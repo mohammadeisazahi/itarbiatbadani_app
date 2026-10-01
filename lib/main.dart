@@ -106,9 +106,7 @@ String pCategory(dynamic p) {
     final terms = p['_embedded']?['wp:term'];
     if (terms is List && terms.isNotEmpty) {
       final catList = terms[0];
-      if (catList is List && catList.isNotEmpty) {
-        return catList[0]['name'] ?? '';
-      }
+      if (catList is List && catList.isNotEmpty) return catList[0]['name'] ?? '';
     }
   } catch (_) {}
   return '';
@@ -371,6 +369,7 @@ class Root extends StatefulWidget {
 
 class _RootState extends State<Root> {
   int _i = 0;
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
@@ -379,7 +378,13 @@ class _RootState extends State<Root> {
         backgroundColor: bgC,
         body: IndexedStack(
           index: _i,
-          children: const [Home(), ArticlesPage(), NewsPage(), ShopPage(), AccountPage()],
+          children: const [
+            Home(),
+            ArticlesPage(),
+            NewsPage(),
+            ShopPage(),
+            AccountPage(),
+          ],
         ),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _i,
@@ -390,11 +395,31 @@ class _RootState extends State<Root> {
           type: BottomNavigationBarType.fixed,
           showUnselectedLabels: true,
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'خانه'),
-            BottomNavigationBarItem(icon: Icon(Icons.article_outlined), activeIcon: Icon(Icons.article), label: 'مقالات'),
-            BottomNavigationBarItem(icon: Icon(Icons.newspaper_outlined), activeIcon: Icon(Icons.newspaper), label: 'اخبار'),
-            BottomNavigationBarItem(icon: Icon(Icons.shopping_cart_outlined), activeIcon: Icon(Icons.shopping_cart), label: 'فروشگاه'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'حساب من'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home),
+              label: 'خانه',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.article_outlined),
+              activeIcon: Icon(Icons.article),
+              label: 'مقالات',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.newspaper_outlined),
+              activeIcon: Icon(Icons.newspaper),
+              label: 'اخبار',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.shopping_cart_outlined),
+              activeIcon: Icon(Icons.shopping_cart),
+              label: 'فروشگاه',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: 'حساب من',
+            ),
           ],
         ),
       ),
@@ -403,6 +428,7 @@ class _RootState extends State<Root> {
 }
 
 /* ==================== HOME ==================== */
+
 class Home extends StatefulWidget {
   const Home({super.key});
   @override
@@ -424,7 +450,9 @@ class _HomeState extends State<Home> {
       _f = getPostsPaged(perPage: 6, page: 1);
       _bannerKey = UniqueKey();
     });
-    try { await _f; } catch (_) {}
+    try {
+      await _f;
+    } catch (_) {}
   }
 
   @override
@@ -438,16 +466,19 @@ class _HomeState extends State<Home> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            SliverToBoxAdapter(child: _header(context)),
-            SliverToBoxAdapter(child: _hero()),
+            SliverToBoxAdapter(child: buildHeader(context)),
+            SliverToBoxAdapter(child: buildHero()),
             SliverToBoxAdapter(child: NewNewsBanner(key: _bannerKey)),
-            const SliverToBoxAdapter(child: _ServicesSection()),
-            SliverToBoxAdapter(child: _LatestPostsSection(postsFuture: _f)),
+            const SliverToBoxAdapter(child: ServicesSectionWidget()),
+            SliverToBoxAdapter(child: LatestPostsSection(postsFuture: _f)),
             const SliverToBoxAdapter(
-              child: _SectionTitle('دسته‌بندی مقالات', Icons.grid_view_rounded),
+              child: SectionTitleWidget(
+                title: 'دسته‌بندی مقالات',
+                icon: Icons.grid_view_rounded,
+              ),
             ),
-            SliverToBoxAdapter(child: _catGrid()),
-            SliverToBoxAdapter(child: _social()),
+            SliverToBoxAdapter(child: buildCatGrid()),
+            SliverToBoxAdapter(child: buildSocial()),
             const SliverToBoxAdapter(child: SizedBox(height: 25)),
           ],
         ),
@@ -456,6 +487,7 @@ class _HomeState extends State<Home> {
   }
 }
 /* ==================== ARTICLES ==================== */
+
 class ArticlesPage extends StatefulWidget {
   const ArticlesPage({super.key});
   @override
@@ -475,8 +507,10 @@ class _ArticlesPageState extends State<ArticlesPage> {
     super.initState();
     _load();
     _scroll.addListener(() {
-      if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 300 &&
-          !_loading && _hasMore) {
+      if (_scroll.position.pixels >=
+              _scroll.position.maxScrollExtent - 300 &&
+          !_loading &&
+          _hasMore) {
         _load();
       }
     });
@@ -484,7 +518,10 @@ class _ArticlesPageState extends State<ArticlesPage> {
 
   Future<void> _load() async {
     if (_loading || !_hasMore) return;
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final list = await getPostsPaged(perPage: perPageSize, page: _page);
       setState(() {
@@ -498,12 +535,20 @@ class _ArticlesPageState extends State<ArticlesPage> {
         _loading = false;
       });
     } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
   Future<void> _refresh() async {
-    setState(() { _posts.clear(); _page = 1; _hasMore = true; _error = null; });
+    setState(() {
+      _posts.clear();
+      _page = 1;
+      _hasMore = true;
+      _error = null;
+    });
     await _load();
   }
 
@@ -515,25 +560,28 @@ class _ArticlesPageState extends State<ArticlesPage> {
         backgroundColor: bgC,
         body: Column(
           children: [
-            _header(context, 'مقالات'),
+            buildHeader(context, 'مقالات'),
             Expanded(
               child: _posts.isEmpty && _loading
                   ? const Padding(
                       padding: EdgeInsets.all(14),
                       child: Column(
                         children: [
-                          _PostSkeleton(),
-                          _PostSkeleton(),
-                          _PostSkeleton(),
-                          _PostSkeleton(),
-                          _PostSkeleton(),
+                          PostSkeleton(),
+                          PostSkeleton(),
+                          PostSkeleton(),
+                          PostSkeleton(),
+                          PostSkeleton(),
                         ],
                       ),
                     )
                   : _posts.isEmpty && _error != null
-                      ? _ErrorBox('خطا در دریافت مقالات.\n$_error', _refresh)
+                      ? ErrorBox(
+                          message: 'خطا در دریافت مقالات.\n$_error',
+                          onRetry: _refresh,
+                        )
                       : _posts.isEmpty
-                          ? const _Empty('مقاله‌ای پیدا نشد.')
+                          ? const EmptyWidget(text: 'مقاله‌ای پیدا نشد.')
                           : RefreshIndicator(
                               color: accentGreen,
                               backgroundColor: pnl,
@@ -542,7 +590,8 @@ class _ArticlesPageState extends State<ArticlesPage> {
                                 controller: _scroll,
                                 cacheExtent: 800,
                                 padding: const EdgeInsets.all(14),
-                                itemCount: _posts.length + (_hasMore ? 1 : 0),
+                                itemCount:
+                                    _posts.length + (_hasMore ? 1 : 0),
                                 itemBuilder: (c, i) {
                                   if (i >= _posts.length) {
                                     return Padding(
@@ -554,7 +603,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
                                       ),
                                     );
                                   }
-                                  return _post(context, _posts[i]);
+                                  return buildPostCard(context, _posts[i]);
                                 },
                               ),
                             ),
@@ -567,6 +616,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
 }
 
 /* ==================== CATEGORY POSTS ==================== */
+
 class CategoryPostsPage extends StatefulWidget {
   final Cat c;
   const CategoryPostsPage({super.key, required this.c});
@@ -588,8 +638,10 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
     super.initState();
     _init();
     _scroll.addListener(() {
-      if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 300 &&
-          !_loading && _hasMore) {
+      if (_scroll.position.pixels >=
+              _scroll.position.maxScrollExtent - 300 &&
+          !_loading &&
+          _hasMore) {
         _load();
       }
     });
@@ -602,14 +654,20 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
       if (_catId == null) throw Exception('دسته‌بندی یافت نشد');
       await _load();
     } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
   Future<void> _load() async {
     if (_loading && _posts.isNotEmpty) return;
     if (!_hasMore) return;
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final list = await getPostsPaged(
         perPage: perPageSize,
@@ -627,12 +685,20 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
         _loading = false;
       });
     } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
   Future<void> _refresh() async {
-    setState(() { _posts.clear(); _page = 1; _hasMore = true; _error = null; });
+    setState(() {
+      _posts.clear();
+      _page = 1;
+      _hasMore = true;
+      _error = null;
+    });
     await _load();
   }
 
@@ -653,17 +719,20 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
                 padding: EdgeInsets.all(14),
                 child: Column(
                   children: [
-                    _PostSkeleton(),
-                    _PostSkeleton(),
-                    _PostSkeleton(),
-                    _PostSkeleton(),
+                    PostSkeleton(),
+                    PostSkeleton(),
+                    PostSkeleton(),
+                    PostSkeleton(),
                   ],
                 ),
               )
             : _posts.isEmpty && _error != null
-                ? _ErrorBox('خطا در دریافت مطالب.\n$_error', _refresh)
+                ? ErrorBox(
+                    message: 'خطا در دریافت مطالب.\n$_error',
+                    onRetry: _refresh,
+                  )
                 : _posts.isEmpty
-                    ? const _Empty('مطلبی در این دسته پیدا نشد.')
+                    ? const EmptyWidget(text: 'مطلبی در این دسته پیدا نشد.')
                     : RefreshIndicator(
                         color: accentGreen,
                         backgroundColor: pnl,
@@ -684,7 +753,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
                                 ),
                               );
                             }
-                            return _post(context, _posts[i]);
+                            return buildPostCard(context, _posts[i]);
                           },
                         ),
                       ),
@@ -692,8 +761,8 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
     );
   }
 }
-
 /* ==================== NEWS ==================== */
+
 class NewsPage extends StatefulWidget {
   const NewsPage({super.key});
   @override
@@ -714,8 +783,10 @@ class _NewsPageState extends State<NewsPage> {
     super.initState();
     _init();
     _scroll.addListener(() {
-      if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 300 &&
-          !_loading && _hasMore) {
+      if (_scroll.position.pixels >=
+              _scroll.position.maxScrollExtent - 300 &&
+          !_loading &&
+          _hasMore) {
         _load();
       }
     });
@@ -728,14 +799,20 @@ class _NewsPageState extends State<NewsPage> {
       if (_catId == null) throw Exception('دسته‌بندی اخبار یافت نشد');
       await _load();
     } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
   Future<void> _load() async {
     if (_loading && _posts.isNotEmpty) return;
     if (!_hasMore) return;
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final list = await getPostsPaged(
         perPage: perPageSize,
@@ -753,12 +830,20 @@ class _NewsPageState extends State<NewsPage> {
         _loading = false;
       });
     } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
   Future<void> _refresh() async {
-    setState(() { _posts.clear(); _page = 1; _hasMore = true; _error = null; });
+    setState(() {
+      _posts.clear();
+      _page = 1;
+      _hasMore = true;
+      _error = null;
+    });
     await _load();
   }
 
@@ -782,17 +867,20 @@ class _NewsPageState extends State<NewsPage> {
                       padding: EdgeInsets.all(14),
                       child: Column(
                         children: [
-                          _PostSkeleton(),
-                          _PostSkeleton(),
-                          _PostSkeleton(),
-                          _PostSkeleton(),
+                          PostSkeleton(),
+                          PostSkeleton(),
+                          PostSkeleton(),
+                          PostSkeleton(),
                         ],
                       ),
                     )
                   : _posts.isEmpty && _error != null
-                      ? _ErrorBox('خطا در دریافت اخبار.\n$_error', _refresh)
+                      ? ErrorBox(
+                          message: 'خطا در دریافت اخبار.\n$_error',
+                          onRetry: _refresh,
+                        )
                       : _posts.isEmpty
-                          ? const _Empty('خبری پیدا نشد.')
+                          ? const EmptyWidget(text: 'خبری پیدا نشد.')
                           : RefreshIndicator(
                               color: accentGreen,
                               backgroundColor: pnl,
@@ -801,7 +889,8 @@ class _NewsPageState extends State<NewsPage> {
                                 controller: _scroll,
                                 cacheExtent: 800,
                                 padding: const EdgeInsets.all(14),
-                                itemCount: _posts.length + (_hasMore ? 1 : 0),
+                                itemCount:
+                                    _posts.length + (_hasMore ? 1 : 0),
                                 itemBuilder: (c, i) {
                                   if (i >= _posts.length) {
                                     return Padding(
@@ -813,7 +902,7 @@ class _NewsPageState extends State<NewsPage> {
                                       ),
                                     );
                                   }
-                                  return _post(context, _posts[i]);
+                                  return buildPostCard(context, _posts[i]);
                                 },
                               ),
                             ),
@@ -824,7 +913,9 @@ class _NewsPageState extends State<NewsPage> {
     );
   }
 }
+
 /* ==================== SHOP ==================== */
+
 class ShopPage extends StatefulWidget {
   const ShopPage({super.key});
   @override
@@ -844,8 +935,10 @@ class _ShopPageState extends State<ShopPage> {
     super.initState();
     _load();
     _scroll.addListener(() {
-      if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 300 &&
-          !_loading && _hasMore) {
+      if (_scroll.position.pixels >=
+              _scroll.position.maxScrollExtent - 300 &&
+          !_loading &&
+          _hasMore) {
         _load();
       }
     });
@@ -853,7 +946,10 @@ class _ShopPageState extends State<ShopPage> {
 
   Future<void> _load() async {
     if (_loading || !_hasMore) return;
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final list = await getProductsPaged(perPage: perPageSize, page: _page);
       setState(() {
@@ -867,12 +963,20 @@ class _ShopPageState extends State<ShopPage> {
         _loading = false;
       });
     } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
   Future<void> _refresh() async {
-    setState(() { _products.clear(); _page = 1; _hasMore = true; _error = null; });
+    setState(() {
+      _products.clear();
+      _page = 1;
+      _hasMore = true;
+      _error = null;
+    });
     await _load();
   }
 
@@ -884,24 +988,27 @@ class _ShopPageState extends State<ShopPage> {
         backgroundColor: bgC,
         body: Column(
           children: [
-            _header(context, 'فروشگاه'),
+            buildHeader(context, 'فروشگاه'),
             Expanded(
               child: _products.isEmpty && _loading
                   ? const Padding(
                       padding: EdgeInsets.all(14),
                       child: Column(
                         children: [
-                          _PostSkeleton(),
-                          _PostSkeleton(),
-                          _PostSkeleton(),
-                          _PostSkeleton(),
+                          PostSkeleton(),
+                          PostSkeleton(),
+                          PostSkeleton(),
+                          PostSkeleton(),
                         ],
                       ),
                     )
                   : _products.isEmpty && _error != null
-                      ? _ErrorBox('خطا در دریافت محصولات.\n$_error', _refresh)
+                      ? ErrorBox(
+                          message: 'خطا در دریافت محصولات.\n$_error',
+                          onRetry: _refresh,
+                        )
                       : _products.isEmpty
-                          ? const _Empty('محصولی پیدا نشد.')
+                          ? const EmptyWidget(text: 'محصولی پیدا نشد.')
                           : RefreshIndicator(
                               color: accentGreen,
                               backgroundColor: pnl,
@@ -910,7 +1017,8 @@ class _ShopPageState extends State<ShopPage> {
                                 controller: _scroll,
                                 cacheExtent: 800,
                                 padding: const EdgeInsets.all(14),
-                                itemCount: _products.length + (_hasMore ? 1 : 0),
+                                itemCount:
+                                    _products.length + (_hasMore ? 1 : 0),
                                 itemBuilder: (c, i) {
                                   if (i >= _products.length) {
                                     return Padding(
@@ -922,7 +1030,8 @@ class _ShopPageState extends State<ShopPage> {
                                       ),
                                     );
                                   }
-                                  return _product(context, _products[i]);
+                                  return buildProductCard(
+                                      context, _products[i]);
                                 },
                               ),
                             ),
@@ -935,6 +1044,7 @@ class _ShopPageState extends State<ShopPage> {
 }
 
 /* ==================== SEARCH (Live) ==================== */
+
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
   @override
@@ -959,10 +1069,16 @@ class _SearchPageState extends State<SearchPage> {
     _debounce = Timer(const Duration(milliseconds: 400), () {
       final q = value.trim();
       if (q.isEmpty) {
-        setState(() { _q = ''; _f = null; });
+        setState(() {
+          _q = '';
+          _f = null;
+        });
         return;
       }
-      setState(() { _q = q; _f = searchExact(q); });
+      setState(() {
+        _q = q;
+        _f = searchExact(q);
+      });
     });
   }
 
@@ -1005,30 +1121,43 @@ class _SearchPageState extends State<SearchPage> {
             ),
             Expanded(
               child: _f == null
-                  ? const _Empty('عبارتی برای جستجو وارد کنید')
+                  ? const EmptyWidget(
+                      text: 'عبارتی برای جستجو وارد کنید',
+                    )
                   : FutureBuilder<List>(
                       future: _f,
                       builder: (c, s) {
-                        if (s.connectionState == ConnectionState.waiting) {
+                        if (s.connectionState ==
+                            ConnectionState.waiting) {
                           return const Padding(
                             padding: EdgeInsets.all(14),
                             child: Column(
                               children: [
-                                _PostSkeleton(),
-                                _PostSkeleton(),
-                                _PostSkeleton(),
+                                PostSkeleton(),
+                                PostSkeleton(),
+                                PostSkeleton(),
                               ],
                             ),
                           );
                         }
-                        if (s.hasError) return _ErrorBox('خطا در جستجو.\n${s.error}', null);
+                        if (s.hasError) {
+                          return ErrorBox(
+                            message: 'خطا در جستجو.\n${s.error}',
+                            onRetry: null,
+                          );
+                        }
                         final posts = s.data ?? [];
-                        if (posts.isEmpty) return _Empty('نتیجه‌ای برای «$_q» پیدا نشد.');
+                        if (posts.isEmpty) {
+                          return EmptyWidget(
+                            text: 'نتیجه‌ای برای «$_q» پیدا نشد.',
+                          );
+                        }
                         return ListView.builder(
                           cacheExtent: 800,
                           padding: const EdgeInsets.all(14),
                           itemCount: posts.length,
-                          itemBuilder: (c, i) => _post(context, posts[i]),
+                          itemBuilder: (c, i) =>
+                              buildPostCard(context, posts[i]),
                         );
                       },
                     ),
@@ -1039,8 +1168,8 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 }
-
 /* ==================== ACCOUNT ==================== */
+
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
   @override
@@ -1104,7 +1233,10 @@ class _AccountPageState extends State<AccountPage> {
                   'expiry': c.expiresDate,
                 })
             .toList();
-        await _storage.write(key: 'wc_cookies', value: json.encode(list));
+        await _storage.write(
+          key: 'wc_cookies',
+          value: json.encode(list),
+        );
       } else {
         await _storage.delete(key: 'wc_cookies');
         await CookieManager.instance().deleteAllCookies();
@@ -1120,13 +1252,14 @@ class _AccountPageState extends State<AccountPage> {
         backgroundColor: bgC,
         body: Column(
           children: [
-            _headerWithAdmin(context, 'حساب من'),
+            buildHeaderWithAdmin(context, 'حساب من'),
             Expanded(
               child: Stack(
                 children: [
                   InAppWebView(
-                    initialUrlRequest:
-                        URLRequest(url: WebUri('$site/my-account/')),
+                    initialUrlRequest: URLRequest(
+                      url: WebUri('$site/my-account/'),
+                    ),
                     initialSettings: InAppWebViewSettings(
                       javaScriptEnabled: true,
                       useOnDownloadStart: true,
@@ -1134,18 +1267,22 @@ class _AccountPageState extends State<AccountPage> {
                           'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
                     ),
                     onWebViewCreated: (c) => _controller = c,
-                    onLoadStart: (c, url) => setState(() => _l = true),
+                    onLoadStart: (c, url) =>
+                        setState(() => _l = true),
                     onLoadStop: (c, url) async {
                       setState(() => _l = false);
                       await _save();
                     },
-                    onDownloadStartRequest: (controller, request) async {
+                    onDownloadStartRequest:
+                        (controller, request) async {
                       await openUrl(request.url.toString());
                     },
                   ),
                   if (_l)
                     Center(
-                      child: CircularProgressIndicator(color: accentGreen),
+                      child: CircularProgressIndicator(
+                        color: accentGreen,
+                      ),
                     ),
                 ],
               ),
@@ -1158,10 +1295,15 @@ class _AccountPageState extends State<AccountPage> {
 }
 
 /* ==================== WEB PAGE ==================== */
+
 class WebPage extends StatefulWidget {
   final String url;
   final String title;
-  const WebPage({super.key, required this.url, required this.title});
+  const WebPage({
+    super.key,
+    required this.url,
+    required this.title,
+  });
   @override
   State<WebPage> createState() => _WebPageState();
 }
@@ -1181,8 +1323,11 @@ class _WebPageState extends State<WebPage> {
       body: Stack(
         children: [
           InAppWebView(
-            initialUrlRequest: URLRequest(url: WebUri(widget.url)),
-            initialSettings: InAppWebViewSettings(javaScriptEnabled: true),
+            initialUrlRequest: URLRequest(
+              url: WebUri(widget.url),
+            ),
+            initialSettings:
+                InAppWebViewSettings(javaScriptEnabled: true),
             onLoadStart: (c, url) => setState(() => _l = true),
             onLoadStop: (c, url) => setState(() => _l = false),
           ),
@@ -1195,15 +1340,18 @@ class _WebPageState extends State<WebPage> {
     );
   }
 }
+
 /* ==================== SERVICES SECTION ==================== */
 
-class _ServicesSection extends StatefulWidget {
-  const _ServicesSection();
+class ServicesSectionWidget extends StatefulWidget {
+  const ServicesSectionWidget({super.key});
+
   @override
-  State<_ServicesSection> createState() => _ServicesSectionState();
+  State<ServicesSectionWidget> createState() =>
+      _ServicesSectionWidgetState();
 }
 
-class _ServicesSectionState extends State<_ServicesSection> {
+class _ServicesSectionWidgetState extends State<ServicesSectionWidget> {
   final ScrollController _scrollCtrl = ScrollController();
 
   final List<Map<String, dynamic>> _items = [
@@ -1212,14 +1360,16 @@ class _ServicesSectionState extends State<_ServicesSection> {
       'icon': Icons.info_outline,
       'color': const Color(0xff1e40af),
       'soft': const Color(0xffeff6ff),
-      'url': '$site/introduction-to-the-field-of-physical-education-and-sports-sciences/',
+      'url':
+          '$site/introduction-to-the-field-of-physical-education-and-sports-sciences/',
     },
     {
       'title': 'گرایش‌های ارشد',
       'icon': Icons.layers_outlined,
       'color': const Color(0xff7c3aed),
       'soft': const Color(0xfff5f3ff),
-      'url': '$site/%da%af%d8%b1%d8%a7%db%8c%d8%b4%d9%87%d8%a7%db%8c-%da%a9%d8%a7%d8%b1%d8%b4%d9%86%d8%a7%d8%b3%db%8c-%d8%a7%d8%b1%d8%b4%d8%af-%d8%aa%d8%b1%d8%a8%db%8c%d8%aa-%d8%a8%d8%af%d9%86%db%8c-%d9%88/',
+      'url':
+          '$site/%da%af%d8%b1%d8%a7%db%8c%d8%b4%d9%87%d8%a7%db%8c-%da%a9%d8%a7%d8%b1%d8%b4%d9%86%d8%a7%d8%b3%db%8c-%d8%a7%d8%b1%d8%b4%d8%af-%d8%aa%d8%b1%d8%a8%db%8c%d8%aa-%d8%a8%d8%af%d9%86%db%8c-%d9%88/',
     },
     {
       'title': 'گرایش‌های دکتری',
@@ -1261,14 +1411,16 @@ class _ServicesSectionState extends State<_ServicesSection> {
       'icon': Icons.work_outline,
       'color': const Color(0xff0d9488),
       'soft': const Color(0xfff0fdfa),
-      'url': '$site/job-market-in-physical-education-and-sports-sciences/',
+      'url':
+          '$site/job-market-in-physical-education-and-sports-sciences/',
     },
     {
       'title': 'طرح درس',
       'icon': Icons.slideshow_outlined,
       'color': const Color(0xff9333ea),
       'soft': const Color(0xfffaf5ff),
-      'url': '$site/product-category/%d8%b7%d8%b1%d8%ad-%d8%af%d8%b1%d8%b3-%d8%b1%d9%88%d8%b2%d8%a7%d9%86%d9%87-%d9%85%d8%a7%d9%87%d8%a7%d9%86%d9%87-%d8%b3%d8%a7%d9%84%d8%a7%d9%86%d9%87/',
+      'url':
+          '$site/product-category/%d8%b7%d8%b1%d8%ad-%d8%af%d8%b1%d8%b3-%d8%b1%d9%88%d8%b2%d8%a7%d9%86%d9%87-%d9%85%d8%a7%d9%87%d8%a7%d9%86%d9%87-%d8%b3%d8%a7%d9%84%d8%a7%d9%86%d9%87/',
     },
     {
       'title': 'پاورپوینت',
@@ -1316,12 +1468,16 @@ class _ServicesSectionState extends State<_ServicesSection> {
                         height: 3,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xff1e40af), Color(0xff2563eb)],
+                            colors: [
+                              Color(0xff1e40af),
+                              Color(0xff2563eb),
+                            ],
                           ),
                           borderRadius: BorderRadius.circular(3),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xff2563eb).withOpacity(.3),
+                              color: const Color(0xff2563eb)
+                                  .withOpacity(.3),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -1359,10 +1515,13 @@ class _ServicesSectionState extends State<_ServicesSection> {
                       child: ListView.separated(
                         controller: _scrollCtrl,
                         scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 18),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 18),
                         itemCount: _items.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 12),
-                        itemBuilder: (c, i) => _buildServiceCard(_items[i]),
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(width: 12),
+                        itemBuilder: (c, i) =>
+                            _buildServiceCard(_items[i]),
                       ),
                     ),
                   ),
@@ -1428,7 +1587,8 @@ class _ServicesSectionState extends State<_ServicesSection> {
       onTap: () => openUrl(item['url'] as String),
       child: Container(
         width: 145,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        padding: const EdgeInsets.symmetric(
+            horizontal: 14, vertical: 16),
         decoration: BoxDecoration(
           color: darkModeNotifier.value ? pnl2 : Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -1444,7 +1604,11 @@ class _ServicesSectionState extends State<_ServicesSection> {
                 color: soft,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(item['icon'] as IconData, color: color, size: 24),
+              child: Icon(
+                item['icon'] as IconData,
+                color: color,
+                size: 24,
+              ),
             ),
             const SizedBox(height: 10),
             Expanded(
@@ -1469,13 +1633,11 @@ class _ServicesSectionState extends State<_ServicesSection> {
       ),
     );
   }
-}
+}/* ==================== LATEST POSTS SECTION ==================== */
 
-/* ==================== LATEST POSTS SECTION ==================== */
-
-class _LatestPostsSection extends StatelessWidget {
+class LatestPostsSection extends StatelessWidget {
   final Future<List>? postsFuture;
-  const _LatestPostsSection({required this.postsFuture});
+  const LatestPostsSection({super.key, required this.postsFuture});
 
   @override
   Widget build(BuildContext context) {
@@ -1507,7 +1669,10 @@ class _LatestPostsSection extends StatelessWidget {
                       height: 3,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xff059669), Color(0xff047857)],
+                          colors: [
+                            Color(0xff059669),
+                            Color(0xff047857),
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(3),
                       ),
@@ -1526,20 +1691,25 @@ class _LatestPostsSection extends StatelessWidget {
                   padding: EdgeInsets.symmetric(horizontal: 14),
                   child: Column(
                     children: [
-                      _FeaturedSkeleton(),
+                      FeaturedSkeleton(),
                       SizedBox(height: 12),
-                      _PostSkeleton(),
+                      PostSkeleton(),
                       SizedBox(height: 12),
-                      _PostSkeleton(),
+                      PostSkeleton(),
                     ],
                   ),
                 );
               }
               if (s.hasError) {
-                return _ErrorBox('خطا در دریافت مطالب.\n${s.error}', null);
+                return ErrorBox(
+                  message: 'خطا در دریافت مطالب.\n${s.error}',
+                  onRetry: null,
+                );
               }
               final posts = s.data ?? [];
-              if (posts.isEmpty) return const _Empty('مطلبی پیدا نشد.');
+              if (posts.isEmpty) {
+                return const EmptyWidget(text: 'مطلبی پیدا نشد.');
+              }
 
               final featured = posts.first;
               final others = posts.skip(1).take(4).toList();
@@ -1548,12 +1718,13 @@ class _LatestPostsSection extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Column(
                   children: [
-                    _FeaturedPostCard(post: featured),
+                    FeaturedPostCard(post: featured),
                     const SizedBox(height: 14),
                     ...others
                         .map((p) => Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: _SidePostCard(post: p),
+                              padding:
+                                  const EdgeInsets.only(bottom: 10),
+                              child: SidePostCard(post: p),
                             ))
                         .toList(),
                   ],
@@ -1569,9 +1740,9 @@ class _LatestPostsSection extends StatelessWidget {
 
 /* ==================== FEATURED POST CARD ==================== */
 
-class _FeaturedPostCard extends StatelessWidget {
+class FeaturedPostCard extends StatelessWidget {
   final dynamic post;
-  const _FeaturedPostCard({required this.post});
+  const FeaturedPostCard({super.key, required this.post});
 
   @override
   Widget build(BuildContext context) {
@@ -1606,7 +1777,8 @@ class _FeaturedPostCard extends StatelessWidget {
                     ? CachedNetworkImage(
                         imageUrl: img,
                         fit: BoxFit.cover,
-                        placeholder: (_, __) => Container(color: pnl2),
+                        placeholder: (_, __) =>
+                            Container(color: pnl2),
                         errorWidget: (_, __, ___) => Container(
                           color: pnl2,
                           child: Icon(
@@ -1638,7 +1810,9 @@ class _FeaturedPostCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: const Color(0xffecfdf5),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0x3305a669)),
+                        border: Border.all(
+                          color: const Color(0x3305a669),
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -1711,7 +1885,11 @@ class _FeaturedPostCard extends StatelessWidget {
                                 color: pnl2,
                                 shape: BoxShape.circle,
                               ),
-                              child: Icon(Icons.person, color: mutC, size: 20),
+                              child: Icon(
+                                Icons.person,
+                                color: mutC,
+                                size: 20,
+                              ),
                             ),
                           ),
                         )
@@ -1723,12 +1901,17 @@ class _FeaturedPostCard extends StatelessWidget {
                             color: pnl2,
                             shape: BoxShape.circle,
                           ),
-                          child: Icon(Icons.person, color: mutC, size: 20),
+                          child: Icon(
+                            Icons.person,
+                            color: mutC,
+                            size: 20,
+                          ),
                         ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
                           children: [
                             if (author.isNotEmpty)
                               Text(
@@ -1794,9 +1977,9 @@ class _FeaturedPostCard extends StatelessWidget {
 
 /* ==================== SIDE POST CARD ==================== */
 
-class _SidePostCard extends StatelessWidget {
+class SidePostCard extends StatelessWidget {
   final dynamic post;
-  const _SidePostCard({required this.post});
+  const SidePostCard({super.key, required this.post});
 
   @override
   Widget build(BuildContext context) {
@@ -1891,7 +2074,8 @@ class _SidePostCard extends StatelessWidget {
                     ? CachedNetworkImage(
                         imageUrl: img,
                         fit: BoxFit.cover,
-                        placeholder: (_, __) => Container(color: pnl2),
+                        placeholder: (_, __) =>
+                            Container(color: pnl2),
                         errorWidget: (_, __, ___) => Container(
                           color: pnl2,
                           child: Icon(
@@ -1917,15 +2101,16 @@ class _SidePostCard extends StatelessWidget {
     );
   }
 }
+
 /* ==================== LIVE DOT ==================== */
 
-class _LiveDot extends StatefulWidget {
-  const _LiveDot();
+class LiveDot extends StatefulWidget {
+  const LiveDot({super.key});
   @override
-  State<_LiveDot> createState() => _LiveDotState();
+  State<LiveDot> createState() => _LiveDotState();
 }
 
-class _LiveDotState extends State<_LiveDot>
+class _LiveDotState extends State<LiveDot>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
 
@@ -1963,7 +2148,8 @@ class _LiveDotState extends State<_LiveDot>
                 height: 16 * scale,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xffff3d00).withOpacity(opacity * 0.5),
+                  color: const Color(0xffff3d00)
+                      .withOpacity(opacity * 0.5),
                 ),
               ),
               Container(
@@ -1984,9 +2170,9 @@ class _LiveDotState extends State<_LiveDot>
 
 /* ==================== URGENT NEWS CARD ==================== */
 
-class _UrgentNewsCard extends StatelessWidget {
+class UrgentNewsCard extends StatelessWidget {
   final dynamic news;
-  const _UrgentNewsCard({required this.news});
+  const UrgentNewsCard({super.key, required this.news});
 
   @override
   Widget build(BuildContext context) {
@@ -1998,7 +2184,10 @@ class _UrgentNewsCard extends StatelessWidget {
     int readTime = 1;
     try {
       final raw = clean(news['content']['rendered'] ?? '');
-      final words = raw.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+      final words = raw
+          .split(RegExp(r'\s+'))
+          .where((w) => w.isNotEmpty)
+          .length;
       readTime = (words / 200).ceil();
       if (readTime < 1) readTime = 1;
     } catch (_) {}
@@ -2027,7 +2216,10 @@ class _UrgentNewsCard extends StatelessWidget {
                     gradient: const LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Color(0xff0d47a1), Color(0xff25b8e8)],
+                      colors: [
+                        Color(0xff0d47a1),
+                        Color(0xff25b8e8),
+                      ],
                     ),
                     borderRadius: BorderRadius.circular(3),
                   ),
@@ -2038,7 +2230,11 @@ class _UrgentNewsCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.calendar_today_outlined, size: 12, color: mutC),
+                      Icon(
+                        Icons.calendar_today_outlined,
+                        size: 12,
+                        color: mutC,
+                      ),
                       const SizedBox(width: 5),
                       Text(
                         date,
@@ -2058,7 +2254,11 @@ class _UrgentNewsCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Icon(Icons.access_time, size: 12, color: mutC),
+                      Icon(
+                        Icons.access_time,
+                        size: 12,
+                        color: mutC,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         '$readTime دقیقه',
@@ -2099,7 +2299,10 @@ class _UrgentNewsCard extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  Container(height: 1, color: lineC.withOpacity(.5)),
+                  Container(
+                    height: 1,
+                    color: lineC.withOpacity(.5),
+                  ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
@@ -2126,7 +2329,8 @@ class _UrgentNewsCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xffff3d00).withOpacity(.1),
+                          color: const Color(0xffff3d00)
+                              .withOpacity(.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Row(
@@ -2216,14 +2420,14 @@ class _NewNewsBannerState extends State<NewNewsBanner> {
                                 end: Alignment.bottomCenter,
                                 colors: [
                                   Color(0xff0d47a1),
-                                  Color(0xff25b8e8)
+                                  Color(0xff25b8e8),
                                 ],
                               ),
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
                           const SizedBox(width: 10),
-                          const _LiveDot(),
+                          const LiveDot(),
                           const SizedBox(width: 8),
                           Text(
                             'اخبار فوری',
@@ -2250,8 +2454,10 @@ class _NewNewsBannerState extends State<NewNewsBanner> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: accentBlue.withOpacity(.1),
-                                  borderRadius: BorderRadius.circular(8),
+                                  color:
+                                      accentBlue.withOpacity(.1),
+                                  borderRadius:
+                                      BorderRadius.circular(8),
                                 ),
                                 child: Row(
                                   children: [
@@ -2288,7 +2494,7 @@ class _NewNewsBannerState extends State<NewNewsBanner> {
                 ),
                 const SizedBox(height: 14),
                 ...items
-                    .map((news) => _UrgentNewsCard(news: news))
+                    .map((news) => UrgentNewsCard(news: news))
                     .toList(),
                 const SizedBox(height: 6),
               ],
@@ -2334,7 +2540,7 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
         appBar: AppBar(
           title: Row(
             children: [
-              const _LiveDot(),
+              const LiveDot(),
               const SizedBox(width: 8),
               Text(
                 'اخبار فوری',
@@ -2357,32 +2563,38 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
           child: FutureBuilder<List>(
             future: _future,
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
+              if (snapshot.connectionState ==
+                  ConnectionState.waiting) {
                 return const Padding(
                   padding: EdgeInsets.all(20),
                   child: Column(
                     children: [
-                      _PostSkeleton(),
-                      _PostSkeleton(),
-                      _PostSkeleton(),
+                      PostSkeleton(),
+                      PostSkeleton(),
+                      PostSkeleton(),
                     ],
                   ),
                 );
               }
               if (snapshot.hasError) {
-                return _ErrorBox(
-                  'خطا در دریافت اخبار.\n${snapshot.error}',
-                  _refresh,
+                return ErrorBox(
+                  message:
+                      'خطا در دریافت اخبار.\n${snapshot.error}',
+                  onRetry: _refresh,
                 );
               }
               final list = snapshot.data ?? [];
               if (list.isEmpty) {
-                return const _Empty('هنوز خبری منتشر نشده است.');
+                return const EmptyWidget(
+                  text: 'هنوز خبری منتشر نشده است.',
+                );
               }
               return ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 14),
                 itemCount: list.length,
-                itemBuilder: (c, i) => _UrgentNewsCard(news: list[i]),
+                itemBuilder: (c, i) =>
+                    UrgentNewsCard(news: list[i]),
               );
             },
           ),
@@ -2391,7 +2603,6 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
     );
   }
 }
-
 /* ==================== ADMIN LOGIN ==================== */
 
 class AdminLoginPage extends StatefulWidget {
@@ -2594,8 +2805,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
               GestureDetector(
                 onTap: () => setState(() => _rememberMe = !_rememberMe),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: pnl,
                     borderRadius: BorderRadius.circular(12),
@@ -2606,9 +2816,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                         width: 22,
                         height: 22,
                         decoration: BoxDecoration(
-                          color: _rememberMe
-                              ? accentGreen
-                              : Colors.transparent,
+                          color: _rememberMe ? accentGreen : Colors.transparent,
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
                             color: _rememberMe ? accentGreen : mutC,
@@ -2616,11 +2824,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                           ),
                         ),
                         child: _rememberMe
-                            ? const Icon(
-                                Icons.check,
-                                color: Colors.white,
-                                size: 16,
-                              )
+                            ? const Icon(Icons.check, color: Colors.white, size: 16)
                             : null,
                       ),
                       const SizedBox(width: 10),
@@ -2653,10 +2857,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                   ),
                   child: Text(
                     _error!,
-                    style: const TextStyle(
-                      color: Colors.orange,
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(color: Colors.orange, fontSize: 12),
                   ),
                 ),
               ],
@@ -2777,10 +2978,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       _reloadList();
     } catch (e) {
       if (!mounted) return;
-      _snack(
-        '❌ خطا: ${e.toString().replaceFirst('Exception: ', '')}',
-        Colors.red,
-      );
+      _snack('❌ خطا: ${e.toString().replaceFirst('Exception: ', '')}', Colors.red);
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -2803,10 +3001,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'حذف',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text('حذف', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -2824,10 +3019,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       _reloadList();
     } catch (e) {
       if (!mounted) return;
-      _snack(
-        '❌ خطا: ${e.toString().replaceFirst('Exception: ', '')}',
-        Colors.red,
-      );
+      _snack('❌ خطا: ${e.toString().replaceFirst('Exception: ', '')}', Colors.red);
     }
   }
 
@@ -2879,11 +3071,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                     Expanded(
                       child: Text(
                         'خبر فوری پس از انتشار، در سایت و بالای صفحه اصلی اپ نمایش داده می‌شود و تا زمانی که شما حذف نکنید باقی می‌ماند.',
-                        style: TextStyle(
-                          color: txtC,
-                          fontSize: 12,
-                          height: 1.6,
-                        ),
+                        style: TextStyle(color: txtC, fontSize: 12, height: 1.6),
                       ),
                     ),
                   ],
@@ -2931,11 +3119,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                 textDirection: TextDirection.rtl,
                 textAlign: TextAlign.right,
                 maxLines: 6,
-                style: TextStyle(
-                  color: txtC,
-                  fontSize: 14,
-                  height: 1.8,
-                ),
+                style: TextStyle(color: txtC, fontSize: 14, height: 1.8),
                 decoration: InputDecoration(
                   hintText: 'توضیحات کامل خبر...',
                   hintStyle: TextStyle(color: mutC),
@@ -3052,10 +3236,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                                     const SizedBox(height: 4),
                                     Text(
                                       pDate(p),
-                                      style: TextStyle(
-                                        color: mutC,
-                                        fontSize: 11,
-                                      ),
+                                      style: TextStyle(color: mutC, fontSize: 11),
                                     ),
                                   ],
                                 ],
@@ -3064,10 +3245,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                             const SizedBox(width: 8),
                             IconButton(
                               onPressed: () => _delete(p),
-                              icon: const Icon(
-                                Icons.delete_outline,
-                                color: Colors.red,
-                              ),
+                              icon: const Icon(Icons.delete_outline, color: Colors.red),
                               tooltip: 'حذف',
                             ),
                           ],
@@ -3084,10 +3262,9 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     );
   }
 }
+/* ==================== HEADER ==================== */
 
-/* ==================== COMMON WIDGETS ==================== */
-
-Widget _header(BuildContext context, [String? t]) {
+Widget buildHeader(BuildContext context, [String? t]) {
   return SafeArea(
     bottom: false,
     child: Container(
@@ -3161,7 +3338,7 @@ Widget _header(BuildContext context, [String? t]) {
   );
 }
 
-Widget _headerWithAdmin(BuildContext context, [String? t]) {
+Widget buildHeaderWithAdmin(BuildContext context, [String? t]) {
   return SafeArea(
     bottom: false,
     child: Container(
@@ -3210,77 +3387,7 @@ Widget _headerWithAdmin(BuildContext context, [String? t]) {
               context,
               MaterialPageRoute(builder: (_) => const AdminLoginPage()),
             ),
-            icon: Icon(
-              Icons.admin_panel_settings,
-              color: accentBlue,
-              size: 26,
-            ),
-            tooltip: 'پنل مدیریت',
-          ),
-          IconButton(
-            onPressed: () async {
-              darkModeNotifier.value = !darkModeNotifier.value;
-              await _storage.write(
-                key: 'dark_mode',
-                value: darkModeNotifier.value.toString(),
-              );
-            },
-            icon: ValueListenableBuilder<bool>(
-              valueListenable: darkModeNot
-              Widget _headerWithAdmin(BuildContext context, [String? t]) {
-  return SafeArea(
-    bottom: false,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: bgC,
-        border: Border(bottom: BorderSide(color: lineC)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(23),
-              border: Border.all(color: lineC, width: 1),
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                logo,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Image.network(
-                  logoNet,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                      Icon(Icons.sports, color: accentGreen),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              t ?? 'اپلیکیشن تربیت بدنی و علوم ورزشی',
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                color: txtC,
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AdminLoginPage()),
-            ),
-            icon: Icon(
-              Icons.admin_panel_settings,
-              color: accentBlue,
-              size: 26,
-            ),
+            icon: Icon(Icons.admin_panel_settings, color: accentBlue, size: 26),
             tooltip: 'پنل مدیریت',
           ),
           IconButton(
@@ -3315,7 +3422,7 @@ Widget _headerWithAdmin(BuildContext context, [String? t]) {
 
 /* ==================== HERO ==================== */
 
-Widget _hero() {
+Widget buildHero() {
   return Container(
     margin: const EdgeInsets.fromLTRB(14, 18, 14, 10),
     decoration: BoxDecoration(
@@ -3350,9 +3457,9 @@ Widget _hero() {
   );
 }
 
-/* ==================== POST ==================== */
+/* ==================== POST CARD ==================== */
 
-Widget _post(BuildContext context, dynamic p) {
+Widget buildPostCard(BuildContext context, dynamic p) {
   final i = pImg(p);
   final date = pDate(p);
   return GestureDetector(
@@ -3447,9 +3554,9 @@ Widget _post(BuildContext context, dynamic p) {
   );
 }
 
-/* ==================== PRODUCT ==================== */
+/* ==================== PRODUCT CARD ==================== */
 
-Widget _product(BuildContext context, dynamic p) {
+Widget buildProductCard(BuildContext context, dynamic p) {
   final img = (p['images'] as List?)?.isNotEmpty == true
       ? (p['images'][0]['src'] ?? '')
       : '';
@@ -3620,7 +3727,7 @@ Widget _product(BuildContext context, dynamic p) {
 
 /* ==================== CAT GRID ==================== */
 
-Widget _catGrid() {
+Widget buildCatGrid() {
   return Padding(
     padding: const EdgeInsets.symmetric(horizontal: 14),
     child: GridView.builder(
@@ -3684,7 +3791,7 @@ Widget _catGrid() {
 
 /* ==================== SOCIAL ==================== */
 
-Widget _social() {
+Widget buildSocial() {
   final items = [
     ['تلگرام', Icons.send, 'https://t.me/itarbiatbadani'],
     ['اینستاگرام', Icons.camera_alt_outlined, 'https://instagram.com/itarbiatbadani'],
@@ -3693,7 +3800,10 @@ Widget _social() {
   ];
   return Column(
     children: [
-      const _SectionTitle('ارتباط با ما', Icons.connect_without_contact),
+      const SectionTitleWidget(
+        title: 'ارتباط با ما',
+        icon: Icons.connect_without_contact,
+      ),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14),
         child: GridView.builder(
@@ -3739,10 +3849,14 @@ Widget _social() {
 
 /* ==================== SECTION TITLE ==================== */
 
-class _SectionTitle extends StatelessWidget {
-  final String t;
-  final IconData i;
-  const _SectionTitle(this.t, this.i);
+class SectionTitleWidget extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  const SectionTitleWidget({
+    super.key,
+    required this.title,
+    required this.icon,
+  });
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
@@ -3760,11 +3874,11 @@ class _SectionTitle extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 9),
-            Icon(i, color: gold, size: 22),
+            Icon(icon, color: gold, size: 22),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                t,
+                title,
                 textAlign: TextAlign.right,
                 style: TextStyle(
                   color: txtC,
@@ -3782,20 +3896,21 @@ class _SectionTitle extends StatelessWidget {
 
 /* ==================== SKELETON ==================== */
 
-class _SkeletonBox extends StatefulWidget {
+class SkeletonBox extends StatefulWidget {
   final double width;
   final double height;
   final double radius;
-  const _SkeletonBox({
+  const SkeletonBox({
+    super.key,
     this.width = double.infinity,
     this.height = 16,
     this.radius = 8,
   });
   @override
-  State<_SkeletonBox> createState() => _SkeletonBoxState();
+  State<SkeletonBox> createState() => _SkeletonBoxState();
 }
 
-class _SkeletonBoxState extends State<_SkeletonBox>
+class _SkeletonBoxState extends State<SkeletonBox>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   late Animation<double> _anim;
@@ -3832,8 +3947,8 @@ class _SkeletonBoxState extends State<_SkeletonBox>
   }
 }
 
-class _PostSkeleton extends StatelessWidget {
-  const _PostSkeleton();
+class PostSkeleton extends StatelessWidget {
+  const PostSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -3851,7 +3966,7 @@ class _PostSkeleton extends StatelessWidget {
               topRight: Radius.circular(15),
               bottomRight: Radius.circular(15),
             ),
-            child: const _SkeletonBox(width: 125, height: 110, radius: 0),
+            child: const SkeletonBox(width: 125, height: 110, radius: 0),
           ),
           Expanded(
             child: Padding(
@@ -3859,11 +3974,11 @@ class _PostSkeleton extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
-                  _SkeletonBox(height: 14, width: double.infinity),
+                  SkeletonBox(height: 14, width: double.infinity),
                   SizedBox(height: 8),
-                  _SkeletonBox(height: 14, width: 200),
+                  SkeletonBox(height: 14, width: 200),
                   SizedBox(height: 8),
-                  _SkeletonBox(height: 12, width: 80),
+                  SkeletonBox(height: 12, width: 80),
                 ],
               ),
             ),
@@ -3874,8 +3989,8 @@ class _PostSkeleton extends StatelessWidget {
   }
 }
 
-class _FeaturedSkeleton extends StatelessWidget {
-  const _FeaturedSkeleton();
+class FeaturedSkeleton extends StatelessWidget {
+  const FeaturedSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -3894,18 +4009,18 @@ class _FeaturedSkeleton extends StatelessWidget {
               topLeft: Radius.circular(18),
               topRight: Radius.circular(18),
             ),
-            child: _SkeletonBox(height: 200, radius: 0),
+            child: SkeletonBox(height: 200, radius: 0),
           ),
           Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
-                _SkeletonBox(height: 16, width: double.infinity),
+                SkeletonBox(height: 16, width: double.infinity),
                 SizedBox(height: 8),
-                _SkeletonBox(height: 16, width: 220),
+                SkeletonBox(height: 16, width: 220),
                 SizedBox(height: 10),
-                _SkeletonBox(height: 12, width: 90),
+                SkeletonBox(height: 12, width: 90),
               ],
             ),
           ),
@@ -3915,33 +4030,30 @@ class _FeaturedSkeleton extends StatelessWidget {
   }
 }
 
-/* ==================== LOADING / EMPTY / ERROR ==================== */
+/* ==================== EMPTY / ERROR ==================== */
 
-class _Loading extends StatelessWidget {
-  const _Loading();
+class EmptyWidget extends StatelessWidget {
+  final String text;
+  const EmptyWidget({super.key, required this.text});
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(35),
-        child: Center(child: CircularProgressIndicator(color: accentGreen)),
-      );
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(30),
+      child: Center(
+        child: Text(text, style: TextStyle(color: mutC)),
+      ),
+    );
+  }
 }
 
-class _Empty extends StatelessWidget {
-  final String t;
-  const _Empty(this.t);
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(30),
-        child: Center(
-          child: Text(t, style: TextStyle(color: mutC)),
-        ),
-      );
-}
-
-class _ErrorBox extends StatelessWidget {
-  final String m;
-  final VoidCallback? r;
-  const _ErrorBox(this.m, this.r);
+class ErrorBox extends StatelessWidget {
+  final String message;
+  final VoidCallback? onRetry;
+  const ErrorBox({
+    super.key,
+    required this.message,
+    this.onRetry,
+  });
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -3952,13 +4064,16 @@ class _ErrorBox extends StatelessWidget {
           const Icon(Icons.error_outline, color: Colors.red, size: 40),
           const SizedBox(height: 10),
           Text(
-            m,
+            message,
             textAlign: TextAlign.center,
             style: TextStyle(color: txtC),
           ),
-          if (r != null) ...[
+          if (onRetry != null) ...[
             const SizedBox(height: 15),
-            ElevatedButton(onPressed: r, child: const Text('تلاش مجدد')),
+            ElevatedButton(
+              onPressed: onRetry,
+              child: const Text('تلاش مجدد'),
+            ),
           ],
         ],
       ),
