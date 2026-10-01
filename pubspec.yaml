@@ -9,31 +9,52 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
   cupertino_icons: ^1.0.8
+
+  # نمایش تصاویر سایت
   cached_network_image: ^3.4.1
+
+  # ارتباط با وردپرس و دریافت مطالب
   http: ^1.2.2
+
+  # باز کردن لینک‌های خارجی
   url_launcher: ^6.3.1
-  flutter_inappwebview: ^6.1.5
+
+  # نمایش مقالات داخل اپ
+  webview_flutter: ^4.10.0
+
+  # ذخیره امن اطلاعات ورود ادمین
   flutter_secure_storage: ^9.2.2
+
+  # آیکون‌های حرفه‌ای
+  font_awesome_flutter: ^10.8.0
+
+  # فونت آنلاین وزیرمتن
+  google_fonts: ^6.2.1
+
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
   flutter_lints: ^5.0.0
+
+  # ساخت آیکون اپ
   flutter_launcher_icons: ^0.14.1
+
+  # ساخت صفحه اسپلش
   flutter_native_splash: ^2.4.3
+
 
 flutter:
   uses-material-design: true
+
   assets:
     - assets/images/
-  fonts:
-    - family: Vazirmatn
-      fonts:
-        - asset: assets/fonts/Vazirmatn-Regular.ttf
-        - asset: assets/fonts/Vazirmatn-Bold.ttf
-          weight: 700
 
+
+# ==================== آیکون لانچر اپ ====================
 flutter_launcher_icons:
   android: true
   ios: false
@@ -42,6 +63,8 @@ flutter_launcher_icons:
   adaptive_icon_foreground: "assets/images/logo.png"
   min_sdk_android: 21
 
+
+# ==================== صفحه اسپلش ====================
 flutter_native_splash:
   color: "#07131f"
   image: assets/images/logo.png
