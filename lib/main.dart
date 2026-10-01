@@ -342,7 +342,7 @@ class App extends StatelessWidget {
             brightness: isDark ? Brightness.dark : Brightness.light,
             scaffoldBackgroundColor: bgC,
             colorScheme: ColorScheme.fromSeed(
-              seedColor: accentGreen,
+              seedColor: const Color(0xff4caf50),
               brightness: isDark ? Brightness.dark : Brightness.light,
             ),
             pageTransitionsTheme: const PageTransitionsTheme(
@@ -563,10 +563,10 @@ class _ArticlesPageState extends State<ArticlesPage> {
             buildHeader(context, 'مقالات'),
             Expanded(
               child: _posts.isEmpty && _loading
-                  ? const Padding(
-                      padding: EdgeInsets.all(14),
+                  ? Padding(
+                      padding: const EdgeInsets.all(14),
                       child: Column(
-                        children: [
+                        children: const [
                           PostSkeleton(),
                           PostSkeleton(),
                           PostSkeleton(),
@@ -594,8 +594,8 @@ class _ArticlesPageState extends State<ArticlesPage> {
                                     _posts.length + (_hasMore ? 1 : 0),
                                 itemBuilder: (c, i) {
                                   if (i >= _posts.length) {
-                                    return const Padding(
-                                      padding: EdgeInsets.all(20),
+                                    return Padding(
+                                      padding: const EdgeInsets.all(20),
                                       child: Center(
                                         child: CircularProgressIndicator(
                                           color: accentGreen,
@@ -738,19 +738,17 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               children: [
-                // ⭐ عنوان بخش
                 if (_posts.isNotEmpty || _loading)
                   const SectionTitleWidget(
                     title: 'جدیدترین نوشته‌ها',
                     icon: Icons.article_outlined,
                   ),
 
-                // ⭐ حالت‌ها
                 if (_posts.isEmpty && _loading)
-                  const Padding(
-                    padding: EdgeInsets.all(14),
+                  Padding(
+                    padding: const EdgeInsets.all(14),
                     child: Column(
-                      children: [
+                      children: const [
                         FeaturedSkeleton(),
                         SizedBox(height: 12),
                         PostSkeleton(),
@@ -794,9 +792,8 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
                               style: TextStyle(fontSize: 12),
                             ),
                           ),
-                        if (!_hasMore && _posts.length <= 5)
+                        if (_hasMore || _posts.length <= 5)
                           const SizedBox(height: 30),
-                        if (_hasMore) const SizedBox(height: 30),
                       ],
                     ),
                   ),
@@ -969,10 +966,10 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
           backgroundColor: pnl,
           onRefresh: _refresh,
           child: _posts.isEmpty && _loading
-              ? const Padding(
-                  padding: EdgeInsets.all(14),
+              ? Padding(
+                  padding: const EdgeInsets.all(14),
                   child: Column(
-                    children: [
+                    children: const [
                       FeaturedSkeleton(),
                       SizedBox(height: 12),
                       PostSkeleton(),
@@ -1189,10 +1186,10 @@ class _NewsPageState extends State<NewsPage> {
             ),
             Expanded(
               child: _posts.isEmpty && _loading
-                  ? const Padding(
-                      padding: EdgeInsets.all(14),
+                  ? Padding(
+                      padding: const EdgeInsets.all(14),
                       child: Column(
-                        children: [
+                        children: const [
                           PostSkeleton(),
                           PostSkeleton(),
                           PostSkeleton(),
@@ -1219,8 +1216,8 @@ class _NewsPageState extends State<NewsPage> {
                                     _posts.length + (_hasMore ? 1 : 0),
                                 itemBuilder: (c, i) {
                                   if (i >= _posts.length) {
-                                    return const Padding(
-                                      padding: EdgeInsets.all(20),
+                                    return Padding(
+                                      padding: const EdgeInsets.all(20),
                                       child: Center(
                                         child: CircularProgressIndicator(
                                           color: accentGreen,
@@ -1317,10 +1314,10 @@ class _ShopPageState extends State<ShopPage> {
             buildHeader(context, 'فروشگاه'),
             Expanded(
               child: _products.isEmpty && _loading
-                  ? const Padding(
-                      padding: EdgeInsets.all(14),
+                  ? Padding(
+                      padding: const EdgeInsets.all(14),
                       child: Column(
-                        children: [
+                        children: const [
                           PostSkeleton(),
                           PostSkeleton(),
                           PostSkeleton(),
@@ -1347,8 +1344,8 @@ class _ShopPageState extends State<ShopPage> {
                                     _products.length + (_hasMore ? 1 : 0),
                                 itemBuilder: (c, i) {
                                   if (i >= _products.length) {
-                                    return const Padding(
-                                      padding: EdgeInsets.all(20),
+                                    return Padding(
+                                      padding: const EdgeInsets.all(20),
                                       child: Center(
                                         child: CircularProgressIndicator(
                                           color: accentGreen,
@@ -1458,10 +1455,10 @@ class _SearchPageState extends State<SearchPage> {
                       builder: (c, s) {
                         if (s.connectionState ==
                             ConnectionState.waiting) {
-                          return const Padding(
-                            padding: EdgeInsets.all(14),
+                          return Padding(
+                            padding: const EdgeInsets.all(14),
                             child: Column(
-                              children: [
+                              children: const [
                                 PostSkeleton(),
                                 PostSkeleton(),
                                 PostSkeleton(),
@@ -1603,7 +1600,7 @@ class _AccountPageState extends State<AccountPage> {
                     },
                   ),
                   if (_l)
-                    const Center(
+                    Center(
                       child: CircularProgressIndicator(color: accentGreen),
                     ),
                 ],
@@ -1655,7 +1652,7 @@ class _WebPageState extends State<WebPage> {
             onLoadStop: (c, url) => setState(() => _l = false),
           ),
           if (_l)
-            const Center(
+            Center(
               child: CircularProgressIndicator(color: accentGreen),
             ),
         ],
@@ -2011,10 +2008,10 @@ class LatestPostsSection extends StatelessWidget {
             future: postsFuture,
             builder: (c, s) {
               if (s.connectionState == ConnectionState.waiting) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 14),
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
                   child: Column(
-                    children: [
+                    children: const [
                       FeaturedSkeleton(),
                       SizedBox(height: 12),
                       PostSkeleton(),
@@ -2105,7 +2102,7 @@ class FeaturedPostCard extends StatelessWidget {
                             Container(color: pnl2),
                         errorWidget: (_, __, ___) => Container(
                           color: pnl2,
-                          child: const Icon(
+                          child: Icon(
                             Icons.article_outlined,
                             color: accentGreen,
                             size: 60,
@@ -2114,7 +2111,7 @@ class FeaturedPostCard extends StatelessWidget {
                       )
                     : Container(
                         color: pnl2,
-                        child: const Icon(
+                        child: Icon(
                           Icons.article_outlined,
                           color: accentGreen,
                           size: 60,
@@ -2395,7 +2392,7 @@ class SidePostCard extends StatelessWidget {
                             Container(color: pnl2),
                         errorWidget: (_, __, ___) => Container(
                           color: pnl2,
-                          child: const Icon(
+                          child: Icon(
                             Icons.article_outlined,
                             color: accentGreen,
                             size: 28,
@@ -2404,7 +2401,7 @@ class SidePostCard extends StatelessWidget {
                       )
                     : Container(
                         color: pnl2,
-                        child: const Icon(
+                        child: Icon(
                           Icons.article_outlined,
                           color: accentGreen,
                           size: 28,
@@ -2882,10 +2879,10 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
             builder: (context, snapshot) {
               if (snapshot.connectionState ==
                   ConnectionState.waiting) {
-                return const Padding(
-                  padding: EdgeInsets.all(20),
+                return Padding(
+                  padding: const EdgeInsets.all(20),
                   child: Column(
-                    children: [
+                    children: const [
                       PostSkeleton(),
                       PostSkeleton(),
                       PostSkeleton(),
@@ -3554,8 +3551,8 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                 builder: (context, snapshot) {
                   if (snapshot.connectionState ==
                       ConnectionState.waiting) {
-                    return const Padding(
-                      padding: EdgeInsets.all(20),
+                    return Padding(
+                      padding: const EdgeInsets.all(20),
                       child: Center(
                         child: CircularProgressIndicator(
                           color: accentGreen,
@@ -3677,8 +3674,10 @@ Widget buildHeader(BuildContext context, [String? t]) {
                 errorBuilder: (_, __, ___) => Image.network(
                   logoNet,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                      Icon(Icons.sports, color: accentGreen),
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.sports,
+                    color: accentGreen,
+                  ),
                 ),
               ),
             ),
@@ -3751,8 +3750,10 @@ Widget buildHeaderWithAdmin(BuildContext context, [String? t]) {
                 errorBuilder: (_, __, ___) => Image.network(
                   logoNet,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                      Icon(Icons.sports, color: accentGreen),
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.sports,
+                    color: accentGreen,
+                  ),
                 ),
               ),
             ),
@@ -3829,7 +3830,7 @@ Widget buildHero() {
           return Container(
             height: 180,
             color: pnl2,
-            child: const Center(
+            child: Center(
               child: CircularProgressIndicator(color: accentGreen),
             ),
           );
@@ -3837,7 +3838,11 @@ Widget buildHero() {
         errorBuilder: (_, __, ___) => Container(
           height: 180,
           color: pnl2,
-          child: const Icon(Icons.sports_soccer, color: accentGreen, size: 60),
+          child: Icon(
+            Icons.sports_soccer,
+            color: accentGreen,
+            size: 60,
+          ),
         ),
       ),
     ),
@@ -3876,7 +3881,7 @@ Widget buildPostCard(BuildContext context, dynamic p) {
                       fadeInDuration: const Duration(milliseconds: 200),
                       placeholder: (_, __) => Container(
                         color: pnl2,
-                        child: const Center(
+                        child: Center(
                           child: SizedBox(
                             width: 20,
                             height: 20,
@@ -3889,7 +3894,7 @@ Widget buildPostCard(BuildContext context, dynamic p) {
                       ),
                       errorWidget: (_, __, ___) => Container(
                         color: pnl2,
-                        child: const Icon(
+                        child: Icon(
                           Icons.article_outlined,
                           color: accentGreen,
                           size: 40,
@@ -3898,7 +3903,7 @@ Widget buildPostCard(BuildContext context, dynamic p) {
                     )
                   : Container(
                       color: pnl2,
-                      child: const Icon(
+                      child: Icon(
                         Icons.article_outlined,
                         color: accentGreen,
                         size: 40,
@@ -3981,7 +3986,7 @@ Widget buildProductCard(BuildContext context, dynamic p) {
                       fadeInDuration: const Duration(milliseconds: 200),
                       placeholder: (_, __) => Container(
                         color: pnl2,
-                        child: const Center(
+                        child: Center(
                           child: SizedBox(
                             width: 20,
                             height: 20,
@@ -3994,7 +3999,7 @@ Widget buildProductCard(BuildContext context, dynamic p) {
                       ),
                       errorWidget: (_, __, ___) => Container(
                         color: pnl2,
-                        child: const Icon(
+                        child: Icon(
                           Icons.shopping_bag_outlined,
                           color: accentGreen,
                           size: 40,
@@ -4003,7 +4008,7 @@ Widget buildProductCard(BuildContext context, dynamic p) {
                     )
                   : Container(
                       color: pnl2,
-                      child: const Icon(
+                      child: Icon(
                         Icons.shopping_bag_outlined,
                         color: accentGreen,
                         size: 40,
@@ -4356,12 +4361,12 @@ class PostSkeleton extends StatelessWidget {
             ),
             child: const SkeletonBox(width: 125, height: 110, radius: 0),
           ),
-          const Expanded(
+          Expanded(
             child: Padding(
-              padding: EdgeInsets.all(13),
+              padding: const EdgeInsets.all(13),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: const [
                   SkeletonBox(height: 14, width: double.infinity),
                   SizedBox(height: 8),
                   SkeletonBox(height: 14, width: 200),
