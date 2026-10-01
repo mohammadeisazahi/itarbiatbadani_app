@@ -43,13 +43,11 @@ jobs:
 
       - name: Upgrade AGP and Gradle
         run: |
-          echo "🔧 Upgrading Android Gradle Plugin and Gradle wrapper..."
+          echo "🔧 Upgrading AGP and Gradle..."
           
           if [ -f "android/settings.gradle" ]; then
             sed -i 's/version "8.1.0"/version "8.3.0"/g' android/settings.gradle || true
             sed -i "s/version '8.1.0'/version '8.3.0'/g" android/settings.gradle || true
-            sed -i 's/version "8.0.0"/version "8.3.0"/g' android/settings.gradle || true
-            sed -i "s/version '8.0.0'/version '8.3.0'/g" android/settings.gradle || true
             sed -i 's/version "8.1.1"/version "8.3.0"/g' android/settings.gradle || true
             sed -i "s/version '8.1.1'/version '8.3.0'/g" android/settings.gradle || true
             echo "✅ settings.gradle updated"
@@ -57,21 +55,18 @@ jobs:
           
           if [ -f "android/settings.gradle.kts" ]; then
             sed -i 's/version = "8.1.0"/version = "8.3.0"/g' android/settings.gradle.kts || true
-            sed -i 's/version = "8.0.0"/version = "8.3.0"/g' android/settings.gradle.kts || true
             sed -i 's/version = "8.1.1"/version = "8.3.0"/g' android/settings.gradle.kts || true
             echo "✅ settings.gradle.kts updated"
           fi
           
           if [ -f "android/build.gradle" ]; then
             sed -i 's/com.android.tools.build:gradle:8.1.0/com.android.tools.build:gradle:8.3.0/g' android/build.gradle || true
-            sed -i 's/com.android.tools.build:gradle:8.0.0/com.android.tools.build:gradle:8.3.0/g' android/build.gradle || true
             sed -i 's/com.android.tools.build:gradle:8.1.1/com.android.tools.build:gradle:8.3.0/g' android/build.gradle || true
             echo "✅ build.gradle updated"
           fi
           
           if [ -f "android/build.gradle.kts" ]; then
             sed -i 's/com.android.tools.build:gradle:8.1.0/com.android.tools.build:gradle:8.3.0/g' android/build.gradle.kts || true
-            sed -i 's/com.android.tools.build:gradle:8.0.0/com.android.tools.build:gradle:8.3.0/g' android/build.gradle.kts || true
             sed -i 's/com.android.tools.build:gradle:8.1.1/com.android.tools.build:gradle:8.3.0/g' android/build.gradle.kts || true
             echo "✅ build.gradle.kts updated"
           fi
@@ -85,19 +80,16 @@ jobs:
             echo "✅ gradle-wrapper.properties updated"
           fi
           
-          echo ""
           echo "📋 Current versions:"
-          grep -r "com.android.application" android/settings.gradle 2>/dev/null || true
-          grep -r "com.android.tools.build:gradle" android/build.gradle 2>/dev/null || true
           grep "distributionUrl" android/gradle/wrapper/gradle-wrapper.properties 2>/dev/null || true
-          echo "✅ AGP + Gradle upgrade complete"
+          echo "✅ AGP and Gradle upgraded"
 
       - name: Add namespace to gradle (if needed)
         run: |
           if [ -f "android/app/build.gradle" ]; then
             if ! grep -q "namespace" android/app/build.gradle; then
               sed -i '/android {/a\    namespace "ir.itarbiatbadani.itarbiatbadani_app"' android/app/build.gradle || true
-              echo "✅ namespace added to app/build.gradle"
+              echo "✅ namespace added"
             else
               echo "✅ namespace already exists"
             fi
@@ -117,7 +109,7 @@ jobs:
         run: |
           sed -i "s|YOUR_WC_KEY|${{ secrets.WC_KEY }}|g" lib/main.dart || true
           sed -i "s|YOUR_WC_SECRET|${{ secrets.WC_SECRET }}|g" lib/main.dart || true
-          echo "✅ WooCommerce keys injected (if any)"
+          echo "✅ WooCommerce keys injected"
 
       - name: Add INTERNET permission
         run: |
