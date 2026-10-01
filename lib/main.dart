@@ -16,9 +16,6 @@ const String logoNet = '$site/wp-content/uploads/2025/07/1000073463.png';
 const String heroImg = '$site/wp-content/uploads/2025/08/file_00000000b12862439589872d238e031b-1.png';
 const int perPageSize = 10;
 
-// ⭐ نامک دسته اخبار جدید
-const String newNewsSlug = 'urgent-news';
-
 final _storage = const FlutterSecureStorage();
 final darkModeNotifier = ValueNotifier<bool>(true);
 
@@ -121,16 +118,9 @@ List<int> _toJalali(int gy, int gm, int gd) {
   return [jy, jm, jd];
 }
 
-// ⭐ getPostsPaged با پارامتر excludeCatId
-Future<List> getPostsPaged({
-  int perPage = perPageSize,
-  int page = 1,
-  int? catId,
-  int? excludeCatId,
-}) async {
+Future<List> getPostsPaged({int perPage = perPageSize, int page = 1, int? catId}) async {
   var u = '$api/posts?per_page=$perPage&page=$page&_embed=wp:featuredmedia';
   if (catId != null) u += '&categories=$catId';
-  if (excludeCatId != null) u += '&categories_exclude=$excludeCatId';
   final r = await http.get(Uri.parse(u));
   if (r.statusCode == 400) return [];
   if (r.statusCode != 200) throw Exception('خطای ${r.statusCode}');
@@ -182,13 +172,17 @@ String formatPrice(String price) {
   return '$buffer تومان';
 }
 
-/* ==================== ⭐ NEW NEWS API ==================== */
+/* ==================== ⭐ NEW NEWS API (CPT: new_news) ==================== */
+
+String _newNewsUrl({int perPage = 10, int page = 1}) {
+  return '$api/new_news?per_page=$perPage&page=$page&orderby=date&order=desc&_embed=wp:featuredmedia';
+}
 
 Future<Map<String, dynamic>?> getNewNews() async {
   try {
-    final id = await getCatIdBySlug(newNewsSlug);
-    if (id == null) return null;
-    final list = await getPostsPaged(perPage: 1, page: 1, catId: id);
+    final r = await http.get(Uri.parse(_newNewsUrl(perPage: 1)));
+    if (r.statusCode != 200) return null;
+    final list = json.decode(r.body) as List;
     if (list.isEmpty) return null;
     return Map<String, dynamic>.from(list.first);
   } catch (_) {
@@ -198,9 +192,9 @@ Future<Map<String, dynamic>?> getNewNews() async {
 
 Future<List> getNewNewsList() async {
   try {
-    final id = await getCatIdBySlug(newNewsSlug);
-    if (id == null) return [];
-    return await getPostsPaged(perPage: 20, page: 1, catId: id);
+    final r = await http.get(Uri.parse(_newNewsUrl(perPage: 20)));
+    if (r.statusCode != 200) return [];
+    return json.decode(r.body) as List;
   } catch (_) {
     return [];
   }
@@ -218,10 +212,8 @@ Future<Map<String, dynamic>> postNewNews({
   required String content,
 }) async {
   final auth = _basicAuth(username, appPassword);
-  final catId = await getCatIdBySlug(newNewsSlug);
-  if (catId == null) throw Exception('دسته «$newNewsSlug» در سایت پیدا نشد.');
+  final uri = Uri.parse('$api/new_news');
 
-  final uri = Uri.parse('$api/posts');
   final r = await http.post(
     uri,
     headers: {
@@ -233,7 +225,6 @@ Future<Map<String, dynamic>> postNewNews({
       'title': title,
       'content': content,
       'status': 'publish',
-      'categories': [catId],
     }),
   );
 
@@ -253,7 +244,7 @@ Future<void> deleteNews({
   required int postId,
 }) async {
   final auth = _basicAuth(username, appPassword);
-  final uri = Uri.parse('$api/posts/$postId?force=true');
+  final uri = Uri.parse('$api/new_news/$postId?force=true');
   final r = await http.delete(
     uri,
     headers: {
@@ -375,29 +366,18 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   Future<List>? _f;
   Key _bannerKey = UniqueKey();
-  int? _urgentCatId;
 
   @override
   void initState() {
     super.initState();
-    _loadPosts();
-  }
-
-  Future<void> _loadPosts() async {
-    _urgentCatId = await getCatIdBySlug('urgent-news');
-    if (!mounted) return;
-    setState(() {
-      _f = getPostsPaged(
-        perPage: 6,
-        page: 1,
-        excludeCatId: _urgentCatId,
-      );
-    });
+    _f = getPostsPaged(perPage: 6, page: 1);
   }
 
   Future<void> _refresh() async {
-    await _loadPosts();
-    setState(() => _bannerKey = UniqueKey());
+    setState(() {
+      _f = getPostsPaged(perPage: 6, page: 1);
+      _bannerKey = UniqueKey();
+    });
     try { await _f; } catch (_) {}
   }
 
@@ -413,11 +393,11 @@ class _HomeState extends State<Home> {
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverToBoxAdapter(child: _header(context)),
-            SliverToBoxAdapter(child: _hero()),
 
-            // ⭐ بنر اخبار جدید (زیر Hero)
+            // ⭐ بنر اخبار جدید (زیر Hero، بالای خدمات ما)
             SliverToBoxAdapter(child: NewNewsBanner(key: _bannerKey)),
 
+            SliverToBoxAdapter(child: _hero()),
             SliverToBoxAdapter(child: _services()),
             const SliverToBoxAdapter(
               child: _SectionTitle('جدیدترین نوشته‌ها', Icons.article_outlined),
@@ -930,16 +910,10 @@ class _SearchPageState extends State<SearchPage> {
     _debounce = Timer(const Duration(milliseconds: 400), () {
       final q = value.trim();
       if (q.isEmpty) {
-        setState(() {
-          _q = '';
-          _f = null;
-        });
+        setState(() { _q = ''; _f = null; });
         return;
       }
-      setState(() {
-        _q = q;
-        _f = searchExact(q);
-      });
+      setState(() { _q = q; _f = searchExact(q); });
     });
   }
 
@@ -1090,7 +1064,7 @@ class _AccountPageState extends State<AccountPage> {
       builder: (context, _, __) => Scaffold(
         body: Column(
           children: [
-            // ⭐ هدر با دکمه پنل ادمین
+            // هدر با دکمه پنل ادمین
             _headerWithAdmin(context, 'حساب من'),
             Expanded(
               child: Stack(
@@ -1179,7 +1153,7 @@ class _WebPageState extends State<WebPage> {
   }
 }
 
-/* ==================== ⭐ NEW NEWS BANNER ==================== */
+/* ==================== NEW NEWS BANNER ==================== */
 
 class NewNewsBanner extends StatefulWidget {
   const NewNewsBanner({super.key});
@@ -1296,7 +1270,7 @@ class _NewNewsBannerState extends State<NewNewsBanner> {
   }
 }
 
-/* ==================== ⭐ ADMIN LOGIN PAGE ==================== */
+/* ==================== ADMIN LOGIN PAGE ==================== */
 
 class AdminLoginPage extends StatefulWidget {
   const AdminLoginPage({super.key});
@@ -1466,7 +1440,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
   }
 }
 
-/* ==================== ⭐ ADMIN PANEL PAGE ==================== */
+/* ==================== ADMIN PANEL PAGE ==================== */
 
 class AdminPanelPage extends StatefulWidget {
   final String username;
@@ -1807,7 +1781,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
 }
 /* ==================== COMMON WIDGETS ==================== */
 
-// هدر معمولی
+// هدر معمولی (بدون دکمه ادمین)
 Widget _header(BuildContext context, [String? t]) {
   return SafeArea(
     bottom: false,
@@ -1876,7 +1850,7 @@ Widget _header(BuildContext context, [String? t]) {
   );
 }
 
-// ⭐ هدر مخصوص صفحه «حساب من» با دکمه پنل ادمین
+// هدر با دکمه پنل ادمین (برای صفحه حساب من)
 Widget _headerWithAdmin(BuildContext context, [String? t]) {
   return SafeArea(
     bottom: false,
@@ -1915,7 +1889,7 @@ Widget _headerWithAdmin(BuildContext context, [String? t]) {
               style: TextStyle(color: txtC, fontSize: 13, fontWeight: FontWeight.bold),
             ),
           ),
-          // ⭐ دکمه پنل ادمین
+          // دکمه پنل ادمین
           IconButton(
             onPressed: () => Navigator.push(
               context,
@@ -1954,7 +1928,7 @@ Widget _headerWithAdmin(BuildContext context, [String? t]) {
   );
 }
 
-/* ==================== HERO ==================== */
+/* ==================== HERO (با عکس) ==================== */
 Widget _hero() {
   return Container(
     margin: const EdgeInsets.fromLTRB(14, 18, 14, 10),
@@ -2138,7 +2112,7 @@ Widget _featuredPost(BuildContext context, dynamic p) {
   );
 }
 
-/* ==================== POST ==================== */
+/* ==================== POST (لیست معمولی) ==================== */
 Widget _post(BuildContext context, dynamic p) {
   final i = pImg(p);
   final date = pDate(p);
