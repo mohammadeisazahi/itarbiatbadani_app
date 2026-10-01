@@ -95,16 +95,6 @@ jobs:
             fi
           fi
 
-      - name: Download Vazirmatn Fonts
-        run: |
-          mkdir -p assets/fonts
-          curl -L -o assets/fonts/Vazirmatn-Regular.ttf \
-            https://github.com/rastikerdar/vazirmatn/raw/master/fonts/ttf/Vazirmatn-Regular.ttf
-          curl -L -o assets/fonts/Vazirmatn-Bold.ttf \
-            https://github.com/rastikerdar/vazirmatn/raw/master/fonts/ttf/Vazirmatn-Bold.ttf
-          ls -la assets/fonts/
-          echo "✅ Fonts downloaded"
-
       - name: Inject WooCommerce Keys
         run: |
           sed -i "s|YOUR_WC_KEY|${{ secrets.WC_KEY }}|g" lib/main.dart || true
