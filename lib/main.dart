@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -335,11 +336,29 @@ class App extends StatelessWidget {
     return ValueListenableBuilder<bool>(
       valueListenable: darkModeNotifier,
       builder: (c, isDark, _) {
+        final baseDark = ThemeData(
+          brightness: Brightness.dark,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: accentGreen,
+            brightness: Brightness.dark,
+          ),
+        );
+        final baseLight = ThemeData(
+          brightness: Brightness.light,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: accentGreen,
+            brightness: Brightness.light,
+          ),
+        );
+
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'تربیت بدنی و علوم ورزشی',
           theme: ThemeData(
             fontFamily: 'Vazirmatn',
+            textTheme: GoogleFonts.vazirmatnTextTheme(
+              isDark ? baseDark.textTheme : baseLight.textTheme,
+            ),
             brightness: isDark ? Brightness.dark : Brightness.light,
             scaffoldBackgroundColor: bgC,
             colorScheme: ColorScheme.fromSeed(
@@ -347,7 +366,9 @@ class App extends StatelessWidget {
               brightness: isDark ? Brightness.dark : Brightness.light,
             ),
             pageTransitionsTheme: const PageTransitionsTheme(
-              builders: {TargetPlatform.android: CupertinoPageTransitionsBuilder()},
+              builders: {
+                TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+              },
             ),
           ),
           builder: (c, ch) => Directionality(
@@ -628,6 +649,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
   final _subCategories = <dynamic>[];
   int _page = 1;
   bool _loading = false;
+  bool _loadingMore = false;
   bool _hasMore = true;
   String? _error;
   int? _catId;
@@ -637,14 +659,6 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
   void initState() {
     super.initState();
     _init();
-    _scroll.addListener(() {
-      if (_scroll.position.pixels >=
-              _scroll.position.maxScrollExtent - 300 &&
-          !_loading &&
-          _hasMore) {
-        _load();
-      }
-    });
   }
 
   Future<void> _init() async {
@@ -654,7 +668,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
       if (_catId == null) throw Exception('دسته‌بندی یافت نشد');
 
       await _loadSubCategories();
-      await _load();
+      await _loadFirst();
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -679,27 +693,19 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
     } catch (_) {}
   }
 
-  Future<void> _load() async {
-    if (_loading && _posts.isNotEmpty) return;
-    if (!_hasMore) return;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  Future<void> _loadFirst() async {
     try {
       final list = await getPostsPaged(
-        perPage: perPageSize,
-        page: _page,
+        perPage: 5,
+        page: 1,
         catId: _catId,
       );
+      if (!mounted) return;
       setState(() {
-        if (list.isEmpty) {
-          _hasMore = false;
-        } else {
-          _posts.addAll(list);
-          _page++;
-          if (list.length < perPageSize) _hasMore = false;
-        }
+        _posts.clear();
+        _posts.addAll(list);
+        _page = 1;
+        _hasMore = list.length >= 5;
         _loading = false;
       });
     } catch (e) {
@@ -710,6 +716,33 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
     }
   }
 
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore) return;
+    setState(() => _loadingMore = true);
+    try {
+      final nextPage = _page + 1;
+      final list = await getPostsPaged(
+        perPage: 5,
+        page: nextPage,
+        catId: _catId,
+      );
+      if (!mounted) return;
+      setState(() {
+        if (list.isEmpty) {
+          _hasMore = false;
+        } else {
+          _posts.addAll(list);
+          _page = nextPage;
+          if (list.length < 5) _hasMore = false;
+        }
+        _loadingMore = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingMore = false);
+    }
+  }
+
   Future<void> _refresh() async {
     setState(() {
       _posts.clear();
@@ -717,7 +750,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
       _hasMore = true;
       _error = null;
     });
-    await _load();
+    await _loadFirst();
   }
 
   @override
@@ -736,74 +769,135 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
           color: accentGreen,
           backgroundColor: pnl,
           onRefresh: _refresh,
-          child: CustomScrollView(
+          child: SingleChildScrollView(
             controller: _scroll,
             physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              if (_subCategories.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: _buildSubCategoriesSection(),
-                ),
+            child: Column(
+              children: [
+                if (_subCategories.isNotEmpty)
+                  _buildSubCategoriesSection(),
 
-              if (_subCategories.isNotEmpty)
-                const SliverToBoxAdapter(
-                  child: SectionTitleWidget(
+                if (_posts.isNotEmpty || _loading)
+                  const SectionTitleWidget(
                     title: 'جدیدترین نوشته‌ها',
                     icon: Icons.article_outlined,
                   ),
-                ),
 
-              if (_posts.isEmpty && _loading)
-                const SliverToBoxAdapter(
-                  child: Padding(
+                if (_posts.isEmpty && _loading)
+                  const Padding(
                     padding: EdgeInsets.all(14),
                     child: Column(
                       children: [
+                        FeaturedSkeleton(),
+                        SizedBox(height: 12),
                         PostSkeleton(),
-                        PostSkeleton(),
-                        PostSkeleton(),
+                        SizedBox(height: 12),
                         PostSkeleton(),
                       ],
                     ),
-                  ),
-                )
-              else if (_posts.isEmpty && _error != null)
-                SliverToBoxAdapter(
-                  child: ErrorBox(
+                  )
+                else if (_posts.isEmpty && _error != null)
+                  ErrorBox(
                     message: 'خطا در دریافت مطالب.\n$_error',
                     onRetry: _refresh,
-                  ),
-                )
-              else if (_posts.isEmpty)
-                const SliverToBoxAdapter(
-                  child: EmptyWidget(text: 'مطلبی در این دسته پیدا نشد.'),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.all(14),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (c, i) {
-                        if (i >= _posts.length) {
+                  )
+                else if (_posts.isEmpty)
+                  const EmptyWidget(text: 'مطلبی در این دسته پیدا نشد.')
+                else
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: Column(
+                      children: [
+                        FeaturedPostCard(post: _posts.first),
+                        const SizedBox(height: 14),
+                        ..._posts.skip(1).map((post) {
                           return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: SidePostCard(post: post),
+                          );
+                        }).toList(),
+                        if (_hasMore)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                                top: 20, bottom: 10),
+                            child: _buildLoadMoreButton(),
+                          ),
+                        if (!_hasMore && _posts.length > 5)
+                          Padding(
                             padding: const EdgeInsets.all(20),
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                color: accentGreen,
+                            child: Text(
+                              'همه مطالب نمایش داده شد.',
+                              style: TextStyle(
+                                color: mutC,
+                                fontSize: 12,
                               ),
                             ),
-                          );
-                        }
-                        return buildPostCard(context, _posts[i]);
-                      },
-                      childCount: _posts.length + (_hasMore ? 1 : 0),
+                          ),
+                        const SizedBox(height: 30),
+                      ],
                     ),
                   ),
-                ),
-
-              const SliverToBoxAdapter(child: SizedBox(height: 20)),
-            ],
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadMoreButton() {
+    final isDark = darkModeNotifier.value;
+
+    return GestureDetector(
+      onTap: _loadingMore ? null : _loadMore,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: 26, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDark ? pnl2 : Colors.white,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: isDark ? lineC : const Color(0xffe9edf3),
+          ),
+          boxShadow: isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_loadingMore)
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: accentGreen,
+                ),
+              )
+            else
+              Icon(
+                Icons.arrow_back_ios_new,
+                size: 12,
+                color: isDark ? txtC : const Color(0xff0f1a2b),
+              ),
+            const SizedBox(width: 8),
+            Text(
+              _loadingMore ? 'در حال بارگذاری...' : 'مشاهده بیشتر',
+              style: TextStyle(
+                color: isDark ? txtC : const Color(0xff0f1a2b),
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -969,44 +1063,30 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
   final _posts = <dynamic>[];
   int _page = 1;
   bool _loading = false;
+  bool _loadingMore = false;
   bool _hasMore = true;
   String? _error;
-  final _scroll = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _load();
-    _scroll.addListener(() {
-      if (_scroll.position.pixels >=
-              _scroll.position.maxScrollExtent - 300 &&
-          !_loading &&
-          _hasMore) {
-        _load();
-      }
-    });
+    _loadFirst();
   }
 
-  Future<void> _load() async {
-    if (_loading || !_hasMore) return;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  Future<void> _loadFirst() async {
+    setState(() => _loading = true);
     try {
       final list = await getPostsPaged(
-        perPage: perPageSize,
-        page: _page,
+        perPage: 5,
+        page: 1,
         catId: widget.categoryId,
       );
+      if (!mounted) return;
       setState(() {
-        if (list.isEmpty) {
-          _hasMore = false;
-        } else {
-          _posts.addAll(list);
-          _page++;
-          if (list.length < perPageSize) _hasMore = false;
-        }
+        _posts.clear();
+        _posts.addAll(list);
+        _page = 1;
+        _hasMore = list.length >= 5;
         _loading = false;
       });
     } catch (e) {
@@ -1017,14 +1097,35 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
     }
   }
 
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore) return;
+    setState(() => _loadingMore = true);
+    try {
+      final nextPage = _page + 1;
+      final list = await getPostsPaged(
+        perPage: 5,
+        page: nextPage,
+        catId: widget.categoryId,
+      );
+      if (!mounted) return;
+      setState(() {
+        if (list.isEmpty) {
+          _hasMore = false;
+        } else {
+          _posts.addAll(list);
+          _page = nextPage;
+          if (list.length < 5) _hasMore = false;
+        }
+        _loadingMore = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingMore = false);
+    }
+  }
+
   Future<void> _refresh() async {
-    setState(() {
-      _posts.clear();
-      _page = 1;
-      _hasMore = true;
-      _error = null;
-    });
-    await _load();
+    await _loadFirst();
   }
 
   @override
@@ -1048,9 +1149,10 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
                   padding: EdgeInsets.all(14),
                   child: Column(
                     children: [
+                      FeaturedSkeleton(),
+                      SizedBox(height: 12),
                       PostSkeleton(),
-                      PostSkeleton(),
-                      PostSkeleton(),
+                      SizedBox(height: 12),
                       PostSkeleton(),
                     ],
                   ),
@@ -1062,25 +1164,103 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
                     )
                   : _posts.isEmpty
                       ? const EmptyWidget(text: 'مطلبی پیدا نشد.')
-                      : ListView.builder(
-                          controller: _scroll,
-                          cacheExtent: 800,
-                          padding: const EdgeInsets.all(14),
-                          itemCount: _posts.length + (_hasMore ? 1 : 0),
-                          itemBuilder: (c, i) {
-                            if (i >= _posts.length) {
-                              return Padding(
-                                padding: const EdgeInsets.all(20),
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    color: accentGreen,
+                      : SingleChildScrollView(
+                          physics:
+                              const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 14,
+                          ),
+                          child: Column(
+                            children: [
+                              FeaturedPostCard(post: _posts.first),
+                              const SizedBox(height: 14),
+                              ..._posts.skip(1).map((post) {
+                                return Padding(
+                                  padding:
+                                      const EdgeInsets.only(bottom: 10),
+                                  child: SidePostCard(post: post),
+                                );
+                              }).toList(),
+                              if (_hasMore)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                      top: 20, bottom: 10),
+                                  child: _buildLoadMoreButton(),
+                                ),
+                              if (!_hasMore && _posts.length > 5)
+                                Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Text(
+                                    'همه مطالب نمایش داده شد.',
+                                    style: TextStyle(
+                                      color: mutC,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ),
-                              );
-                            }
-                            return buildPostCard(context, _posts[i]);
-                          },
+                              const SizedBox(height: 30),
+                            ],
+                          ),
                         ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadMoreButton() {
+    final isDark = darkModeNotifier.value;
+
+    return GestureDetector(
+      onTap: _loadingMore ? null : _loadMore,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: 26, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDark ? pnl2 : Colors.white,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: isDark ? lineC : const Color(0xffe9edf3),
+          ),
+          boxShadow: isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_loadingMore)
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: accentGreen,
+                ),
+              )
+            else
+              Icon(
+                Icons.arrow_back_ios_new,
+                size: 12,
+                color: isDark ? txtC : const Color(0xff0f1a2b),
+              ),
+            const SizedBox(width: 8),
+            Text(
+              _loadingMore ? 'در حال بارگذاری...' : 'مشاهده بیشتر',
+              style: TextStyle(
+                color: isDark ? txtC : const Color(0xff0f1a2b),
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
         ),
       ),
     );
