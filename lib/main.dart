@@ -16,7 +16,7 @@ const String logoNet = '$site/wp-content/uploads/2025/07/1000073463.png';
 const String heroImg = '$site/wp-content/uploads/2025/08/file_00000000b12862439589872d238e031b-1.png';
 const int perPageSize = 10;
 
-// ⭐ دسته‌ی اخبار جدید در وردپرس
+// ⭐ نامک دسته اخبار جدید
 const String newNewsSlug = 'urgent-news';
 
 final _storage = const FlutterSecureStorage();
@@ -121,9 +121,16 @@ List<int> _toJalali(int gy, int gm, int gd) {
   return [jy, jm, jd];
 }
 
-Future<List> getPostsPaged({int perPage = perPageSize, int page = 1, int? catId}) async {
+// ⭐ getPostsPaged با پارامتر excludeCatId
+Future<List> getPostsPaged({
+  int perPage = perPageSize,
+  int page = 1,
+  int? catId,
+  int? excludeCatId,
+}) async {
   var u = '$api/posts?per_page=$perPage&page=$page&_embed=wp:featuredmedia';
   if (catId != null) u += '&categories=$catId';
+  if (excludeCatId != null) u += '&categories_exclude=$excludeCatId';
   final r = await http.get(Uri.parse(u));
   if (r.statusCode == 400) return [];
   if (r.statusCode != 200) throw Exception('خطای ${r.statusCode}');
@@ -367,19 +374,30 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   Future<List>? _f;
-  Key _bannerKey = UniqueKey();       // ⭐ برای رفرش بنر اخبار جدید
+  Key _bannerKey = UniqueKey();
+  int? _urgentCatId;
 
   @override
   void initState() {
     super.initState();
-    _f = getPostsPaged(perPage: 6, page: 1);
+    _loadPosts();
+  }
+
+  Future<void> _loadPosts() async {
+    _urgentCatId = await getCatIdBySlug('urgent-news');
+    if (!mounted) return;
+    setState(() {
+      _f = getPostsPaged(
+        perPage: 6,
+        page: 1,
+        excludeCatId: _urgentCatId,
+      );
+    });
   }
 
   Future<void> _refresh() async {
-    setState(() {
-      _f = getPostsPaged(perPage: 6, page: 1);
-      _bannerKey = UniqueKey();       // ⭐ رفرش بنر
-    });
+    await _loadPosts();
+    setState(() => _bannerKey = UniqueKey());
     try { await _f; } catch (_) {}
   }
 
@@ -397,7 +415,7 @@ class _HomeState extends State<Home> {
             SliverToBoxAdapter(child: _header(context)),
             SliverToBoxAdapter(child: _hero()),
 
-            // ⭐ بنر اخبار جدید (زیر Hero، بالای خدمات ما)
+            // ⭐ بنر اخبار جدید (زیر Hero)
             SliverToBoxAdapter(child: NewNewsBanner(key: _bannerKey)),
 
             SliverToBoxAdapter(child: _services()),
@@ -1226,7 +1244,7 @@ class _NewNewsBannerState extends State<NewNewsBanner> {
                         Icon(Icons.fiber_new, color: accentBlue, size: 16),
                         const SizedBox(width: 3),
                         Text(
-                          'جدید',
+                          'اخبار جدید',
                           style: TextStyle(
                             color: accentBlue,
                             fontSize: 11,
@@ -1579,7 +1597,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // پیام راهنما
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -1790,7 +1807,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
 }
 /* ==================== COMMON WIDGETS ==================== */
 
-// ⭐ هدر معمولی (بدون دکمه ادمین) - همان کد اصلی
+// هدر معمولی
 Widget _header(BuildContext context, [String? t]) {
   return SafeArea(
     bottom: false,
@@ -1859,7 +1876,7 @@ Widget _header(BuildContext context, [String? t]) {
   );
 }
 
-/* ⭐ هدر مخصوص صفحه «حساب من» با دکمه پنل ادمین */
+// ⭐ هدر مخصوص صفحه «حساب من» با دکمه پنل ادمین
 Widget _headerWithAdmin(BuildContext context, [String? t]) {
   return SafeArea(
     bottom: false,
@@ -1937,7 +1954,7 @@ Widget _headerWithAdmin(BuildContext context, [String? t]) {
   );
 }
 
-/* ==================== HERO (با عکس) ==================== */
+/* ==================== HERO ==================== */
 Widget _hero() {
   return Container(
     margin: const EdgeInsets.fromLTRB(14, 18, 14, 10),
@@ -2121,7 +2138,7 @@ Widget _featuredPost(BuildContext context, dynamic p) {
   );
 }
 
-/* ==================== POST (لیست معمولی) ==================== */
+/* ==================== POST ==================== */
 Widget _post(BuildContext context, dynamic p) {
   final i = pImg(p);
   final date = pDate(p);
