@@ -54,7 +54,7 @@ const cats = <Cat>[
   Cat('آزمون‌های استخدامی', 'employment-tests', Icons.assignment_outlined),
   Cat('معرفی رشته‌های ورزشی', 'introduction-to-sports-disciplines', Icons.sports_handball_outlined),
   Cat('ورزش برای گروه‌ها و نیازهای ویژه', 'exercise-for-special-groups-and-needs', Icons.accessibility_new_outlined),
-  Cat('فناوری و نوآوری در ورزش', 'technology-and-innovation-in-sports-sports-science', Icons.memory_outlined),
+  Cat('تکنولوژی و نوآوری در ورزش', 'technology-and-innovation-in-sports', Icons.memory_outlined),
 ];
 
 Future<void> openUrl(String url) async {
@@ -369,7 +369,6 @@ class Root extends StatefulWidget {
 
 class _RootState extends State<Root> {
   int _i = 0;
-
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
@@ -626,6 +625,7 @@ class CategoryPostsPage extends StatefulWidget {
 
 class _CategoryPostsPageState extends State<CategoryPostsPage> {
   final _posts = <dynamic>[];
+  final _subCategories = <dynamic>[];
   int _page = 1;
   bool _loading = false;
   bool _hasMore = true;
@@ -652,6 +652,8 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
     try {
       _catId = await getCatIdBySlug(widget.c.s);
       if (_catId == null) throw Exception('دسته‌بندی یافت نشد');
+
+      await _loadSubCategories();
       await _load();
     } catch (e) {
       setState(() {
@@ -659,6 +661,22 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
         _loading = false;
       });
     }
+  }
+
+  Future<void> _loadSubCategories() async {
+    try {
+      final url =
+          '$api/categories?parent=$_catId&per_page=100&hide_empty=false';
+      final r = await http.get(Uri.parse(url));
+      if (r.statusCode == 200) {
+        final list = json.decode(r.body) as List;
+        if (!mounted) return;
+        setState(() {
+          _subCategories.clear();
+          _subCategories.addAll(list);
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _load() async {
@@ -714,30 +732,337 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
           foregroundColor: txtC,
           elevation: 0,
         ),
-        body: _posts.isEmpty && _loading
-            ? const Padding(
-                padding: EdgeInsets.all(14),
-                child: Column(
-                  children: [
-                    PostSkeleton(),
-                    PostSkeleton(),
-                    PostSkeleton(),
-                    PostSkeleton(),
-                  ],
+        body: RefreshIndicator(
+          color: accentGreen,
+          backgroundColor: pnl,
+          onRefresh: _refresh,
+          child: CustomScrollView(
+            controller: _scroll,
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              if (_subCategories.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: _buildSubCategoriesSection(),
                 ),
-              )
-            : _posts.isEmpty && _error != null
-                ? ErrorBox(
+
+              if (_subCategories.isNotEmpty)
+                const SliverToBoxAdapter(
+                  child: SectionTitleWidget(
+                    title: 'جدیدترین نوشته‌ها',
+                    icon: Icons.article_outlined,
+                  ),
+                ),
+
+              if (_posts.isEmpty && _loading)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(14),
+                    child: Column(
+                      children: [
+                        PostSkeleton(),
+                        PostSkeleton(),
+                        PostSkeleton(),
+                        PostSkeleton(),
+                      ],
+                    ),
+                  ),
+                )
+              else if (_posts.isEmpty && _error != null)
+                SliverToBoxAdapter(
+                  child: ErrorBox(
                     message: 'خطا در دریافت مطالب.\n$_error',
                     onRetry: _refresh,
-                  )
-                : _posts.isEmpty
-                    ? const EmptyWidget(text: 'مطلبی در این دسته پیدا نشد.')
-                    : RefreshIndicator(
-                        color: accentGreen,
-                        backgroundColor: pnl,
-                        onRefresh: _refresh,
-                        child: ListView.builder(
+                  ),
+                )
+              else if (_posts.isEmpty)
+                const SliverToBoxAdapter(
+                  child: EmptyWidget(text: 'مطلبی در این دسته پیدا نشد.'),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.all(14),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (c, i) {
+                        if (i >= _posts.length) {
+                          return Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: accentGreen,
+                              ),
+                            ),
+                          );
+                        }
+                        return buildPostCard(context, _posts[i]);
+                      },
+                      childCount: _posts.length + (_hasMore ? 1 : 0),
+                    ),
+                  ),
+                ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 20)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubCategoriesSection() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 20, 14, 12),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Stack(
+                children: [
+                  Text(
+                    'زیر دسته‌ها',
+                    style: TextStyle(
+                      color: txtC,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  Positioned(
+                    bottom: -2,
+                    right: 0,
+                    left: 0,
+                    child: Container(
+                      height: 3,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xff1e40af),
+                            Color(0xff2563eb),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 14),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: pnl,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: lineC),
+            ),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _subCategories.map((sub) {
+                final name = clean(sub['name'] ?? '');
+                final count = sub['count'] ?? 0;
+                final subId = sub['id'];
+                final subSlug = sub['slug'] ?? '';
+
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => SubCategoryPostsPage(
+                          categoryId: subId,
+                          categoryName: name,
+                          categorySlug: subSlug,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: darkModeNotifier.value
+                          ? pnl2
+                          : const Color(0xffeff6ff),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: darkModeNotifier.value
+                            ? lineC
+                            : const Color(0x331e40af),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.folder_outlined,
+                          size: 14,
+                          color: accentBlue,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          name,
+                          style: TextStyle(
+                            color: txtC,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (count > 0) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: accentBlue.withOpacity(.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '$count',
+                              style: TextStyle(
+                                color: accentBlue,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
+      ),
+    );
+  }
+}
+
+/* ==================== SUB CATEGORY POSTS PAGE ==================== */
+
+class SubCategoryPostsPage extends StatefulWidget {
+  final int categoryId;
+  final String categoryName;
+  final String categorySlug;
+  const SubCategoryPostsPage({
+    super.key,
+    required this.categoryId,
+    required this.categoryName,
+    required this.categorySlug,
+  });
+  @override
+  State<SubCategoryPostsPage> createState() => _SubCategoryPostsPageState();
+}
+
+class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
+  final _posts = <dynamic>[];
+  int _page = 1;
+  bool _loading = false;
+  bool _hasMore = true;
+  String? _error;
+  final _scroll = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    _scroll.addListener(() {
+      if (_scroll.position.pixels >=
+              _scroll.position.maxScrollExtent - 300 &&
+          !_loading &&
+          _hasMore) {
+        _load();
+      }
+    });
+  }
+
+  Future<void> _load() async {
+    if (_loading || !_hasMore) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final list = await getPostsPaged(
+        perPage: perPageSize,
+        page: _page,
+        catId: widget.categoryId,
+      );
+      setState(() {
+        if (list.isEmpty) {
+          _hasMore = false;
+        } else {
+          _posts.addAll(list);
+          _page++;
+          if (list.length < perPageSize) _hasMore = false;
+        }
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _posts.clear();
+      _page = 1;
+      _hasMore = true;
+      _error = null;
+    });
+    await _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Scaffold(
+        backgroundColor: bgC,
+        appBar: AppBar(
+          title: Text(widget.categoryName),
+          backgroundColor: bgC,
+          foregroundColor: txtC,
+          elevation: 0,
+        ),
+        body: RefreshIndicator(
+          color: accentGreen,
+          backgroundColor: pnl,
+          onRefresh: _refresh,
+          child: _posts.isEmpty && _loading
+              ? const Padding(
+                  padding: EdgeInsets.all(14),
+                  child: Column(
+                    children: [
+                      PostSkeleton(),
+                      PostSkeleton(),
+                      PostSkeleton(),
+                      PostSkeleton(),
+                    ],
+                  ),
+                )
+              : _posts.isEmpty && _error != null
+                  ? ErrorBox(
+                      message: 'خطا در دریافت مطالب.\n$_error',
+                      onRetry: _refresh,
+                    )
+                  : _posts.isEmpty
+                      ? const EmptyWidget(text: 'مطلبی پیدا نشد.')
+                      : ListView.builder(
                           controller: _scroll,
                           cacheExtent: 800,
                           padding: const EdgeInsets.all(14),
@@ -756,7 +1081,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
                             return buildPostCard(context, _posts[i]);
                           },
                         ),
-                      ),
+        ),
       ),
     );
   }
@@ -1233,10 +1558,7 @@ class _AccountPageState extends State<AccountPage> {
                   'expiry': c.expiresDate,
                 })
             .toList();
-        await _storage.write(
-          key: 'wc_cookies',
-          value: json.encode(list),
-        );
+        await _storage.write(key: 'wc_cookies', value: json.encode(list));
       } else {
         await _storage.delete(key: 'wc_cookies');
         await CookieManager.instance().deleteAllCookies();
@@ -1267,22 +1589,18 @@ class _AccountPageState extends State<AccountPage> {
                           'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
                     ),
                     onWebViewCreated: (c) => _controller = c,
-                    onLoadStart: (c, url) =>
-                        setState(() => _l = true),
+                    onLoadStart: (c, url) => setState(() => _l = true),
                     onLoadStop: (c, url) async {
                       setState(() => _l = false);
                       await _save();
                     },
-                    onDownloadStartRequest:
-                        (controller, request) async {
+                    onDownloadStartRequest: (controller, request) async {
                       await openUrl(request.url.toString());
                     },
                   ),
                   if (_l)
                     Center(
-                      child: CircularProgressIndicator(
-                        color: accentGreen,
-                      ),
+                      child: CircularProgressIndicator(color: accentGreen),
                     ),
                 ],
               ),
@@ -1323,9 +1641,7 @@ class _WebPageState extends State<WebPage> {
       body: Stack(
         children: [
           InAppWebView(
-            initialUrlRequest: URLRequest(
-              url: WebUri(widget.url),
-            ),
+            initialUrlRequest: URLRequest(url: WebUri(widget.url)),
             initialSettings:
                 InAppWebViewSettings(javaScriptEnabled: true),
             onLoadStart: (c, url) => setState(() => _l = true),
@@ -1515,8 +1831,8 @@ class _ServicesSectionWidgetState extends State<ServicesSectionWidget> {
                       child: ListView.separated(
                         controller: _scrollCtrl,
                         scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 18),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 18),
                         itemCount: _items.length,
                         separatorBuilder: (_, __) =>
                             const SizedBox(width: 12),
@@ -1587,8 +1903,8 @@ class _ServicesSectionWidgetState extends State<ServicesSectionWidget> {
       onTap: () => openUrl(item['url'] as String),
       child: Container(
         width: 145,
-        padding: const EdgeInsets.symmetric(
-            horizontal: 14, vertical: 16),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
         decoration: BoxDecoration(
           color: darkModeNotifier.value ? pnl2 : Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -1633,7 +1949,8 @@ class _ServicesSectionWidgetState extends State<ServicesSectionWidget> {
       ),
     );
   }
-}/* ==================== LATEST POSTS SECTION ==================== */
+}
+/* ==================== LATEST POSTS SECTION ==================== */
 
 class LatestPostsSection extends StatelessWidget {
   final Future<List>? postsFuture;
@@ -1811,8 +2128,7 @@ class FeaturedPostCard extends StatelessWidget {
                         color: const Color(0xffecfdf5),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: const Color(0x3305a669),
-                        ),
+                            color: const Color(0x3305a669)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -1885,11 +2201,8 @@ class FeaturedPostCard extends StatelessWidget {
                                 color: pnl2,
                                 shape: BoxShape.circle,
                               ),
-                              child: Icon(
-                                Icons.person,
-                                color: mutC,
-                                size: 20,
-                              ),
+                              child: Icon(Icons.person,
+                                  color: mutC, size: 20),
                             ),
                           ),
                         )
@@ -1901,11 +2214,8 @@ class FeaturedPostCard extends StatelessWidget {
                             color: pnl2,
                             shape: BoxShape.circle,
                           ),
-                          child: Icon(
-                            Icons.person,
-                            color: mutC,
-                            size: 20,
-                          ),
+                          child: Icon(Icons.person,
+                              color: mutC, size: 20),
                         ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -2590,8 +2900,7 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
                 );
               }
               return ListView.builder(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 14),
+                padding: const EdgeInsets.symmetric(vertical: 14),
                 itemCount: list.length,
                 itemBuilder: (c, i) =>
                     UrgentNewsCard(news: list[i]),
@@ -2679,7 +2988,10 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => AdminPanelPage(username: user, password: pass),
+          builder: (_) => AdminPanelPage(
+            username: user,
+            password: pass,
+          ),
         ),
       );
     } catch (e) {
@@ -2723,7 +3035,10 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
           actions: [
             IconButton(
               onPressed: _clearSavedCredentials,
-              icon: const Icon(Icons.delete_sweep_outlined, color: Colors.red),
+              icon: const Icon(
+                Icons.delete_sweep_outlined,
+                color: Colors.red,
+              ),
               tooltip: 'پاک کردن اطلاعات ذخیره‌شده',
             ),
           ],
@@ -2740,7 +3055,11 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                   color: gold.withOpacity(0.15),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.lock_outline, color: gold, size: 40),
+                child: Icon(
+                  Icons.lock_outline,
+                  color: gold,
+                  size: 40,
+                ),
               ),
               const SizedBox(height: 20),
               Text(
@@ -2764,7 +3083,8 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                 decoration: InputDecoration(
                   hintText: 'نام کاربری وردپرس',
                   hintStyle: TextStyle(color: mutC),
-                  prefixIcon: Icon(Icons.person, color: accentGreen),
+                  prefixIcon:
+                      Icon(Icons.person, color: accentGreen),
                   filled: true,
                   fillColor: pnl,
                   border: OutlineInputBorder(
@@ -2791,7 +3111,8 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                       color: mutC,
                       size: 20,
                     ),
-                    onPressed: () => setState(() => _obscure = !_obscure),
+                    onPressed: () =>
+                        setState(() => _obscure = !_obscure),
                   ),
                   filled: true,
                   fillColor: pnl,
@@ -2803,9 +3124,11 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
               ),
               const SizedBox(height: 15),
               GestureDetector(
-                onTap: () => setState(() => _rememberMe = !_rememberMe),
+                onTap: () =>
+                    setState(() => _rememberMe = !_rememberMe),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: pnl,
                     borderRadius: BorderRadius.circular(12),
@@ -2816,7 +3139,9 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                         width: 22,
                         height: 22,
                         decoration: BoxDecoration(
-                          color: _rememberMe ? accentGreen : Colors.transparent,
+                          color: _rememberMe
+                              ? accentGreen
+                              : Colors.transparent,
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
                             color: _rememberMe ? accentGreen : mutC,
@@ -2824,7 +3149,11 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                           ),
                         ),
                         child: _rememberMe
-                            ? const Icon(Icons.check, color: Colors.white, size: 16)
+                            ? const Icon(
+                                Icons.check,
+                                color: Colors.white,
+                                size: 16,
+                              )
                             : null,
                       ),
                       const SizedBox(width: 10),
@@ -2837,11 +3166,13 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                         ),
                       ),
                       const Spacer(),
-                      Icon(Icons.lock_outline, color: mutC, size: 16),
+                      Icon(Icons.lock_outline,
+                          color: mutC, size: 16),
                       const SizedBox(width: 4),
                       Text(
                         'ذخیره امن',
-                        style: TextStyle(color: mutC, fontSize: 10),
+                        style:
+                            TextStyle(color: mutC, fontSize: 10),
                       ),
                     ],
                   ),
@@ -2857,7 +3188,10 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                   ),
                   child: Text(
                     _error!,
-                    style: const TextStyle(color: Colors.orange, fontSize: 12),
+                    style: const TextStyle(
+                      color: Colors.orange,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
@@ -2901,7 +3235,8 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.shield_outlined, color: accentBlue, size: 18),
+                    Icon(Icons.shield_outlined,
+                        color: accentBlue, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -2978,7 +3313,10 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       _reloadList();
     } catch (e) {
       if (!mounted) return;
-      _snack('❌ خطا: ${e.toString().replaceFirst('Exception: ', '')}', Colors.red);
+      _snack(
+        '❌ خطا: ${e.toString().replaceFirst('Exception: ', '')}',
+        Colors.red,
+      );
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -2997,11 +3335,15 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('انصراف', style: TextStyle(color: mutC)),
+            child: Text('انصراف',
+                style: TextStyle(color: mutC)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('حذف', style: TextStyle(color: Colors.red)),
+            child: const Text(
+              'حذف',
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -3019,7 +3361,10 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       _reloadList();
     } catch (e) {
       if (!mounted) return;
-      _snack('❌ خطا: ${e.toString().replaceFirst('Exception: ', '')}', Colors.red);
+      _snack(
+        '❌ خطا: ${e.toString().replaceFirst('Exception: ', '')}',
+        Colors.red,
+      );
     }
   }
 
@@ -3062,16 +3407,23 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                 decoration: BoxDecoration(
                   color: accentBlue.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: accentBlue.withOpacity(0.4)),
+                  border: Border.all(
+                    color: accentBlue.withOpacity(0.4),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: accentBlue, size: 22),
+                    Icon(Icons.info_outline,
+                        color: accentBlue, size: 22),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         'خبر فوری پس از انتشار، در سایت و بالای صفحه اصلی اپ نمایش داده می‌شود و تا زمانی که شما حذف نکنید باقی می‌ماند.',
-                        style: TextStyle(color: txtC, fontSize: 12, height: 1.6),
+                        style: TextStyle(
+                          color: txtC,
+                          fontSize: 12,
+                          height: 1.6,
+                        ),
                       ),
                     ),
                   ],
@@ -3119,7 +3471,11 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                 textDirection: TextDirection.rtl,
                 textAlign: TextAlign.right,
                 maxLines: 6,
-                style: TextStyle(color: txtC, fontSize: 14, height: 1.8),
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 14,
+                  height: 1.8,
+                ),
                 decoration: InputDecoration(
                   hintText: 'توضیحات کامل خبر...',
                   hintStyle: TextStyle(color: mutC),
@@ -3178,18 +3534,22 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               FutureBuilder<List>(
                 future: _newsFuture,
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
                     return Padding(
                       padding: const EdgeInsets.all(20),
                       child: Center(
-                        child: CircularProgressIndicator(color: accentGreen),
+                        child: CircularProgressIndicator(
+                          color: accentGreen,
+                        ),
                       ),
                     );
                   }
                   if (snapshot.hasError) {
                     return Text(
                       'خطا: ${snapshot.error}',
-                      style: const TextStyle(color: Colors.orange),
+                      style:
+                          const TextStyle(color: Colors.orange),
                     );
                   }
                   final list = snapshot.data ?? [];
@@ -3207,7 +3567,8 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                   return Column(
                     children: list.map((p) {
                       return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
+                        margin:
+                            const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: pnl,
@@ -3218,12 +3579,14 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                           children: [
                             Expanded(
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     pTitle(p),
                                     maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                    overflow:
+                                        TextOverflow.ellipsis,
                                     textAlign: TextAlign.right,
                                     style: TextStyle(
                                       color: txtC,
@@ -3236,7 +3599,10 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                                     const SizedBox(height: 4),
                                     Text(
                                       pDate(p),
-                                      style: TextStyle(color: mutC, fontSize: 11),
+                                      style: TextStyle(
+                                        color: mutC,
+                                        fontSize: 11,
+                                      ),
                                     ),
                                   ],
                                 ],
@@ -3245,7 +3611,10 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                             const SizedBox(width: 8),
                             IconButton(
                               onPressed: () => _delete(p),
-                              icon: const Icon(Icons.delete_outline, color: Colors.red),
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                              ),
                               tooltip: 'حذف',
                             ),
                           ],
@@ -3794,7 +4163,8 @@ Widget buildCatGrid() {
 Widget buildSocial() {
   final items = [
     ['تلگرام', Icons.send, 'https://t.me/itarbiatbadani'],
-    ['اینستاگرام', Icons.camera_alt_outlined, 'https://instagram.com/itarbiatbadani'],
+    ['اینستاگرام', Icons.camera_alt_outlined,
+        'https://instagram.com/itarbiatbadani'],
     ['بله', Icons.chat_outlined, 'https://ble.ir/itarbiatbadani'],
     ['فروشگاه', Icons.shopping_cart, '$site/shop/'],
   ];
