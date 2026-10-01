@@ -172,7 +172,7 @@ String formatPrice(String price) {
   return '$buffer تومان';
 }
 
-/* ==================== ⭐ NEW NEWS API (CPT: new_news) ==================== */
+/* ==================== اخبار فوری API ==================== */
 
 String _newNewsUrl({int perPage = 10, int page = 1}) {
   return '$api/new_news?per_page=$perPage&page=$page&orderby=date&order=desc&_embed=wp:featuredmedia';
@@ -394,10 +394,11 @@ class _HomeState extends State<Home> {
           slivers: [
             SliverToBoxAdapter(child: _header(context)),
 
-            // ⭐ بنر اخبار جدید (زیر Hero، بالای خدمات ما)
+            SliverToBoxAdapter(child: _hero()),
+
+            // ⭐ اخبار فوری (زیر Hero و بالا جدیدترین نوشته‌ها)
             SliverToBoxAdapter(child: NewNewsBanner(key: _bannerKey)),
 
-            SliverToBoxAdapter(child: _hero()),
             SliverToBoxAdapter(child: _services()),
             const SliverToBoxAdapter(
               child: _SectionTitle('جدیدترین نوشته‌ها', Icons.article_outlined),
@@ -984,7 +985,7 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 }
-/* ==================== ACCOUNT (Persistent Login + Download) ==================== */
+/* ==================== ACCOUNT ==================== */
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
   @override
@@ -1064,7 +1065,6 @@ class _AccountPageState extends State<AccountPage> {
       builder: (context, _, __) => Scaffold(
         body: Column(
           children: [
-            // هدر با دکمه پنل ادمین
             _headerWithAdmin(context, 'حساب من'),
             Expanded(
               child: Stack(
@@ -1153,116 +1153,65 @@ class _WebPageState extends State<WebPage> {
   }
 }
 
-/* ==================== NEW NEWS BANNER ==================== */
+/* ==================== ⭐ اخبار فوری ==================== */
 
-class NewNewsBanner extends StatefulWidget {
-  const NewNewsBanner({super.key});
+/* نقطه LIVE چشمک‌زن */
+class _LiveDot extends StatefulWidget {
+  const _LiveDot();
   @override
-  State<NewNewsBanner> createState() => _NewNewsBannerState();
+  State<_LiveDot> createState() => _LiveDotState();
 }
 
-class _NewNewsBannerState extends State<NewNewsBanner> {
-  late Future<Map<String, dynamic>?> _future;
+class _LiveDotState extends State<_LiveDot>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
 
   @override
   void initState() {
     super.initState();
-    _future = getNewNews();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>?>(
-      future: _future,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data == null) {
-          return const SizedBox.shrink();
-        }
-        final news = snapshot.data!;
-        final title = pTitle(news);
-        final link = pLink(news);
-        final date = pDate(news);
-
-        return GestureDetector(
-          onTap: () => openUrl(link),
-          child: Container(
-            margin: const EdgeInsets.fromLTRB(14, 4, 14, 4),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: darkModeNotifier.value
-                    ? [const Color(0xff42a5f5), const Color(0xff1976d2)]
-                    : [const Color(0xff2196f3), const Color(0xff0d47a1)],
-              ),
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: accentBlue.withOpacity(0.25),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        final t = _ctrl.value;
+        final scale = 1.0 + (t < 0.5 ? t * 0.5 : (1 - t) * 0.5);
+        final opacity = 1.0 - t;
+        return SizedBox(
+          width: 16,
+          height: 16,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 16 * scale,
+                height: 16 * scale,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xffff3d00).withOpacity(opacity * 0.5),
                 ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.fiber_new, color: accentBlue, size: 16),
-                        const SizedBox(width: 3),
-                        Text(
-                          'اخبار جدید',
-                          style: TextStyle(
-                            color: accentBlue,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.right,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            height: 1.6,
-                          ),
-                        ),
-                        if (date.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            date,
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 16),
-                ],
               ),
-            ),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xffff3d00),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -1270,7 +1219,454 @@ class _NewNewsBannerState extends State<NewNewsBanner> {
   }
 }
 
-/* ==================== ADMIN LOGIN PAGE ==================== */
+/* کارت خبر فوری */
+class _UrgentNewsCard extends StatelessWidget {
+  final dynamic news;
+  const _UrgentNewsCard({required this.news});
+
+  @override
+  Widget build(BuildContext context) {
+    final title = pTitle(news);
+    final link = pLink(news);
+    final date = pDate(news);
+
+    // محتوا
+    String excerpt = '';
+    try {
+      final raw = clean(news['content']['rendered'] ?? '');
+      excerpt = raw.length > 150 ? '${raw.substring(0, 150)}...' : raw;
+    } catch (_) {
+      try {
+        final raw = clean(news['excerpt']['rendered'] ?? '');
+        excerpt = raw.length > 150 ? '${raw.substring(0, 150)}...' : raw;
+      } catch (_) {}
+    }
+
+    // زمان مطالعه
+    int readTime = 1;
+    try {
+      final raw = clean(news['content']['rendered'] ?? '');
+      final words = raw.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+      readTime = (words / 200).ceil();
+      if (readTime < 1) readTime = 1;
+    } catch (_) {}
+
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => GestureDetector(
+        onTap: () => openUrl(link),
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
+          decoration: BoxDecoration(
+            color: pnl,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: lineC),
+          ),
+          child: Stack(
+            children: [
+              // نوار عمودی رنگی سمت راست
+              Positioned(
+                top: 0,
+                bottom: 0,
+                right: -18,
+                child: Container(
+                  width: 3,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0xff0d47a1), Color(0xff25b8e8)],
+                    ),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  /* ---------- متادیتا ---------- */
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_today_outlined, size: 12, color: mutC),
+                      const SizedBox(width: 5),
+                      Text(
+                        date,
+                        style: TextStyle(
+                          color: mutC,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 3,
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: mutC.withOpacity(.5),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(Icons.access_time, size: 12, color: mutC),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$readTime دقیقه',
+                        style: TextStyle(
+                          color: mutC,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  /* ---------- عنوان ---------- */
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: txtC,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      height: 1.6,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+
+                  /* ---------- خلاصه ---------- */
+                  if (excerpt.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      excerpt,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: mutC,
+                        fontSize: 12.5,
+                        height: 1.8,
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 12),
+
+                  /* ---------- خط جداکننده ---------- */
+                  Container(
+                    height: 1,
+                    color: lineC.withOpacity(.5),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  /* ---------- فوتر ---------- */
+                  Row(
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'خواندن کامل',
+                            style: TextStyle(
+                              color: accentBlue,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.arrow_back_ios_new,
+                            color: accentBlue,
+                            size: 11,
+                          ),
+                        ],
+                      ),
+
+                      const Spacer(),
+
+                      // بج «فوری»
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xffff3d00).withOpacity(.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 5,
+                              height: 5,
+                              decoration: const BoxDecoration(
+                                color: Color(0xffff3d00),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            const Text(
+                              'فوری',
+                              style: TextStyle(
+                                color: Color(0xffff3d00),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/* ویجت بنر اخبار فوری (زیر Hero) */
+class NewNewsBanner extends StatefulWidget {
+  const NewNewsBanner({super.key});
+  @override
+  State<NewNewsBanner> createState() => _NewNewsBannerState();
+}
+
+class _NewNewsBannerState extends State<NewNewsBanner> {
+  late Future<List> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = getNewNewsList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => FutureBuilder<List>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const SizedBox.shrink();
+          }
+          if (snapshot.hasError) {
+            return const SizedBox.shrink();
+          }
+          final list = snapshot.data ?? [];
+          if (list.isEmpty) return const SizedBox.shrink();
+
+          final items = list.take(3).toList();
+
+          return Container(
+            margin: const EdgeInsets.only(top: 22),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                /* ---------- هدر بخش ---------- */
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          // خط رنگی
+                          Container(
+                            width: 4,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [Color(0xff0d47a1), Color(0xff25b8e8)],
+                              ),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+
+                          // نقطه LIVE
+                          const _LiveDot(),
+
+                          const SizedBox(width: 8),
+
+                          // عنوان
+                          Text(
+                            'اخبار فوری',
+                            style: TextStyle(
+                              color: txtC,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+
+                          const Spacer(),
+
+                          // دکمه مشاهده همه
+                          if (list.length > 3)
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const UrgentNewsListPage(),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: accentBlue.withOpacity(.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      'مشاهده همه',
+                                      style: TextStyle(
+                                        color: accentBlue,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 3),
+                                    Icon(
+                                      Icons.arrow_back_ios_new,
+                                      color: accentBlue,
+                                      size: 11,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      // خط زیر هدر
+                      Container(
+                        height: 2,
+                        decoration: BoxDecoration(
+                          color: lineC,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 14),
+
+                /* ---------- کارت‌ها ---------- */
+                ...items.map((news) => _UrgentNewsCard(news: news)).toList(),
+
+                const SizedBox(height: 6),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/* ==================== صفحه لیست اخبار فوری ==================== */
+
+class UrgentNewsListPage extends StatefulWidget {
+  const UrgentNewsListPage({super.key});
+
+  @override
+  State<UrgentNewsListPage> createState() => _UrgentNewsListPageState();
+}
+
+class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
+  late Future<List> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = getNewNewsList();
+  }
+
+  Future<void> _refresh() async {
+    final f = getNewNewsList();
+    setState(() => _future = f);
+    try { await f; } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Scaffold(
+        backgroundColor: bgC,
+        appBar: AppBar(
+          title: Row(
+            children: [
+              const _LiveDot(),
+              const SizedBox(width: 8),
+              Text(
+                'اخبار فوری',
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: bgC,
+          foregroundColor: txtC,
+          elevation: 0,
+        ),
+        body: RefreshIndicator(
+          color: accentGreen,
+          backgroundColor: pnl,
+          onRefresh: _refresh,
+          child: FutureBuilder<List>(
+            future: _future,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      _PostSkeleton(),
+                      _PostSkeleton(),
+                      _PostSkeleton(),
+                    ],
+                  ),
+                );
+              }
+              if (snapshot.hasError) {
+                return _ErrorBox('خطا در دریافت اخبار.\n${snapshot.error}', _refresh);
+              }
+              final list = snapshot.data ?? [];
+              if (list.isEmpty) {
+                return const _Empty('هنوز خبری منتشر نشده است.');
+              }
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                itemCount: list.length,
+                itemBuilder: (c, i) => _UrgentNewsCard(news: list[i]),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/* ==================== ADMIN LOGIN ==================== */
 
 class AdminLoginPage extends StatefulWidget {
   const AdminLoginPage({super.key});
@@ -1322,10 +1718,12 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     return ValueListenableBuilder<bool>(
       valueListenable: darkModeNotifier,
       builder: (context, _, __) => Scaffold(
+        backgroundColor: bgC,
         appBar: AppBar(
           title: const Text('ورود ادمین'),
           backgroundColor: bgC,
           foregroundColor: txtC,
+          elevation: 0,
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -1352,7 +1750,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                'برای مدیریت اخبار جدید وارد شوید',
+                'برای مدیریت اخبار فوری وارد شوید',
                 style: TextStyle(color: mutC, fontSize: 13),
               ),
               const SizedBox(height: 30),
@@ -1440,7 +1838,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
   }
 }
 
-/* ==================== ADMIN PANEL PAGE ==================== */
+/* ==================== ADMIN PANEL ==================== */
 
 class AdminPanelPage extends StatefulWidget {
   final String username;
@@ -1488,7 +1886,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         content: content,
       );
       if (!mounted) return;
-      _snack('✅ خبر جدید منتشر شد!', Colors.green);
+      _snack('✅ خبر فوری منتشر شد!', Colors.green);
       _titleCtrl.clear();
       _contentCtrl.clear();
       _reloadList();
@@ -1561,16 +1959,19 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     return ValueListenableBuilder<bool>(
       valueListenable: darkModeNotifier,
       builder: (context, _, __) => Scaffold(
+        backgroundColor: bgC,
         appBar: AppBar(
-          title: const Text('پنل مدیریت'),
+          title: const Text('پنل مدیریت اخبار فوری'),
           backgroundColor: bgC,
           foregroundColor: txtC,
+          elevation: 0,
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // هشدار
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -1584,7 +1985,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'خبر جدید پس از انتشار، در سایت و بالای صفحه اصلی اپ نمایش داده می‌شود و تا زمانی که شما حذف نکنید باقی می‌ماند.',
+                        'خبر فوری پس از انتشار، در سایت و بالای صفحه اصلی اپ نمایش داده می‌شود و تا زمانی که شما حذف نکنید باقی می‌ماند.',
                         style: TextStyle(color: txtC, fontSize: 12, height: 1.6),
                       ),
                     ),
@@ -1672,7 +2073,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                         )
                       : const Icon(Icons.send, size: 22),
                   label: Text(
-                    _sending ? 'در حال ارسال...' : 'انتشار خبر جدید',
+                    _sending ? 'در حال ارسال...' : 'انتشار خبر فوری',
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -1781,7 +2182,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
 }
 /* ==================== COMMON WIDGETS ==================== */
 
-// هدر معمولی (بدون دکمه ادمین)
+// هدر معمولی
 Widget _header(BuildContext context, [String? t]) {
   return SafeArea(
     bottom: false,
@@ -1850,7 +2251,7 @@ Widget _header(BuildContext context, [String? t]) {
   );
 }
 
-// هدر با دکمه پنل ادمین (برای صفحه حساب من)
+// هدر با دکمه ادمین (برای صفحه حساب من)
 Widget _headerWithAdmin(BuildContext context, [String? t]) {
   return SafeArea(
     bottom: false,
@@ -1928,7 +2329,7 @@ Widget _headerWithAdmin(BuildContext context, [String? t]) {
   );
 }
 
-/* ==================== HERO (با عکس) ==================== */
+/* ==================== HERO ==================== */
 Widget _hero() {
   return Container(
     margin: const EdgeInsets.fromLTRB(14, 18, 14, 10),
@@ -2112,7 +2513,7 @@ Widget _featuredPost(BuildContext context, dynamic p) {
   );
 }
 
-/* ==================== POST (لیست معمولی) ==================== */
+/* ==================== POST ==================== */
 Widget _post(BuildContext context, dynamic p) {
   final i = pImg(p);
   final date = pDate(p);
