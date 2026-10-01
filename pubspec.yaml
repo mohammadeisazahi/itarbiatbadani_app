@@ -15,6 +15,7 @@ dependencies:
   url_launcher: ^6.3.1
   flutter_inappwebview: ^6.1.5
   flutter_secure_storage: ^9.2.2
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:
@@ -27,12 +28,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
-  fonts:
-    - family: Vazirmatn
-      fonts:
-        - asset: assets/fonts/Vazirmatn-Regular.ttf
-        - asset: assets/fonts/Vazirmatn-Bold.ttf
-          weight: 700
 
 flutter_launcher_icons:
   android: true
