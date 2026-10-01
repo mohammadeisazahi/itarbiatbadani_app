@@ -355,7 +355,6 @@ class App extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'تربیت بدنی و علوم ورزشی',
           theme: ThemeData(
-            fontFamily: 'Vazirmatn',
             textTheme: GoogleFonts.vazirmatnTextTheme(
               isDark ? baseDark.textTheme : baseLight.textTheme,
             ),
@@ -520,7 +519,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
   bool _loading = false;
   bool _hasMore = true;
   String? _error;
-  final _scroll = ScrollController();
+  final _scroll = ScrollController(keepScrollOffset: false);
 
   @override
   void initState() {
@@ -653,7 +652,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
   bool _hasMore = true;
   String? _error;
   int? _catId;
-  final _scroll = ScrollController();
+  final _scroll = ScrollController(keepScrollOffset: false);
 
   @override
   void initState() {
@@ -760,7 +759,12 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
       builder: (context, _, __) => Scaffold(
         backgroundColor: bgC,
         appBar: AppBar(
-          title: Text(widget.c.n),
+          title: Text(
+            widget.c.n,
+            style: GoogleFonts.vazirmatn(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           backgroundColor: bgC,
           foregroundColor: txtC,
           elevation: 0,
@@ -774,15 +778,14 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               children: [
-                if (_subCategories.isNotEmpty)
-                  _buildSubCategoriesSection(),
-
+                // ⭐ عنوان بخش
                 if (_posts.isNotEmpty || _loading)
                   const SectionTitleWidget(
                     title: 'جدیدترین نوشته‌ها',
                     icon: Icons.article_outlined,
                   ),
 
+                // ⭐ حالت‌ها
                 if (_posts.isEmpty && _loading)
                   const Padding(
                     padding: EdgeInsets.all(14),
@@ -827,16 +830,21 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
                             padding: const EdgeInsets.all(20),
                             child: Text(
                               'همه مطالب نمایش داده شد.',
-                              style: TextStyle(
+                              style: GoogleFonts.vazirmatn(
                                 color: mutC,
                                 fontSize: 12,
                               ),
                             ),
                           ),
-                        const SizedBox(height: 30),
                       ],
                     ),
                   ),
+
+                // ⭐⭐ زیردسته‌ها در پایین صفحه
+                if (_subCategories.isNotEmpty)
+                  _buildSubCategoriesSection(),
+
+                const SizedBox(height: 30),
               ],
             ),
           ),
@@ -890,7 +898,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
             const SizedBox(width: 8),
             Text(
               _loadingMore ? 'در حال بارگذاری...' : 'مشاهده بیشتر',
-              style: TextStyle(
+              style: GoogleFonts.vazirmatn(
                 color: isDark ? txtC : const Color(0xff0f1a2b),
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
@@ -903,6 +911,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
     );
   }
 
+  /// ⭐ بخش زیردسته‌ها (در پایین صفحه)
   Widget _buildSubCategoriesSection() {
     return ValueListenableBuilder<bool>(
       valueListenable: darkModeNotifier,
@@ -910,14 +919,14 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 20, 14, 12),
+            padding: const EdgeInsets.fromLTRB(14, 30, 14, 12),
             child: Align(
               alignment: Alignment.centerRight,
               child: Stack(
                 children: [
                   Text(
                     'زیر دسته‌ها',
-                    style: TextStyle(
+                    style: GoogleFonts.vazirmatn(
                       color: txtC,
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
@@ -1002,7 +1011,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
                         const SizedBox(width: 6),
                         Text(
                           name,
-                          style: TextStyle(
+                          style: GoogleFonts.vazirmatn(
                             color: txtC,
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -1021,7 +1030,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
                             ),
                             child: Text(
                               '$count',
-                              style: TextStyle(
+                              style: GoogleFonts.vazirmatn(
                                 color: accentBlue,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
@@ -1036,7 +1045,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
               }).toList(),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 20),
         ],
       ),
     );
@@ -1066,6 +1075,7 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
   bool _loadingMore = false;
   bool _hasMore = true;
   String? _error;
+  final _scroll = ScrollController(keepScrollOffset: false);
 
   @override
   void initState() {
@@ -1135,7 +1145,12 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
       builder: (context, _, __) => Scaffold(
         backgroundColor: bgC,
         appBar: AppBar(
-          title: Text(widget.categoryName),
+          title: Text(
+            widget.categoryName,
+            style: GoogleFonts.vazirmatn(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           backgroundColor: bgC,
           foregroundColor: txtC,
           elevation: 0,
@@ -1165,6 +1180,7 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
                   : _posts.isEmpty
                       ? const EmptyWidget(text: 'مطلبی پیدا نشد.')
                       : SingleChildScrollView(
+                          controller: _scroll,
                           physics:
                               const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.symmetric(
@@ -1193,7 +1209,7 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
                                   padding: const EdgeInsets.all(20),
                                   child: Text(
                                     'همه مطالب نمایش داده شد.',
-                                    style: TextStyle(
+                                    style: GoogleFonts.vazirmatn(
                                       color: mutC,
                                       fontSize: 12,
                                     ),
@@ -1253,7 +1269,7 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
             const SizedBox(width: 8),
             Text(
               _loadingMore ? 'در حال بارگذاری...' : 'مشاهده بیشتر',
-              style: TextStyle(
+              style: GoogleFonts.vazirmatn(
                 color: isDark ? txtC : const Color(0xff0f1a2b),
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
@@ -1281,7 +1297,7 @@ class _NewsPageState extends State<NewsPage> {
   bool _hasMore = true;
   String? _error;
   int? _catId;
-  final _scroll = ScrollController();
+  final _scroll = ScrollController(keepScrollOffset: false);
 
   @override
   void initState() {
@@ -1361,7 +1377,12 @@ class _NewsPageState extends State<NewsPage> {
         body: Column(
           children: [
             AppBar(
-              title: const Text('اخبار و رویدادها'),
+              title: Text(
+                'اخبار و رویدادها',
+                style: GoogleFonts.vazirmatn(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               backgroundColor: bgC,
               foregroundColor: txtC,
               elevation: 0,
@@ -1433,7 +1454,7 @@ class _ShopPageState extends State<ShopPage> {
   bool _loading = false;
   bool _hasMore = true;
   String? _error;
-  final _scroll = ScrollController();
+  final _scroll = ScrollController(keepScrollOffset: false);
 
   @override
   void initState() {
@@ -1594,7 +1615,12 @@ class _SearchPageState extends State<SearchPage> {
       builder: (context, _, __) => Scaffold(
         backgroundColor: bgC,
         appBar: AppBar(
-          title: const Text('جستجو'),
+          title: Text(
+            'جستجو',
+            style: GoogleFonts.vazirmatn(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           backgroundColor: bgC,
           foregroundColor: txtC,
           elevation: 0,
@@ -1607,10 +1633,10 @@ class _SearchPageState extends State<SearchPage> {
                 controller: _ctrl,
                 textInputAction: TextInputAction.search,
                 onChanged: _onChanged,
-                style: TextStyle(color: txtC),
+                style: GoogleFonts.vazirmatn(color: txtC),
                 decoration: InputDecoration(
                   hintText: 'عبارت مورد نظر...',
-                  hintStyle: TextStyle(color: mutC),
+                  hintStyle: GoogleFonts.vazirmatn(color: mutC),
                   filled: true,
                   fillColor: pnl,
                   border: OutlineInputBorder(
@@ -1813,7 +1839,10 @@ class _WebPageState extends State<WebPage> {
     return Scaffold(
       backgroundColor: bgC,
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(
+          widget.title,
+          style: GoogleFonts.vazirmatn(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: bgC,
         foregroundColor: txtC,
         elevation: 0,
@@ -1949,7 +1978,7 @@ class _ServicesSectionWidgetState extends State<ServicesSectionWidget> {
                   children: [
                     Text(
                       'خدمات ما',
-                      style: TextStyle(
+                      style: GoogleFonts.vazirmatn(
                         color: txtC,
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
@@ -2114,7 +2143,7 @@ class _ServicesSectionWidgetState extends State<ServicesSectionWidget> {
                   maxLines: 2,
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: GoogleFonts.vazirmatn(
                     color: txtC,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
@@ -2151,7 +2180,7 @@ class LatestPostsSection extends StatelessWidget {
                 children: [
                   Text(
                     'جدیدترین نوشته‌ها',
-                    style: TextStyle(
+                    style: GoogleFonts.vazirmatn(
                       color: txtC,
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
@@ -2324,8 +2353,8 @@ class FeaturedPostCard extends StatelessWidget {
                           const SizedBox(width: 6),
                           Text(
                             cat,
-                            style: const TextStyle(
-                              color: Color(0xff047857),
+                            style: GoogleFonts.vazirmatn(
+                              color: const Color(0xff047857),
                               fontSize: 11,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 1.1,
@@ -2340,7 +2369,7 @@ class FeaturedPostCard extends StatelessWidget {
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.right,
-                    style: TextStyle(
+                    style: GoogleFonts.vazirmatn(
                       color: txtC,
                       fontSize: 17,
                       fontWeight: FontWeight.w900,
@@ -2355,7 +2384,7 @@ class FeaturedPostCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.right,
-                      style: TextStyle(
+                      style: GoogleFonts.vazirmatn(
                         color: inkSoft,
                         fontSize: 13,
                         height: 1.85,
@@ -2408,7 +2437,7 @@ class FeaturedPostCard extends StatelessWidget {
                                 author,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
+                                style: GoogleFonts.vazirmatn(
                                   color: txtC,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w800,
@@ -2417,7 +2446,7 @@ class FeaturedPostCard extends StatelessWidget {
                             if (date.isNotEmpty)
                               Text(
                                 date,
-                                style: TextStyle(
+                                style: GoogleFonts.vazirmatn(
                                   color: mutC,
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
@@ -2435,17 +2464,17 @@ class FeaturedPostCard extends StatelessWidget {
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: const [
+                          children: [
                             Text(
                               'مطالعه',
-                              style: TextStyle(
-                                color: Color(0xff047857),
+                              style: GoogleFonts.vazirmatn(
+                                color: const Color(0xff047857),
                                 fontSize: 11,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
-                            SizedBox(width: 4),
-                            Icon(
+                            const SizedBox(width: 4),
+                            const Icon(
                               Icons.arrow_back,
                               color: Color(0xff047857),
                               size: 12,
@@ -2516,8 +2545,8 @@ class SidePostCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             cat,
-                            style: const TextStyle(
-                              color: Color(0xff047857),
+                            style: GoogleFonts.vazirmatn(
+                              color: const Color(0xff047857),
                               fontSize: 9.5,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 1,
@@ -2532,7 +2561,7 @@ class SidePostCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.right,
-                    style: TextStyle(
+                    style: GoogleFonts.vazirmatn(
                       color: txtC,
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
@@ -2544,7 +2573,7 @@ class SidePostCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       date,
-                      style: TextStyle(
+                      style: GoogleFonts.vazirmatn(
                         color: mutC,
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
@@ -2728,7 +2757,7 @@ class UrgentNewsCard extends StatelessWidget {
                       const SizedBox(width: 5),
                       Text(
                         date,
-                        style: TextStyle(
+                        style: GoogleFonts.vazirmatn(
                           color: mutC,
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
@@ -2752,7 +2781,7 @@ class UrgentNewsCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         '$readTime دقیقه',
-                        style: TextStyle(
+                        style: GoogleFonts.vazirmatn(
                           color: mutC,
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
@@ -2766,7 +2795,7 @@ class UrgentNewsCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.right,
-                    style: TextStyle(
+                    style: GoogleFonts.vazirmatn(
                       color: txtC,
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
@@ -2781,7 +2810,7 @@ class UrgentNewsCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.right,
-                      style: TextStyle(
+                      style: GoogleFonts.vazirmatn(
                         color: mutC,
                         fontSize: 12.5,
                         height: 1.8,
@@ -2800,7 +2829,7 @@ class UrgentNewsCard extends StatelessWidget {
                         children: [
                           Text(
                             'خواندن کامل',
-                            style: TextStyle(
+                            style: GoogleFonts.vazirmatn(
                               color: accentBlue,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -2834,10 +2863,10 @@ class UrgentNewsCard extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 5),
-                            const Text(
+                            Text(
                               'فوری',
-                              style: TextStyle(
-                                color: Color(0xffff3d00),
+                              style: GoogleFonts.vazirmatn(
+                                color: const Color(0xffff3d00),
                                 fontSize: 10,
                                 fontWeight: FontWeight.w800,
                               ),
@@ -2921,7 +2950,7 @@ class _NewNewsBannerState extends State<NewNewsBanner> {
                           const SizedBox(width: 8),
                           Text(
                             'اخبار فوری',
-                            style: TextStyle(
+                            style: GoogleFonts.vazirmatn(
                               color: txtC,
                               fontSize: 17,
                               fontWeight: FontWeight.w900,
@@ -2953,7 +2982,7 @@ class _NewNewsBannerState extends State<NewNewsBanner> {
                                   children: [
                                     Text(
                                       'مشاهده همه',
-                                      style: TextStyle(
+                                      style: GoogleFonts.vazirmatn(
                                         color: accentBlue,
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
@@ -3034,7 +3063,7 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
               const SizedBox(width: 8),
               Text(
                 'اخبار فوری',
-                style: TextStyle(
+                style: GoogleFonts.vazirmatn(
                   color: txtC,
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
@@ -3187,7 +3216,10 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg),
+        content: Text(
+          msg,
+          style: GoogleFonts.vazirmatn(),
+        ),
         backgroundColor: accentBlue,
         duration: const Duration(seconds: 2),
       ),
@@ -3208,7 +3240,10 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
       builder: (context, _, __) => Scaffold(
         backgroundColor: bgC,
         appBar: AppBar(
-          title: const Text('ورود ادمین'),
+          title: Text(
+            'ورود ادمین',
+            style: GoogleFonts.vazirmatn(fontWeight: FontWeight.bold),
+          ),
           backgroundColor: bgC,
           foregroundColor: txtC,
           elevation: 0,
@@ -3244,7 +3279,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
               const SizedBox(height: 20),
               Text(
                 'فقط مدیر سایت',
-                style: TextStyle(
+                style: GoogleFonts.vazirmatn(
                   color: txtC,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -3253,16 +3288,19 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
               const SizedBox(height: 8),
               Text(
                 'برای مدیریت اخبار فوری وارد شوید',
-                style: TextStyle(color: mutC, fontSize: 13),
+                style: GoogleFonts.vazirmatn(
+                  color: mutC,
+                  fontSize: 13,
+                ),
               ),
               const SizedBox(height: 30),
               TextField(
                 controller: _userCtrl,
                 textDirection: TextDirection.ltr,
-                style: TextStyle(color: txtC),
+                style: GoogleFonts.vazirmatn(color: txtC),
                 decoration: InputDecoration(
                   hintText: 'نام کاربری وردپرس',
-                  hintStyle: TextStyle(color: mutC),
+                  hintStyle: GoogleFonts.vazirmatn(color: mutC),
                   prefixIcon:
                       Icon(Icons.person, color: accentGreen),
                   filled: true,
@@ -3278,10 +3316,10 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                 controller: _passCtrl,
                 obscureText: _obscure,
                 textDirection: TextDirection.ltr,
-                style: TextStyle(color: txtC),
+                style: GoogleFonts.vazirmatn(color: txtC),
                 decoration: InputDecoration(
                   hintText: 'Application Password',
-                  hintStyle: TextStyle(color: mutC),
+                  hintStyle: GoogleFonts.vazirmatn(color: mutC),
                   prefixIcon: Icon(Icons.key, color: accentGreen),
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -3339,7 +3377,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                       const SizedBox(width: 10),
                       Text(
                         'مرا به خاطر بسپار',
-                        style: TextStyle(
+                        style: GoogleFonts.vazirmatn(
                           color: txtC,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -3351,8 +3389,10 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                       const SizedBox(width: 4),
                       Text(
                         'ذخیره امن',
-                        style:
-                            TextStyle(color: mutC, fontSize: 10),
+                        style: GoogleFonts.vazirmatn(
+                          color: mutC,
+                          fontSize: 10,
+                        ),
                       ),
                     ],
                   ),
@@ -3368,7 +3408,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                   ),
                   child: Text(
                     _error!,
-                    style: const TextStyle(
+                    style: GoogleFonts.vazirmatn(
                       color: Colors.orange,
                       fontSize: 12,
                     ),
@@ -3397,9 +3437,9 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text(
+                      : Text(
                           'ورود',
-                          style: TextStyle(
+                          style: GoogleFonts.vazirmatn(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -3421,7 +3461,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                     Expanded(
                       child: Text(
                         'اطلاعات ورود شما به‌صورت رمزنگاری‌شده روی دستگاه ذخیره می‌شود.',
-                        style: TextStyle(
+                        style: GoogleFonts.vazirmatn(
                           color: mutC,
                           fontSize: 11,
                           height: 1.6,
@@ -3507,22 +3547,27 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: pnl,
-        title: Text('حذف خبر', style: TextStyle(color: txtC)),
+        title: Text(
+          'حذف خبر',
+          style: GoogleFonts.vazirmatn(color: txtC),
+        ),
         content: Text(
           'آیا از حذف «${pTitle(post)}» مطمئن هستید؟',
-          style: TextStyle(color: mutC),
+          style: GoogleFonts.vazirmatn(color: mutC),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('انصراف',
-                style: TextStyle(color: mutC)),
+            child: Text(
+              'انصراف',
+              style: GoogleFonts.vazirmatn(color: mutC),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
+            child: Text(
               'حذف',
-              style: TextStyle(color: Colors.red),
+              style: GoogleFonts.vazirmatn(color: Colors.red),
             ),
           ),
         ],
@@ -3551,7 +3596,10 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
   void _snack(String msg, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg),
+        content: Text(
+          msg,
+          style: GoogleFonts.vazirmatn(),
+        ),
         backgroundColor: color,
         duration: const Duration(seconds: 3),
       ),
@@ -3572,7 +3620,10 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       builder: (context, _, __) => Scaffold(
         backgroundColor: bgC,
         appBar: AppBar(
-          title: const Text('پنل مدیریت اخبار فوری'),
+          title: Text(
+            'پنل مدیریت اخبار فوری',
+            style: GoogleFonts.vazirmatn(fontWeight: FontWeight.bold),
+          ),
           backgroundColor: bgC,
           foregroundColor: txtC,
           elevation: 0,
@@ -3599,7 +3650,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                     Expanded(
                       child: Text(
                         'خبر فوری پس از انتشار، در سایت و بالای صفحه اصلی اپ نمایش داده می‌شود و تا زمانی که شما حذف نکنید باقی می‌ماند.',
-                        style: TextStyle(
+                        style: GoogleFonts.vazirmatn(
                           color: txtC,
                           fontSize: 12,
                           height: 1.6,
@@ -3612,7 +3663,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               const SizedBox(height: 20),
               Text(
                 'عنوان خبر',
-                style: TextStyle(
+                style: GoogleFonts.vazirmatn(
                   color: accentGreen,
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -3623,10 +3674,13 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                 controller: _titleCtrl,
                 textDirection: TextDirection.rtl,
                 textAlign: TextAlign.right,
-                style: TextStyle(color: txtC, fontSize: 15),
+                style: GoogleFonts.vazirmatn(
+                  color: txtC,
+                  fontSize: 15,
+                ),
                 decoration: InputDecoration(
                   hintText: 'مثلاً: ثبت‌نام دوره جدید آغاز شد',
-                  hintStyle: TextStyle(color: mutC),
+                  hintStyle: GoogleFonts.vazirmatn(color: mutC),
                   filled: true,
                   fillColor: pnl,
                   contentPadding: const EdgeInsets.all(15),
@@ -3639,7 +3693,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               const SizedBox(height: 20),
               Text(
                 'متن کامل خبر',
-                style: TextStyle(
+                style: GoogleFonts.vazirmatn(
                   color: accentGreen,
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -3651,14 +3705,14 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                 textDirection: TextDirection.rtl,
                 textAlign: TextAlign.right,
                 maxLines: 6,
-                style: TextStyle(
+                style: GoogleFonts.vazirmatn(
                   color: txtC,
                   fontSize: 14,
                   height: 1.8,
                 ),
                 decoration: InputDecoration(
                   hintText: 'توضیحات کامل خبر...',
-                  hintStyle: TextStyle(color: mutC),
+                  hintStyle: GoogleFonts.vazirmatn(color: mutC),
                   filled: true,
                   fillColor: pnl,
                   contentPadding: const EdgeInsets.all(15),
@@ -3692,7 +3746,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                       : const Icon(Icons.send, size: 22),
                   label: Text(
                     _sending ? 'در حال ارسال...' : 'انتشار خبر فوری',
-                    style: const TextStyle(
+                    style: GoogleFonts.vazirmatn(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -3704,7 +3758,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               const SizedBox(height: 12),
               Text(
                 'اخبار منتشر شده',
-                style: TextStyle(
+                style: GoogleFonts.vazirmatn(
                   color: txtC,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -3728,8 +3782,9 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                   if (snapshot.hasError) {
                     return Text(
                       'خطا: ${snapshot.error}',
-                      style:
-                          const TextStyle(color: Colors.orange),
+                      style: GoogleFonts.vazirmatn(
+                        color: Colors.orange,
+                      ),
                     );
                   }
                   final list = snapshot.data ?? [];
@@ -3739,7 +3794,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                       child: Center(
                         child: Text(
                           'هنوز خبری منتشر نشده است.',
-                          style: TextStyle(color: mutC),
+                          style: GoogleFonts.vazirmatn(color: mutC),
                         ),
                       ),
                     );
@@ -3768,7 +3823,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                                     overflow:
                                         TextOverflow.ellipsis,
                                     textAlign: TextAlign.right,
-                                    style: TextStyle(
+                                    style: GoogleFonts.vazirmatn(
                                       color: txtC,
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
@@ -3779,7 +3834,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                                     const SizedBox(height: 4),
                                     Text(
                                       pDate(p),
-                                      style: TextStyle(
+                                      style: GoogleFonts.vazirmatn(
                                         color: mutC,
                                         fontSize: 11,
                                       ),
@@ -3850,7 +3905,7 @@ Widget buildHeader(BuildContext context, [String? t]) {
             child: Text(
               t ?? 'اپلیکیشن تربیت بدنی و علوم ورزشی',
               textAlign: TextAlign.right,
-              style: TextStyle(
+              style: GoogleFonts.vazirmatn(
                 color: txtC,
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
@@ -3924,7 +3979,7 @@ Widget buildHeaderWithAdmin(BuildContext context, [String? t]) {
             child: Text(
               t ?? 'اپلیکیشن تربیت بدنی و علوم ورزشی',
               textAlign: TextAlign.right,
-              style: TextStyle(
+              style: GoogleFonts.vazirmatn(
                 color: txtC,
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
@@ -4079,7 +4134,7 @@ Widget buildPostCard(BuildContext context, dynamic p) {
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.right,
-                    style: TextStyle(
+                    style: GoogleFonts.vazirmatn(
                       color: txtC,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -4090,7 +4145,10 @@ Widget buildPostCard(BuildContext context, dynamic p) {
                     const SizedBox(height: 6),
                     Text(
                       date,
-                      style: TextStyle(color: mutC, fontSize: 11),
+                      style: GoogleFonts.vazirmatn(
+                        color: mutC,
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ],
@@ -4184,7 +4242,7 @@ Widget buildProductCard(BuildContext context, dynamic p) {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.right,
-                    style: TextStyle(
+                    style: GoogleFonts.vazirmatn(
                       color: txtC,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -4202,9 +4260,9 @@ Widget buildProductCard(BuildContext context, dynamic p) {
                             color: Colors.red.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text(
+                          child: Text(
                             'تخفیف',
-                            style: TextStyle(
+                            style: GoogleFonts.vazirmatn(
                               color: Colors.red,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
@@ -4214,7 +4272,7 @@ Widget buildProductCard(BuildContext context, dynamic p) {
                         const SizedBox(width: 6),
                         Text(
                           formatPrice(regularPrice),
-                          style: TextStyle(
+                          style: GoogleFonts.vazirmatn(
                             color: mutC,
                             fontSize: 11,
                             decoration: TextDecoration.lineThrough,
@@ -4225,7 +4283,7 @@ Widget buildProductCard(BuildContext context, dynamic p) {
                     const SizedBox(height: 4),
                     Text(
                       formatPrice(salePrice),
-                      style: TextStyle(
+                      style: GoogleFonts.vazirmatn(
                         color: txtC,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -4234,7 +4292,7 @@ Widget buildProductCard(BuildContext context, dynamic p) {
                   ] else if (regularPrice.isNotEmpty) ...[
                     Text(
                       formatPrice(regularPrice),
-                      style: TextStyle(
+                      style: GoogleFonts.vazirmatn(
                         color: txtC,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -4243,7 +4301,10 @@ Widget buildProductCard(BuildContext context, dynamic p) {
                   ] else ...[
                     Text(
                       'قیمت نامشخص',
-                      style: TextStyle(color: mutC, fontSize: 12),
+                      style: GoogleFonts.vazirmatn(
+                        color: mutC,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                   const SizedBox(height: 6),
@@ -4257,7 +4318,7 @@ Widget buildProductCard(BuildContext context, dynamic p) {
                       const SizedBox(width: 4),
                       Text(
                         inStock ? 'موجود' : 'ناموجود',
-                        style: TextStyle(
+                        style: GoogleFonts.vazirmatn(
                           color: inStock ? Colors.green : Colors.red,
                           fontSize: 11,
                         ),
@@ -4321,7 +4382,7 @@ Widget buildCatGrid() {
                     maxLines: 2,
                     textAlign: TextAlign.center,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: GoogleFonts.vazirmatn(
                       color: txtC,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -4381,7 +4442,7 @@ Widget buildSocial() {
                   const SizedBox(width: 8),
                   Text(
                     items[i][0] as String,
-                    style: TextStyle(
+                    style: GoogleFonts.vazirmatn(
                       color: txtC,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
@@ -4430,7 +4491,7 @@ class SectionTitleWidget extends StatelessWidget {
               child: Text(
                 title,
                 textAlign: TextAlign.right,
-                style: TextStyle(
+                style: GoogleFonts.vazirmatn(
                   color: txtC,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -4590,7 +4651,10 @@ class EmptyWidget extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(30),
       child: Center(
-        child: Text(text, style: TextStyle(color: mutC)),
+        child: Text(
+          text,
+          style: GoogleFonts.vazirmatn(color: mutC),
+        ),
       ),
     );
   }
@@ -4616,13 +4680,16 @@ class ErrorBox extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: TextStyle(color: txtC),
+            style: GoogleFonts.vazirmatn(color: txtC),
           ),
           if (onRetry != null) ...[
             const SizedBox(height: 15),
             ElevatedButton(
               onPressed: onRetry,
-              child: const Text('تلاش مجدد'),
+              child: Text(
+                'تلاش مجدد',
+                style: GoogleFonts.vazirmatn(),
+              ),
             ),
           ],
         ],
