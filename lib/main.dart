@@ -163,8 +163,9 @@ List<int> _toJalali(int gy, int gm, int gd) {
   return [jy, jm, jd];
 }
 
+/// ⭐ بهینه‌سازی شده: فقط featuredmedia برای کاهش حجم پاسخ
 Future<List> getPostsPaged({int perPage = perPageSize, int page = 1, int? catId}) async {
-  var u = '$api/posts?per_page=$perPage&page=$page&_embed=wp:featuredmedia,author,wp:term';
+  var u = '$api/posts?per_page=$perPage&page=$page&_embed=wp:featuredmedia';
   if (catId != null) u += '&categories=$catId';
   final r = await http.get(Uri.parse(u));
   if (r.statusCode == 400) return [];
@@ -193,7 +194,7 @@ Future<int?> getCatIdBySlug(String slug) async {
 
 Future<List> searchExact(String query) async {
   final r = await http.get(
-    Uri.parse('$api/posts?search=${Uri.encodeComponent(query)}&per_page=50&_embed=wp:featuredmedia,author,wp:term'),
+    Uri.parse('$api/posts?search=${Uri.encodeComponent(query)}&per_page=50&_embed=wp:featuredmedia'),
   );
   if (r.statusCode != 200) throw Exception('خطای ${r.statusCode}');
   final list = json.decode(r.body) as List;
@@ -339,6 +340,7 @@ class App extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'تربیت بدنی و علوم ورزشی',
           theme: ThemeData(
+            fontFamily: 'Vazirmatn',
             brightness: isDark ? Brightness.dark : Brightness.light,
             scaffoldBackgroundColor: bgC,
             colorScheme: ColorScheme.fromSeed(
@@ -442,12 +444,12 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    _f = getPostsPaged(perPage: 6, page: 1);
+    _f = getPostsPaged(perPage: 5, page: 1);
   }
 
   Future<void> _refresh() async {
     setState(() {
-      _f = getPostsPaged(perPage: 6, page: 1);
+      _f = getPostsPaged(perPage: 5, page: 1);
       _bannerKey = UniqueKey();
     });
     try {
