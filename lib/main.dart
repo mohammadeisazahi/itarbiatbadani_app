@@ -163,9 +163,9 @@ List<int> _toJalali(int gy, int gm, int gd) {
   return [jy, jm, jd];
 }
 
-/// ⭐ بهینه‌سازی شده: فقط featuredmedia برای کاهش حجم پاسخ
+/// ⭐ `wp:term` اضافه شد برای نام دسته
 Future<List> getPostsPaged({int perPage = perPageSize, int page = 1, int? catId}) async {
-  var u = '$api/posts?per_page=$perPage&page=$page&_embed=wp:featuredmedia';
+  var u = '$api/posts?per_page=$perPage&page=$page&_embed=wp:featuredmedia,wp:term';
   if (catId != null) u += '&categories=$catId';
   final r = await http.get(Uri.parse(u));
   if (r.statusCode == 400) return [];
@@ -192,9 +192,10 @@ Future<int?> getCatIdBySlug(String slug) async {
   return null;
 }
 
+/// ⭐ `wp:term` اضافه شد
 Future<List> searchExact(String query) async {
   final r = await http.get(
-    Uri.parse('$api/posts?search=${Uri.encodeComponent(query)}&per_page=50&_embed=wp:featuredmedia'),
+    Uri.parse('$api/posts?search=${Uri.encodeComponent(query)}&per_page=50&_embed=wp:featuredmedia,wp:term'),
   );
   if (r.statusCode != 200) throw Exception('خطای ${r.statusCode}');
   final list = json.decode(r.body) as List;
@@ -779,12 +780,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
                             child: SidePostCard(post: post),
                           );
                         }).toList(),
-                        if (_hasMore)
-                          Padding(
-                            padding: const EdgeInsets.only(
-                                top: 6, bottom: 6),
-                            child: _buildLoadMoreButton(),
-                          ),
+                        if (_hasMore) _buildLoadMoreButton(),
                         if (!_hasMore && _posts.length > 5)
                           Padding(
                             padding: const EdgeInsets.only(
@@ -811,57 +807,41 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
   Widget _buildLoadMoreButton() {
     final isDark = darkModeNotifier.value;
 
-    return GestureDetector(
-      onTap: _loadingMore ? null : _loadMore,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 26, vertical: 12),
-        decoration: BoxDecoration(
-          color: isDark ? pnl2 : Colors.white,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: isDark ? lineC : const Color(0xffe9edf3),
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(0, 16, 0, 30),
+      height: 54,
+      child: TextButton(
+        onPressed: _loadingMore ? null : _loadMore,
+        style: TextButton.styleFrom(
+          backgroundColor: isDark ? pnl2 : Colors.white,
+          foregroundColor: isDark ? txtC : const Color(0xff0f1a2b),
+          padding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(27),
+            side: BorderSide(
+              color: isDark ? lineC : const Color(0xffe9edf3),
+              width: 1.5,
+            ),
           ),
-          boxShadow: isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 6,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_loadingMore)
-              const SizedBox(
-                width: 16,
-                height: 16,
+        child: _loadingMore
+            ? const SizedBox(
+                width: 22,
+                height: 22,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2,
+                  strokeWidth: 2.5,
                   color: Color(0xff4caf50),
                 ),
               )
-            else
-              Icon(
-                Icons.arrow_back_ios_new,
-                size: 12,
-                color: isDark ? txtC : const Color(0xff0f1a2b),
+            : Text(
+                'مشاهده بیشتر',
+                style: TextStyle(
+                  color: isDark ? txtC : const Color(0xff0f1a2b),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            const SizedBox(width: 8),
-            Text(
-              _loadingMore ? 'در حال بارگذاری...' : 'مشاهده بیشتر',
-              style: TextStyle(
-                color: isDark ? txtC : const Color(0xff0f1a2b),
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.3,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1010,12 +990,7 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
                                   child: SidePostCard(post: post),
                                 );
                               }).toList(),
-                              if (_hasMore)
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                      top: 6, bottom: 6),
-                                  child: _buildLoadMoreButton(),
-                                ),
+                              if (_hasMore) _buildLoadMoreButton(),
                               if (!_hasMore && _posts.length > 5)
                                 Padding(
                                   padding: const EdgeInsets.only(
@@ -1039,57 +1014,41 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
   Widget _buildLoadMoreButton() {
     final isDark = darkModeNotifier.value;
 
-    return GestureDetector(
-      onTap: _loadingMore ? null : _loadMore,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 26, vertical: 12),
-        decoration: BoxDecoration(
-          color: isDark ? pnl2 : Colors.white,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: isDark ? lineC : const Color(0xffe9edf3),
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(0, 16, 0, 30),
+      height: 54,
+      child: TextButton(
+        onPressed: _loadingMore ? null : _loadMore,
+        style: TextButton.styleFrom(
+          backgroundColor: isDark ? pnl2 : Colors.white,
+          foregroundColor: isDark ? txtC : const Color(0xff0f1a2b),
+          padding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(27),
+            side: BorderSide(
+              color: isDark ? lineC : const Color(0xffe9edf3),
+              width: 1.5,
+            ),
           ),
-          boxShadow: isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 6,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_loadingMore)
-              const SizedBox(
-                width: 16,
-                height: 16,
+        child: _loadingMore
+            ? const SizedBox(
+                width: 22,
+                height: 22,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2,
+                  strokeWidth: 2.5,
                   color: Color(0xff4caf50),
                 ),
               )
-            else
-              Icon(
-                Icons.arrow_back_ios_new,
-                size: 12,
-                color: isDark ? txtC : const Color(0xff0f1a2b),
+            : Text(
+                'مشاهده بیشتر',
+                style: TextStyle(
+                  color: isDark ? txtC : const Color(0xff0f1a2b),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            const SizedBox(width: 8),
-            Text(
-              _loadingMore ? 'در حال بارگذاری...' : 'مشاهده بیشتر',
-              style: TextStyle(
-                color: isDark ? txtC : const Color(0xff0f1a2b),
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.3,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
