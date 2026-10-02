@@ -203,14 +203,20 @@ String pId(dynamic p) {
   }
 }
 
+// 👇 بهبود سرعت: استفاده از تصویر medium_large به جای large
 String pImg(dynamic p) {
   try {
     final m = p['_embedded']?['wp:featuredmedia'];
     if (m is List && m.isNotEmpty) {
       final item = m[0];
-      return item['source_url'] ??
-          item['media_details']?['sizes']?['large']?['source_url'] ??
-          '';
+      final sizes = item['media_details']?['sizes'];
+      if (sizes != null) {
+        final ml = sizes['medium_large']?['source_url'];
+        if (ml != null && ml.toString().isNotEmpty) return ml;
+        final lg = sizes['large']?['source_url'];
+        if (lg != null && lg.toString().isNotEmpty) return lg;
+      }
+      return item['source_url'] ?? '';
     }
   } catch (_) {}
   return '';
@@ -340,7 +346,8 @@ List<int> _toJalali(int gy, int gm, int gd) {
 
 final Map<String, List> _postsCache = {};
 final Map<String, int> _postsCacheTime = {};
-const int _cacheDurationSeconds = 600;
+// 👇 بهبود: کش ۵ دقیقه به جای ۱۰ دقیقه
+const int _cacheDurationSeconds = 300;
 
 Future<List> getPostsPaged({
   int perPage = perPageSize,
@@ -759,10 +766,17 @@ class _HomeState extends State<Home> {
   void initState() {
     super.initState();
     _load();
+    // 👇 پیش‌بارگذاری تصویر هیرو برای سرعت بالاتر
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        precacheImage(NetworkImage(heroImg), context);
+      } catch (_) {}
+    });
   }
 
   void _load() {
-    _f = getPostsPaged(perPage: 7, page: 1);
+    // 👇 بهبود سرعت: تعداد پست کمتر = بارگذاری سریع‌تر
+    _f = getPostsPaged(perPage: 5, page: 1);
     _newsFuture = getNewNewsList();
   }
 
@@ -807,13 +821,14 @@ class _HomeState extends State<Home> {
               const SliverToBoxAdapter(child: ModernServicesSection()),
               const SliverToBoxAdapter(
                 child: ModernSectionTitle(
-                  title: 'دسته‌بندی مقالات',
+                  title: 'دسته‌ها',
                   icon: Icons.grid_view_rounded,
                 ),
               ),
               SliverToBoxAdapter(child: ModernCatGrid()),
               SliverToBoxAdapter(child: ModernSocial()),
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+              // 👇 بهبود: فاصله بیشتر تا آیکون‌های ارتباط با ما کامل دیده شوند
+              const SliverToBoxAdapter(child: SizedBox(height: 140)),
             ],
           ),
         ),
@@ -3043,9 +3058,41 @@ class _ModernServicesSectionState extends State<ModernServicesSection> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const ModernSectionTitle(
-          title: 'خدمات ما',
-          icon: Icons.auto_awesome_rounded,
+        // 👇 عنوان «خدمات ما» با رنگ آبی متمایز
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 20, 14, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 4,
+                height: 24,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [accentBlue2, accentBlue],
+                  ),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Icon(Icons.auto_awesome_rounded,
+                  color: accentBlue, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'خدمات ما',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: txtC,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         SizedBox(
           height: 118,
@@ -3422,8 +3469,7 @@ class FeaturedPostCard extends StatelessWidget {
                 children: [
                   if (cat.isNotEmpty)
                     ConstrainedBox(
-                      constraints:
-                          const BoxConstraints(maxWidth: 260),
+                      constraints: const BoxConstraints(maxWidth: 260),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 6),
@@ -3966,7 +4012,7 @@ class ModernCatGrid extends StatelessWidget {
           crossAxisCount: 2,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
-          mainAxisExtent: 130,
+          mainAxisExtent: 125,
         ),
         itemBuilder: (c, i) {
           final cat = cats[i];
