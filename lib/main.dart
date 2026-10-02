@@ -100,7 +100,7 @@ Future<void> toggleBookmark(String id) async {
 
 bool isBookmarked(String id) => bookmarkNotifier.value.contains(id);
 
-/* ==================== NAVIGATION HELPERS ==================== */
+/* ==================== NAVIGATION ==================== */
 
 Future<void> openUrl(BuildContext context, String url,
     {String title = 'مشاهده'}) async {
@@ -136,7 +136,9 @@ void showSnack(BuildContext context, String msg, {bool error = false}) {
       content: Row(
         children: [
           Icon(
-            error ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+            error
+                ? Icons.error_outline_rounded
+                : Icons.check_circle_outline_rounded,
             color: Colors.white,
             size: 20,
           ),
@@ -153,9 +155,10 @@ void showSnack(BuildContext context, String msg, {bool error = false}) {
           ),
         ],
       ),
-      backgroundColor: error ? rose : accentGreen2,
+      backgroundColor: error ? const Color(0xfff43f5e) : const Color(0xff059669),
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       margin: const EdgeInsets.all(14),
       duration: const Duration(seconds: 2),
     ),
@@ -541,7 +544,7 @@ class App extends StatelessWidget {
             scaffoldBackgroundColor: bgC,
             splashFactory: InkSparkle.splashFactory,
             colorScheme: ColorScheme.fromSeed(
-              seedColor: accentGreen,
+              seedColor: const Color(0xff10b981),
               brightness: isDark ? Brightness.dark : Brightness.light,
             ),
             pageTransitionsTheme: const PageTransitionsTheme(
@@ -572,7 +575,7 @@ class Root extends StatefulWidget {
 class _RootState extends State<Root> {
   int _i = 0;
 
-  final _pages = const [
+  static const _pages = [
     Home(),
     ArticlesPage(),
     NewsPage(),
@@ -750,7 +753,6 @@ class _HomeState extends State<Home> {
   }
 
   Future<void> _refresh() async {
-    // پاک کردن کش برای درخواست جدید
     _postsCache.clear();
     _postsCacheTime.clear();
     setState(() {
@@ -911,7 +913,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
           width: active ? 24 : 8,
           height: 8,
           decoration: BoxDecoration(
-            color: active ? accentGreen : mutC.withOpacity(0.3),
+            color: active ? const Color(0xff10b981) : mutC.withOpacity(0.3),
             borderRadius: BorderRadius.circular(999),
           ),
         );
@@ -958,16 +960,15 @@ class _CarouselCard extends StatelessWidget {
                   placeholder: (_, __) => Container(color: pnl2),
                   errorWidget: (_, __, ___) => Container(
                     color: pnl2,
-                    child: Icon(
+                    child: const Icon(
                       Icons.article_rounded,
-                      color: accentGreen,
+                      color: Color(0xff10b981),
                       size: 60,
                     ),
                   ),
                 )
               else
                 Container(color: pnl2),
-              // Gradient overlay
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -981,7 +982,6 @@ class _CarouselCard extends StatelessWidget {
                   ),
                 ),
               ),
-              // Content
               Positioned(
                 left: 18,
                 right: 18,
@@ -995,7 +995,7 @@ class _CarouselCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: accentGreen,
+                          color: const Color(0xff10b981),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -1006,6 +1006,7 @@ class _CarouselCard extends StatelessWidget {
                             color: Colors.white,
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
+                            fontFamily: 'Vazirmatn',
                           ),
                         ),
                       ),
@@ -1104,16 +1105,18 @@ class ModernHeroBanner extends StatelessWidget {
             return Container(
               height: 180,
               color: pnl2,
-              child: Center(
-                child: CircularProgressIndicator(color: accentGreen),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xff10b981),
+                ),
               ),
             );
           },
           errorBuilder: (_, __, ___) => Container(
             height: 180,
             color: pnl2,
-            child: Icon(Icons.sports_soccer_rounded,
-                color: accentGreen, size: 60),
+            child: const Icon(Icons.sports_soccer_rounded,
+                color: Color(0xff10b981), size: 60),
           ),
         ),
       ),
@@ -1225,8 +1228,10 @@ class _ArticlesPageState extends State<ArticlesPage> {
                                 controller: _scroll,
                                 cacheExtent: 800,
                                 physics: const BouncingScrollPhysics(),
-                                padding: const EdgeInsets.fromLTRB(14, 14, 14, 120),
-                                itemCount: _posts.length + (_hasMore ? 1 : 0),
+                                padding:
+                                    const EdgeInsets.fromLTRB(14, 14, 14, 120),
+                                itemCount:
+                                    _posts.length + (_hasMore ? 1 : 0),
                                 itemBuilder: (c, i) {
                                   if (i >= _posts.length) {
                                     return Padding(
@@ -1433,7 +1438,8 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
-                  child: FeaturedPostCard(post: _posts.first, showBookmark: true),
+                  child: FeaturedPostCard(
+                      post: _posts.first, showBookmark: true),
                 ),
               ),
               SliverPadding(
@@ -1444,7 +1450,8 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
                       final post = _posts[i + 1];
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 10),
-                        child: SidePostCard(post: post, showBookmark: true),
+                        child:
+                            SidePostCard(post: post, showBookmark: true),
                       );
                     },
                     childCount: _posts.length - 1,
@@ -1492,7 +1499,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (_loadingMore)
-              const SizedBox(
+              SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
@@ -1642,17 +1649,21 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
                         : SingleChildScrollView(
                             controller: _scroll,
                             physics: const BouncingScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
+                            padding:
+                                const EdgeInsets.fromLTRB(14, 14, 14, 100),
                             child: Column(
                               children: [
                                 FeaturedPostCard(
-                                    post: _posts.first, showBookmark: true),
+                                    post: _posts.first,
+                                    showBookmark: true),
                                 const SizedBox(height: 14),
                                 ..._posts.skip(1).map((post) {
                                   return Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
+                                    padding: const EdgeInsets.only(
+                                        bottom: 10),
                                     child: SidePostCard(
-                                        post: post, showBookmark: true),
+                                        post: post,
+                                        showBookmark: true),
                                   );
                                 }).toList(),
                                 if (_hasMore)
@@ -1694,7 +1705,7 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (_loadingMore)
-              const SizedBox(
+              SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
@@ -1755,9 +1766,8 @@ class _BookmarksPageState extends State<BookmarksPage> {
       builder: (context, _, __) => ValueListenableBuilder<Set<String>>(
         valueListenable: bookmarkNotifier,
         builder: (context, bookmarks, __) {
-          final saved = _allPosts
-              .where((p) => bookmarks.contains(pId(p)))
-              .toList();
+          final saved =
+              _allPosts.where((p) => bookmarks.contains(pId(p))).toList();
 
           return Scaffold(
             backgroundColor: bgC,
@@ -1784,17 +1794,19 @@ class _BookmarksPageState extends State<BookmarksPage> {
                   )
                 : saved.isEmpty
                     ? const EmptyWidget(
-                        text: 'هنوز مقاله‌ای را نشان نکرده‌اید.\nبا زدن آیکون نشان روی کارت‌ها، اینجا ذخیره می‌شوند.')
+                        text:
+                            'هنوز مقاله‌ای را نشان نکرده‌اید.\nبا زدن آیکون نشان روی کارت‌ها، اینجا ذخیره می‌شوند.')
                     : RefreshIndicator(
                         color: accentGreen,
                         backgroundColor: pnl,
                         onRefresh: _loadAll,
                         child: ListView.builder(
                           physics: const BouncingScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
+                          padding:
+                              const EdgeInsets.fromLTRB(14, 14, 14, 100),
                           itemCount: saved.length,
-                          itemBuilder: (c, i) =>
-                              ModernPostCard(post: saved[i], showBookmark: true),
+                          itemBuilder: (c, i) => ModernPostCard(
+                              post: saved[i], showBookmark: true),
                         ),
                       ),
           );
@@ -2068,7 +2080,8 @@ class _ShopPageState extends State<ShopPage> {
                                       ),
                                     );
                                   }
-                                  return ModernProductCard(product: _products[i]);
+                                  return ModernProductCard(
+                                      product: _products[i]);
                                 },
                               ),
                             ),
@@ -2204,8 +2217,8 @@ class _SearchPageState extends State<SearchPage> {
                     hintText: 'عبارت مورد نظر...',
                     hintStyle:
                         TextStyle(color: mutC, fontFamily: 'Vazirmatn'),
-                    prefixIcon:
-                        Icon(Icons.search_rounded, color: accentGreen),
+                    prefixIcon: Icon(Icons.search_rounded,
+                        color: accentGreen),
                     suffixIcon: _ctrl.text.isNotEmpty
                         ? IconButton(
                             icon: Icon(Icons.close_rounded,
@@ -2614,8 +2627,10 @@ Widget ModernHeader(BuildContext context, [String? t]) {
                 errorBuilder: (_, __, ___) => Image.network(
                   logoNet,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                      Icon(Icons.sports_rounded, color: accentGreen),
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.sports_rounded,
+                    color: Color(0xff10b981),
+                  ),
                 ),
               ),
             ),
@@ -2715,8 +2730,10 @@ Widget ModernHeaderWithAdmin(BuildContext context, [String? t]) {
                 errorBuilder: (_, __, ___) => Image.network(
                   logoNet,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                      Icon(Icons.sports_rounded, color: accentGreen),
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.sports_rounded,
+                    color: Color(0xff10b981),
+                  ),
                 ),
               ),
             ),
@@ -2841,7 +2858,7 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
                       width: 4,
                       height: 24,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
+                        gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [accentBlue2, accentBlue],
@@ -2865,7 +2882,9 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
                 ),
               ),
               const SizedBox(height: 14),
-              ...items.map((news) => ModernUrgentNewsCard(news: news)).toList(),
+              ...items
+                  .map((news) => ModernUrgentNewsCard(news: news))
+                  .toList(),
               if (list.length > 3)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
@@ -2925,7 +2944,8 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
 class ModernServicesSection extends StatefulWidget {
   const ModernServicesSection({super.key});
   @override
-  State<ModernServicesSection> createState() => _ModernServicesSectionState();
+  State<ModernServicesSection> createState() =>
+      _ModernServicesSectionState();
 }
 
 class _ModernServicesSectionState extends State<ModernServicesSection> {
@@ -3153,7 +3173,8 @@ class ModernLatestSection extends StatelessWidget {
 class ModernPostCard extends StatefulWidget {
   final dynamic post;
   final bool showBookmark;
-  const ModernPostCard({super.key, required this.post, this.showBookmark = true});
+  const ModernPostCard(
+      {super.key, required this.post, this.showBookmark = true});
 
   @override
   State<ModernPostCard> createState() => _ModernPostCardState();
@@ -3205,14 +3226,14 @@ class _ModernPostCardState extends State<ModernPostCard> {
                         placeholder: (_, __) => Container(color: pnl2),
                         errorWidget: (_, __, ___) => Container(
                           color: pnl2,
-                          child: Icon(Icons.article_rounded,
-                              color: accentGreen, size: 32),
+                          child: const Icon(Icons.article_rounded,
+                              color: Color(0xff10b981), size: 32),
                         ),
                       )
                     : Container(
                         color: pnl2,
-                        child: Icon(Icons.article_rounded,
-                            color: accentGreen, size: 32),
+                        child: const Icon(Icons.article_rounded,
+                            color: Color(0xff10b981), size: 32),
                       ),
               ),
             ),
@@ -3328,13 +3349,13 @@ class _ModernPostCardState extends State<ModernPostCard> {
     );
   }
 }
-
 /* ==================== FEATURED POST CARD ==================== */
 
 class FeaturedPostCard extends StatelessWidget {
   final dynamic post;
   final bool showBookmark;
-  const FeaturedPostCard({super.key, required this.post, this.showBookmark = true});
+  const FeaturedPostCard(
+      {super.key, required this.post, this.showBookmark = true});
 
   @override
   Widget build(BuildContext context) {
@@ -3386,15 +3407,15 @@ class FeaturedPostCard extends StatelessWidget {
                         placeholder: (_, __) => Container(color: pnl2),
                         errorWidget: (_, __, ___) => Container(
                           color: pnl2,
-                          child: Icon(Icons.article_rounded,
-                              color: accentGreen, size: 60),
+                          child: const Icon(Icons.article_rounded,
+                              color: Color(0xff10b981), size: 60),
                         ),
                       )
                     else
                       Container(
                         color: pnl2,
-                        child: Icon(Icons.article_rounded,
-                            color: accentGreen, size: 60),
+                        child: const Icon(Icons.article_rounded,
+                            color: Color(0xff10b981), size: 60),
                       ),
                     if (showBookmark)
                       Positioned(
@@ -3611,7 +3632,8 @@ class FeaturedPostCard extends StatelessWidget {
 class SidePostCard extends StatelessWidget {
   final dynamic post;
   final bool showBookmark;
-  const SidePostCard({super.key, required this.post, this.showBookmark = true});
+  const SidePostCard(
+      {super.key, required this.post, this.showBookmark = true});
 
   @override
   Widget build(BuildContext context) {
@@ -3755,14 +3777,14 @@ class SidePostCard extends StatelessWidget {
                         placeholder: (_, __) => Container(color: pnl2),
                         errorWidget: (_, __, ___) => Container(
                           color: pnl2,
-                          child: Icon(Icons.article_rounded,
-                              color: accentGreen, size: 26),
+                          child: const Icon(Icons.article_rounded,
+                              color: Color(0xff10b981), size: 26),
                         ),
                       )
                     : Container(
                         color: pnl2,
-                        child: Icon(Icons.article_rounded,
-                            color: accentGreen, size: 26),
+                        child: const Icon(Icons.article_rounded,
+                            color: Color(0xff10b981), size: 26),
                       ),
               ),
             ),
@@ -3830,16 +3852,18 @@ class ModernProductCard extends StatelessWidget {
                                 Container(color: pnl2),
                             errorWidget: (_, __, ___) => Container(
                               color: pnl2,
-                              child: Icon(
+                              child: const Icon(
                                   Icons.shopping_bag_rounded,
-                                  color: accentGreen,
+                                  color: Color(0xff10b981),
                                   size: 32),
                             ),
                           )
                         : Container(
                             color: pnl2,
-                            child: Icon(Icons.shopping_bag_rounded,
-                                color: accentGreen, size: 32),
+                            child: const Icon(
+                                Icons.shopping_bag_rounded,
+                                color: Color(0xff10b981),
+                                size: 32),
                           ),
                     if (isOnSale)
                       Positioned(
@@ -4052,14 +4076,30 @@ class ModernSocial extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      ['تلگرام', Icons.send_rounded, 'https://t.me/itarbiatbadani',
-          const Color(0xff229ED9)],
-      ['اینستاگرام', Icons.camera_alt_rounded,
-          'https://instagram.com/itarbiatbadani', const Color(0xffE1306C)],
-      ['بله', Icons.chat_rounded, 'https://ble.ir/itarbiatbadani',
-          const Color(0xff00b4a0)],
-      ['فروشگاه', Icons.shopping_cart_rounded, '$site/shop/',
-          const Color(0xfff59e0b)],
+      [
+        'تلگرام',
+        Icons.send_rounded,
+        'https://t.me/itarbiatbadani',
+        const Color(0xff229ED9)
+      ],
+      [
+        'اینستاگرام',
+        Icons.camera_alt_rounded,
+        'https://instagram.com/itarbiatbadani',
+        const Color(0xffE1306C)
+      ],
+      [
+        'بله',
+        Icons.chat_rounded,
+        'https://ble.ir/itarbiatbadani',
+        const Color(0xff00b4a0)
+      ],
+      [
+        'فروشگاه',
+        Icons.shopping_cart_rounded,
+        '$site/shop/',
+        const Color(0xfff59e0b)
+      ],
     ];
     return Column(
       children: [
@@ -4215,13 +4255,12 @@ class _ModernLiveDotState extends State<ModernLiveDot>
                   color: rose.withOpacity(opacity * 0.5),
                 ),
               ),
-              Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
+              const DecoratedBox(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Color(0xfff43f5e),
                 ),
+                child: SizedBox(width: 8, height: 8),
               ),
             ],
           ),
@@ -4279,7 +4318,7 @@ class ModernUrgentNewsCard extends StatelessWidget {
               child: Container(
                 width: 3,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [accentBlue2, accentBlue],
@@ -4820,7 +4859,8 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                 decoration: BoxDecoration(
                   color: accentBlue.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: accentBlue.withOpacity(0.15)),
+                  border:
+                      Border.all(color: accentBlue.withOpacity(0.15)),
                 ),
                 child: Row(
                   children: [
@@ -4883,6 +4923,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     );
   }
 }
+
 /* ==================== ADMIN PANEL ==================== */
 
 class AdminPanelPage extends StatefulWidget {
@@ -4971,8 +5012,8 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text('انصراف',
-                style: TextStyle(
-                    color: mutC, fontFamily: 'Vazirmatn')),
+                style:
+                    TextStyle(color: mutC, fontFamily: 'Vazirmatn')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -5040,8 +5081,8 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                 decoration: BoxDecoration(
                   color: accentBlue.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                      color: accentBlue.withOpacity(0.3)),
+                  border:
+                      Border.all(color: accentBlue.withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
@@ -5368,13 +5409,13 @@ class PostSkeleton extends StatelessWidget {
         border: Border.all(color: lineC),
       ),
       child: Row(
-        children: [
-          const ShimmerBox(height: 90, width: 90, radius: 14),
-          const SizedBox(width: 12),
+        children: const [
+          ShimmerBox(height: 90, width: 90, radius: 14),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 ShimmerBox(height: 12, width: 80, radius: 6),
                 SizedBox(height: 10),
                 ShimmerBox(height: 14),
@@ -5403,10 +5444,10 @@ class FeaturedSkeleton extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: lineC),
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const ClipRRect(
+          ClipRRect(
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(22),
               topRight: Radius.circular(22),
@@ -5414,10 +5455,10 @@ class FeaturedSkeleton extends StatelessWidget {
             child: ShimmerBox(height: 200, radius: 0),
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 ShimmerBox(height: 12, width: 90, radius: 6),
                 SizedBox(height: 12),
                 ShimmerBox(height: 16),
@@ -5475,76 +5516,4 @@ class EmptyWidget extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class ErrorBox extends StatelessWidget {
-  final String message;
-  final VoidCallback? onRetry;
-  const ErrorBox({
-    super.key,
-    required this.message,
-    this.onRetry,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: rose.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.error_outline_rounded,
-              color: rose,
-              size: 42,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: txtC,
-              fontSize: 13,
-              height: 1.7,
-              fontFamily: 'Vazirmatn',
-            ),
-          ),
-          if (onRetry != null) ...[
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: onRetry,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentGreen,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text(
-                'تلاش مجدد',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'Vazirmatn',
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
+   
