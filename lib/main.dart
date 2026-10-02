@@ -813,7 +813,7 @@ class _HomeState extends State<Home> {
               ),
               SliverToBoxAdapter(child: ModernCatGrid()),
               SliverToBoxAdapter(child: ModernSocial()),
-              const SliverToBoxAdapter(child: SizedBox(height: 110)),
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           ),
         ),
@@ -3202,40 +3202,37 @@ class _ModernPostCardState extends State<ModernPostCard> {
                     Row(
                       children: [
                         if (cat.isNotEmpty)
-                          Flexible(
+                          ConstrainedBox(
+                            constraints:
+                                const BoxConstraints(maxWidth: 180),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
+                                  horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: chipBg,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 3),
-                                    child: Container(
-                                      width: 5,
-                                      height: 5,
-                                      decoration: BoxDecoration(
-                                        color: chipFg,
-                                        shape: BoxShape.circle,
-                                      ),
+                                  Container(
+                                    width: 5,
+                                    height: 5,
+                                    decoration: BoxDecoration(
+                                      color: chipFg,
+                                      shape: BoxShape.circle,
                                     ),
                                   ),
                                   const SizedBox(width: 4),
                                   Flexible(
                                     child: Text(
                                       cat,
-                                      maxLines: 2,
+                                      maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         color: chipFg,
                                         fontSize: 9.5,
                                         fontWeight: FontWeight.w900,
-                                        height: 1.4,
                                         fontFamily: 'Vazirmatn',
                                       ),
                                     ),
@@ -3424,54 +3421,46 @@ class FeaturedPostCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (cat.isNotEmpty)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: chipBg,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                  color: chipFg.withOpacity(0.25)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Container(
-                                    width: 6,
-                                    height: 6,
-                                    decoration: BoxDecoration(
-                                      color: chipFg,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Flexible(
-                                  child: Text(
-                                    cat,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: chipFg,
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w900,
-                                      height: 1.5,
-                                      fontFamily: 'Vazirmatn',
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                    ConstrainedBox(
+                      constraints:
+                          const BoxConstraints(maxWidth: 260),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: chipBg,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                              color: chipFg.withOpacity(0.25)),
                         ),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: chipFg,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                cat,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: chipFg,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w900,
+                                  fontFamily: 'Vazirmatn',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   const SizedBox(height: 12),
                   Text(
@@ -3642,40 +3631,37 @@ class SidePostCard extends StatelessWidget {
                   Row(
                     children: [
                       if (cat.isNotEmpty)
-                        Flexible(
+                        ConstrainedBox(
+                          constraints:
+                              const BoxConstraints(maxWidth: 160),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 3),
+                                horizontal: 7, vertical: 4),
                             decoration: BoxDecoration(
                               color: chipBg,
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 3),
-                                  child: Container(
-                                    width: 5,
-                                    height: 5,
-                                    decoration: BoxDecoration(
-                                      color: chipFg,
-                                      shape: BoxShape.circle,
-                                    ),
+                                Container(
+                                  width: 5,
+                                  height: 5,
+                                  decoration: BoxDecoration(
+                                    color: chipFg,
+                                    shape: BoxShape.circle,
                                   ),
                                 ),
                                 const SizedBox(width: 4),
                                 Flexible(
                                   child: Text(
                                     cat,
-                                    maxLines: 2,
+                                    maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                       color: chipFg,
                                       fontSize: 9.5,
                                       fontWeight: FontWeight.w900,
-                                      height: 1.4,
                                       fontFamily: 'Vazirmatn',
                                     ),
                                   ),
@@ -3974,12 +3960,13 @@ class ModernCatGrid extends StatelessWidget {
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
         itemCount: cats.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
-          childAspectRatio: 1.2,
+          mainAxisExtent: 130,
         ),
         itemBuilder: (c, i) {
           final cat = cats[i];
@@ -3993,7 +3980,7 @@ class ModernCatGrid extends StatelessWidget {
               );
             },
             child: Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: pnl,
                 borderRadius: BorderRadius.circular(18),
@@ -4010,15 +3997,15 @@ class ModernCatGrid extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 46,
-                    height: 46,
+                    width: 42,
+                    height: 42,
                     decoration: BoxDecoration(
                       color: cat.c.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(cat.i, color: cat.c, size: 24),
+                    child: Icon(cat.i, color: cat.c, size: 22),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Expanded(
                     child: Center(
                       child: Text(
@@ -4028,9 +4015,9 @@ class ModernCatGrid extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: txtC,
-                          fontSize: 11.5,
+                          fontSize: 11,
                           fontWeight: FontWeight.w800,
-                          height: 1.4,
+                          height: 1.35,
                           fontFamily: 'Vazirmatn',
                         ),
                       ),
@@ -4081,15 +4068,47 @@ class ModernSocial extends StatelessWidget {
     ];
     return Column(
       children: [
-        const ModernSectionTitle(
-          title: 'ارتباط با ما',
-          icon: Icons.connect_without_contact_rounded,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
+          child: Row(
+            children: [
+              Container(
+                width: 4,
+                height: 24,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [accentGreen, accentGreen2],
+                  ),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Icon(Icons.connect_without_contact_rounded,
+                  color: accentGreen, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'ارتباط با ما',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: txtC,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.zero,
             itemCount: items.length,
             gridDelegate:
                 const SliverGridDelegateWithFixedCrossAxisCount(
