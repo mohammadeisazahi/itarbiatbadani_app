@@ -89,13 +89,69 @@ jobs:
             fi
           fi
 
+      - name: Enable Core Library Desugaring
+        run: |
+          FILE="android/app/build.gradle"
+          if [ -f "$FILE" ]; then
+            if ! grep -q "coreLibraryDesugaringEnabled" "$FILE"; then
+              python3 -c "
+          path = '$FILE'
+          with open(path, 'r', encoding='utf-8') as f:
+              content = f.read()
+
+          if 'compileOptions {' in content:
+              content = content.replace(
+                  'compileOptions {',
+                  'compileOptions {\n        coreLibraryDesugaringEnabled true',
+                  1
+              )
+          else:
+              content = content.replace(
+                  'android {',
+                  '''android {
+              compileOptions {
+                  coreLibraryDesugaringEnabled true
+                  sourceCompatibility JavaVersion.VERSION_1_8
+                  targetCompatibility JavaVersion.VERSION_1_8
+              }''',
+                  1
+              )
+
+          if 'coreLibraryDesugaring' not in content:
+              if 'dependencies {' in content:
+                  content = content.replace(
+                      'dependencies {',
+                      \"dependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'\",
+                      1
+                  )
+              else:
+                  content += \"\"\"
+
+          dependencies {
+              coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+          }
+          \"\"\"
+
+          with open(path, 'w', encoding='utf-8') as f:
+              f.write(content)
+          print('✅ Core Library Desugaring enabled')
+          "
+            else
+              echo "✅ Core Library Desugaring already enabled"
+            fi
+            echo "--- محتوای build.gradle پس از تغییر ---"
+            cat "$FILE"
+          else
+            echo "❌ android/app/build.gradle یافت نشد"
+          fi
+
       - name: Inject WooCommerce Keys
         run: |
           sed -i "s|YOUR_WC_KEY|${{ secrets.WC_KEY }}|g" lib/main.dart || true
           sed -i "s|YOUR_WC_SECRET|${{ secrets.WC_SECRET }}|g" lib/main.dart || true
           echo "✅ WooCommerce keys injected"
 
-      - name: Add INTERNET permission
+      - name: Add Permissions to Manifest
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           sed -i 's/android:label="[^"]*"/android:label="تربیت بدنی و علوم ورزشی"/' $MANIFEST
@@ -103,17 +159,29 @@ jobs:
           path = '$MANIFEST'
           with open(path, 'r', encoding='utf-8') as f:
               content = f.read()
-          if 'android.permission.INTERNET' not in content:
-              content = content.replace(
-                  '<application',
-                  '<uses-permission android:name=\"android.permission.INTERNET\" />\n    <application',
-                  1
-              )
-              with open(path, 'w', encoding='utf-8') as f:
-                  f.write(content)
-              print('✅ INTERNET permission added')
-          else:
-              print('✅ INTERNET permission already exists')
+
+          permissions = [
+              'android.permission.INTERNET',
+              'android.permission.POST_NOTIFICATIONS',
+              'android.permission.VIBRATE',
+              'android.permission.RECEIVE_BOOT_COMPLETED',
+              'android.permission.SCHEDULE_EXACT_ALARM',
+              'android.permission.USE_EXACT_ALARM',
+          ]
+
+          for perm in permissions:
+              if perm not in content:
+                  content = content.replace(
+                      '<application',
+                      f'<uses-permission android:name=\"{perm}\" />\n    <application',
+                      1
+                  )
+                  print(f'✅ {perm} added')
+              else:
+                  print(f'✅ {perm} already exists')
+
+          with open(path, 'w', encoding='utf-8') as f:
+              f.write(content)
           "
           cat $MANIFEST
 
