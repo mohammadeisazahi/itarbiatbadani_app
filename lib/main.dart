@@ -618,90 +618,92 @@ class _ModernNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = darkModeNotifier.value;
-    return SafeArea(
-      bottom: true,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-        decoration: BoxDecoration(
-          color: navBg,
-          borderRadius: BorderRadius.circular(26),
-          border: Border.all(
-            color: isDark
-                ? const Color(0xff2a3b5c)
-                : const Color(0xffdbe4f0),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, isDark, _) => SafeArea(
+        bottom: true,
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+          decoration: BoxDecoration(
+            color: navBg,
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(
               color: isDark
-                  ? Colors.black.withOpacity(0.5)
-                  : const Color(0xff10b981).withOpacity(0.12),
-              blurRadius: 28,
-              offset: const Offset(0, 10),
+                  ? const Color(0xff2a3b5c)
+                  : const Color(0xffdbe4f0),
+              width: 1.5,
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(26),
-          child: SizedBox(
-            height: 74,
-            child: Row(
-              children: List.generate(_items.length, (i) {
-                final selected = i == currentIndex;
-                final item = _items[i];
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      onTap(i);
-                    },
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? accentGreen.withOpacity(0.18)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(18),
-                        border: selected
-                            ? Border.all(
-                                color: accentGreen.withOpacity(0.5),
-                                width: 1.5,
-                              )
-                            : null,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            selected ? item.activeIcon : item.icon,
-                            color: selected
-                                ? accentGreen
-                                : txtC.withOpacity(0.75),
-                            size: selected ? 26 : 24,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            item.label,
-                            style: TextStyle(
-                              fontFamily: 'Vazirmatn',
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withOpacity(0.5)
+                    : const Color(0xff10b981).withOpacity(0.12),
+                blurRadius: 28,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(26),
+            child: SizedBox(
+              height: 74,
+              child: Row(
+                children: List.generate(_items.length, (i) {
+                  final selected = i == currentIndex;
+                  final item = _items[i];
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        onTap(i);
+                      },
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? accentGreen.withOpacity(0.18)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(18),
+                          border: selected
+                              ? Border.all(
+                                  color: accentGreen.withOpacity(0.5),
+                                  width: 1.5,
+                                )
+                              : null,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              selected ? item.activeIcon : item.icon,
                               color: selected
                                   ? accentGreen
                                   : txtC.withOpacity(0.75),
-                              fontSize: selected ? 12 : 11,
-                              fontWeight: selected
-                                  ? FontWeight.w900
-                                  : FontWeight.w700,
+                              size: selected ? 26 : 24,
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 4),
+                            Text(
+                              item.label,
+                              style: TextStyle(
+                                fontFamily: 'Vazirmatn',
+                                color: selected
+                                    ? accentGreen
+                                    : txtC.withOpacity(0.75),
+                                fontSize: selected ? 12 : 11,
+                                fontWeight: selected
+                                    ? FontWeight.w900
+                                    : FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              }),
+                  );
+                }),
+              ),
             ),
           ),
         ),
@@ -766,7 +768,6 @@ class _HomeState extends State<Home> {
   void initState() {
     super.initState();
     _load();
-    // 👇 پیش‌بارگذاری تصویر هیرو برای سرعت بالاتر
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {
         precacheImage(NetworkImage(heroImg), context);
@@ -775,7 +776,6 @@ class _HomeState extends State<Home> {
   }
 
   void _load() {
-    // 👇 بهبود سرعت: تعداد پست کمتر = بارگذاری سریع‌تر
     _f = getPostsPaged(perPage: 5, page: 1);
     _newsFuture = getNewNewsList();
   }
@@ -818,8 +818,8 @@ class _HomeState extends State<Home> {
               SliverToBoxAdapter(
                 child: ModernNewsBanner(key: _bannerKey, future: _newsFuture),
               ),
-              const SliverToBoxAdapter(child: ModernServicesSection()),
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(child: ModernServicesSection()),
+              SliverToBoxAdapter(
                 child: ModernSectionTitle(
                   title: 'دسته‌ها',
                   icon: Icons.grid_view_rounded,
@@ -827,7 +827,6 @@ class _HomeState extends State<Home> {
               ),
               SliverToBoxAdapter(child: ModernCatGrid()),
               SliverToBoxAdapter(child: ModernSocial()),
-              // 👇 بهبود: فاصله بیشتر تا آیکون‌های ارتباط با ما کامل دیده شوند
               const SliverToBoxAdapter(child: SizedBox(height: 140)),
             ],
           ),
@@ -2629,82 +2628,82 @@ class _ModernWebPageState extends State<ModernWebPage> {
 /* ==================== MODERN HEADER ==================== */
 
 Widget ModernHeader(BuildContext context, [String? t]) {
-  return SafeArea(
-    bottom: false,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(23),
-              border: Border.all(color: lineC),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                logo,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Image.network(
-                  logoNet,
+  return ValueListenableBuilder<bool>(
+    valueListenable: darkModeNotifier,
+    builder: (context, _, __) => SafeArea(
+      bottom: false,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(23),
+                border: Border.all(color: lineC),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: ClipOval(
+                child: Image.asset(
+                  logo,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.sports_rounded,
-                    color: Color(0xff10b981),
+                  errorBuilder: (_, __, ___) => Image.network(
+                    logoNet,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.sports_rounded,
+                      color: Color(0xff10b981),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  t ?? 'تربیت بدنی و علوم ورزشی',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: txtC,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    t ?? 'تربیت بدنی و علوم ورزشی',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: txtC,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Vazirmatn',
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'به اپلیکیشن خوش آمدید',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: mutC,
-                    fontSize: 11,
-                    fontFamily: 'Vazirmatn',
+                  const SizedBox(height: 2),
+                  Text(
+                    'به اپلیکیشن خوش آمدید',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: mutC,
+                      fontSize: 11,
+                      fontFamily: 'Vazirmatn',
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          _HeaderIconButton(
-            icon: Icons.bookmark_outline_rounded,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const BookmarksPage()),
+            _HeaderIconButton(
+              icon: Icons.bookmark_outline_rounded,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BookmarksPage()),
+              ),
             ),
-          ),
-          const SizedBox(width: 4),
-          ValueListenableBuilder<bool>(
-            valueListenable: darkModeNotifier,
-            builder: (c, isDark, _) => _HeaderIconButton(
-              icon: isDark
+            const SizedBox(width: 4),
+            _HeaderIconButton(
+              icon: darkModeNotifier.value
                   ? Icons.light_mode_rounded
                   : Icons.dark_mode_rounded,
               onTap: () async {
@@ -2716,84 +2715,84 @@ Widget ModernHeader(BuildContext context, [String? t]) {
                 );
               },
             ),
-          ),
-          const SizedBox(width: 4),
-          _HeaderIconButton(
-            icon: Icons.search_rounded,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SearchPage()),
+            const SizedBox(width: 4),
+            _HeaderIconButton(
+              icon: Icons.search_rounded,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SearchPage()),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     ),
   );
 }
 
 Widget ModernHeaderWithAdmin(BuildContext context, [String? t]) {
-  return SafeArea(
-    bottom: false,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(23),
-              border: Border.all(color: lineC),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                logo,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Image.network(
-                  logoNet,
+  return ValueListenableBuilder<bool>(
+    valueListenable: darkModeNotifier,
+    builder: (context, _, __) => SafeArea(
+      bottom: false,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(23),
+                border: Border.all(color: lineC),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: ClipOval(
+                child: Image.asset(
+                  logo,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.sports_rounded,
-                    color: Color(0xff10b981),
+                  errorBuilder: (_, __, ___) => Image.network(
+                    logoNet,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.sports_rounded,
+                      color: Color(0xff10b981),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              t ?? 'حساب من',
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                color: txtC,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-                fontFamily: 'Vazirmatn',
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                t ?? 'حساب من',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
               ),
             ),
-          ),
-          _HeaderIconButton(
-            icon: Icons.admin_panel_settings_rounded,
-            color: accentBlue,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AdminLoginPage()),
+            _HeaderIconButton(
+              icon: Icons.admin_panel_settings_rounded,
+              color: accentBlue,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AdminLoginPage()),
+              ),
             ),
-          ),
-          const SizedBox(width: 4),
-          ValueListenableBuilder<bool>(
-            valueListenable: darkModeNotifier,
-            builder: (c, isDark, _) => _HeaderIconButton(
-              icon: isDark
+            const SizedBox(width: 4),
+            _HeaderIconButton(
+              icon: darkModeNotifier.value
                   ? Icons.light_mode_rounded
                   : Icons.dark_mode_rounded,
               onTap: () async {
@@ -2805,16 +2804,16 @@ Widget ModernHeaderWithAdmin(BuildContext context, [String? t]) {
                 );
               },
             ),
-          ),
-          const SizedBox(width: 4),
-          _HeaderIconButton(
-            icon: Icons.search_rounded,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SearchPage()),
+            const SizedBox(width: 4),
+            _HeaderIconButton(
+              icon: Icons.search_rounded,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SearchPage()),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     ),
   );
@@ -3056,58 +3055,60 @@ class _ModernServicesSectionState extends State<ModernServicesSection> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // 👇 عنوان «خدمات ما» با رنگ آبی متمایز
-        Padding(
-          padding: const EdgeInsets.fromLTRB(14, 20, 14, 12),
-          child: Row(
-            children: [
-              Container(
-                width: 4,
-                height: 24,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [accentBlue2, accentBlue],
-                  ),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Icon(Icons.auto_awesome_rounded,
-                  color: accentBlue, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'خدمات ما',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: txtC,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 20, 14, 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [accentBlue2, accentBlue],
+                    ),
+                    borderRadius: BorderRadius.circular(3),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 10),
+                Icon(Icons.auto_awesome_rounded,
+                    color: accentBlue, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'خدمات ما',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: txtC,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        SizedBox(
-          height: 118,
-          child: ListView.separated(
-            controller: _scrollCtrl,
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            itemCount: _items.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
-            itemBuilder: (c, i) => _buildCard(_items[i]),
+          SizedBox(
+            height: 118,
+            child: ListView.separated(
+              controller: _scrollCtrl,
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              itemCount: _items.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (c, i) => _buildCard(_items[i]),
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-      ],
+          const SizedBox(height: 8),
+        ],
+      ),
     );
   }
 
@@ -4001,79 +4002,82 @@ class ModernCatGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.zero,
-        itemCount: cats.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          mainAxisExtent: 125,
-        ),
-        itemBuilder: (c, i) {
-          final cat = cats[i];
-          return GestureDetector(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              Navigator.push(
-                c,
-                MaterialPageRoute(
-                    builder: (_) => CategoryPostsPage(c: cat)),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: pnl,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: lineC),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: cat.c.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          itemCount: cats.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            mainAxisExtent: 125,
+          ),
+          itemBuilder: (c, i) {
+            final cat = cats[i];
+            return GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                Navigator.push(
+                  c,
+                  MaterialPageRoute(
+                      builder: (_) => CategoryPostsPage(c: cat)),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: pnl,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: lineC),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
-                    child: Icon(cat.i, color: cat.c, size: 22),
-                  ),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        cat.n,
-                        maxLines: 2,
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: txtC,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          height: 1.35,
-                          fontFamily: 'Vazirmatn',
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: cat.c.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(cat.i, color: cat.c, size: 22),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          cat.n,
+                          maxLines: 2,
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: txtC,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            height: 1.35,
+                            fontFamily: 'Vazirmatn',
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -4112,90 +4116,93 @@ class ModernSocial extends StatelessWidget {
         const Color(0xfff59e0b)
       ],
     ];
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
-          child: Row(
-            children: [
-              Container(
-                width: 4,
-                height: 24,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [accentGreen, accentGreen2],
-                  ),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Icon(Icons.connect_without_contact_rounded,
-                  color: accentGreen, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'ارتباط با ما',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: txtC,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.zero,
-            itemCount: items.length,
-            gridDelegate:
-                const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              childAspectRatio: 3.0,
-            ),
-            itemBuilder: (c, i) => GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                openExternalUrl(items[i][2] as String);
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: pnl,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: lineC),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(items[i][1] as IconData,
-                        color: items[i][3] as Color, size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      items[i][0] as String,
-                      style: TextStyle(
-                        color: txtC,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12.5,
-                        fontFamily: 'Vazirmatn',
-                      ),
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [accentGreen, accentGreen2],
                     ),
-                  ],
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Icon(Icons.connect_without_contact_rounded,
+                    color: accentGreen, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'ارتباط با ما',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: txtC,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              itemCount: items.length,
+              gridDelegate:
+                  const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 3.0,
+              ),
+              itemBuilder: (c, i) => GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  openExternalUrl(items[i][2] as String);
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: pnl,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: lineC),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(items[i][1] as IconData,
+                          color: items[i][3] as Color, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        items[i][0] as String,
+                        style: TextStyle(
+                          color: txtC,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12.5,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -4213,38 +4220,41 @@ class ModernSectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-      child: Row(
-        children: [
-          Container(
-            width: 4,
-            height: 24,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [accentGreen, accentGreen2],
-              ),
-              borderRadius: BorderRadius.circular(3),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Icon(icon, color: accentGreen, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              title,
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                color: txtC,
-                fontSize: 17,
-                fontWeight: FontWeight.w900,
-                fontFamily: 'Vazirmatn',
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+        child: Row(
+          children: [
+            Container(
+              width: 4,
+              height: 24,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [accentGreen, accentGreen2],
+                ),
+                borderRadius: BorderRadius.circular(3),
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 10),
+            Icon(icon, color: accentGreen, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                title,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
