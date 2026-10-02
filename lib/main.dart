@@ -602,6 +602,8 @@ class _RootState extends State<Root> {
   }
 }
 
+/* ==================== MODERN NAV BAR ==================== */
+
 class _ModernNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -614,22 +616,27 @@ class _ModernNavBar extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
       decoration: BoxDecoration(
         color: navBg,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: lineC),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(
+          color: isDark
+              ? const Color(0xff2a3b5c)
+              : const Color(0xffdbe4f0),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withOpacity(0.4)
-                : Colors.black.withOpacity(0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+                ? Colors.black.withOpacity(0.5)
+                : const Color(0xff10b981).withOpacity(0.12),
+            blurRadius: 28,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(26),
         child: SizedBox(
-          height: 68,
+          height: 74,
           child: Row(
             children: List.generate(_items.length, (i) {
               final selected = i == currentIndex;
@@ -641,16 +648,20 @@ class _ModernNavBar extends StatelessWidget {
                     onTap(i);
                   },
                   behavior: HitTestBehavior.opaque,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOutCubic,
+                  child: Container(
                     margin: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 10),
+                        horizontal: 4, vertical: 8),
                     decoration: BoxDecoration(
                       color: selected
-                          ? accentGreen.withOpacity(0.15)
+                          ? accentGreen.withOpacity(0.18)
                           : Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(18),
+                      border: selected
+                          ? Border.all(
+                              color: accentGreen.withOpacity(0.5),
+                              width: 1.5,
+                            )
+                          : null,
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -661,20 +672,24 @@ class _ModernNavBar extends StatelessWidget {
                           curve: Curves.easeOutBack,
                           child: Icon(
                             selected ? item.activeIcon : item.icon,
-                            color: selected ? accentGreen : mutC,
-                            size: 22,
+                            color: selected
+                                ? accentGreen
+                                : txtC.withOpacity(0.75),
+                            size: selected ? 26 : 24,
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: 4),
                         AnimatedDefaultTextStyle(
                           duration: const Duration(milliseconds: 220),
                           style: TextStyle(
                             fontFamily: 'Vazirmatn',
-                            color: selected ? accentGreen : mutC,
-                            fontSize: selected ? 11 : 10,
+                            color: selected
+                                ? accentGreen
+                                : txtC.withOpacity(0.75),
+                            fontSize: selected ? 12 : 11,
                             fontWeight: selected
                                 ? FontWeight.w900
-                                : FontWeight.w600,
+                                : FontWeight.w700,
                           ),
                           child: Text(item.label),
                         ),
@@ -5492,6 +5507,7 @@ class EmptyWidget extends StatelessWidget {
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               width: 80,
