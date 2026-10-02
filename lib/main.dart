@@ -112,17 +112,15 @@ String pExcerpt(dynamic p, {int maxChars = 200}) {
   } catch (_) { return ''; }
 }
 
-// 👇 استخراج تمام زیردسته‌ها با علامت •
+// 👇 فقط نام زیردسته (آخرین دسته در لیست) را برمی‌گرداند
 String pCategory(dynamic p) {
   try {
     final terms = p['_embedded']?['wp:term'];
     if (terms is List && terms.isNotEmpty) {
       final catList = terms[0];
       if (catList is List && catList.isNotEmpty) {
-        return catList
-            .map((c) => c['name']?.toString() ?? '')
-            .where((name) => name.isNotEmpty)
-            .join(' • ');
+        final lastCat = catList.last;
+        return lastCat['name']?.toString() ?? '';
       }
     }
   } catch (_) {}
@@ -779,8 +777,6 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
               padding: const EdgeInsets.fromLTRB(0, 0, 0, 60),
               child: Column(
                 children: [
-                  // ⚠️ بلوک "جدیدترین نوشته‌ها" حذف شد
-
                   if (_posts.isEmpty && _loading)
                     const Padding(
                       padding: EdgeInsets.all(14),
@@ -2843,47 +2839,6 @@ class _NewNewsBannerState extends State<NewNewsBanner> {
                               letterSpacing: -0.3,
                             ),
                           ),
-                          const Spacer(),
-                          if (list.length > 3)
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        const UrgentNewsListPage(),
-                                  ),
-                                );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color:
-                                      accentBlue.withOpacity(.1),
-                                  borderRadius:
-                                      BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      'مشاهده همه',
-                                      style: TextStyle(
-                                        color: accentBlue,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Icon(
-                                      Icons.arrow_back_ios_new,
-                                      color: accentBlue,
-                                      size: 11,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
                         ],
                       ),
                       const SizedBox(height: 14),
@@ -2901,6 +2856,57 @@ class _NewNewsBannerState extends State<NewNewsBanner> {
                 ...items
                     .map((news) => UrgentNewsCard(news: news))
                     .toList(),
+                // 👇 دکمه «مشاهده همه» زیر اخبار فوری (فقط اگر بیش از ۳ خبر وجود داشته باشد)
+                if (list.length > 3)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const UrgentNewsListPage(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: accentBlue.withOpacity(.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: accentBlue.withOpacity(.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.list_alt_outlined,
+                              color: accentBlue,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'مشاهده همه اخبار فوری',
+                              style: TextStyle(
+                                color: accentBlue,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_back_ios_new,
+                              color: accentBlue,
+                              size: 12,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 6),
               ],
             ),
