@@ -4927,7 +4927,6 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     );
   }
 }
-
 /* ==================== ADMIN PANEL ==================== */
 
 class AdminPanelPage extends StatefulWidget {
@@ -5329,7 +5328,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     );
   }
 }
-
 /* ==================== SHIMMER BOX ==================== */
 
 class ShimmerBox extends StatefulWidget {
@@ -5397,7 +5395,7 @@ class _ShimmerBoxState extends State<ShimmerBox>
   }
 }
 
-/* ==================== SKELETONS ==================== */
+/* ==================== POST SKELETON ==================== */
 
 class PostSkeleton extends StatelessWidget {
   const PostSkeleton({super.key});
@@ -5435,6 +5433,8 @@ class PostSkeleton extends StatelessWidget {
     );
   }
 }
+
+/* ==================== FEATURED SKELETON ==================== */
 
 class FeaturedSkeleton extends StatelessWidget {
   const FeaturedSkeleton({super.key});
@@ -5479,7 +5479,7 @@ class FeaturedSkeleton extends StatelessWidget {
   }
 }
 
-/* ==================== EMPTY ==================== */
+/* ==================== EMPTY WIDGET ==================== */
 
 class EmptyWidget extends StatelessWidget {
   final String text;
@@ -5518,4 +5518,83 @@ class EmptyWidget extends StatelessWidget {
               ),
             ),
           ],
-       
+        ),
+      ),
+    );
+  }
+}
+
+/* ==================== ERROR BOX ==================== */
+
+class ErrorBox extends StatelessWidget {
+  final String message;
+  final VoidCallback? onRetry;
+  const ErrorBox({
+    super.key,
+    required this.message,
+    this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: rose.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error_outline_rounded,
+                color: rose,
+                size: 42,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: txtC,
+                fontSize: 13,
+                height: 1.7,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+            if (onRetry != null) ...[
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: onRetry,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff10b981),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text(
+                  'تلاش مجدد',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
