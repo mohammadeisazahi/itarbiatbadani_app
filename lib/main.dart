@@ -342,7 +342,7 @@ class App extends StatelessWidget {
             brightness: isDark ? Brightness.dark : Brightness.light,
             scaffoldBackgroundColor: bgC,
             colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xff4caf50),
+              seedColor: accentGreen,
               brightness: isDark ? Brightness.dark : Brightness.light,
             ),
             pageTransitionsTheme: const PageTransitionsTheme(
@@ -563,10 +563,10 @@ class _ArticlesPageState extends State<ArticlesPage> {
             buildHeader(context, 'مقالات'),
             Expanded(
               child: _posts.isEmpty && _loading
-                  ? Padding(
-                      padding: const EdgeInsets.all(14),
+                  ? const Padding(
+                      padding: EdgeInsets.all(14),
                       child: Column(
-                        children: const [
+                        children: [
                           PostSkeleton(),
                           PostSkeleton(),
                           PostSkeleton(),
@@ -745,10 +745,10 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
                   ),
 
                 if (_posts.isEmpty && _loading)
-                  Padding(
-                    padding: const EdgeInsets.all(14),
+                  const Padding(
+                    padding: EdgeInsets.all(14),
                     child: Column(
-                      children: const [
+                      children: [
                         FeaturedSkeleton(),
                         SizedBox(height: 12),
                         PostSkeleton(),
@@ -784,16 +784,17 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
                             child: _buildLoadMoreButton(),
                           ),
                         if (!_hasMore && _posts.length > 5)
-                          const Padding(
-                            padding: EdgeInsets.only(
+                          Padding(
+                            padding: const EdgeInsets.only(
                                 top: 12, bottom: 30),
                             child: Text(
                               'همه مطالب نمایش داده شد.',
-                              style: TextStyle(fontSize: 12),
+                              style: TextStyle(
+                                color: mutC,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
-                        if (_hasMore || _posts.length <= 5)
-                          const SizedBox(height: 30),
                       ],
                     ),
                   ),
@@ -836,7 +837,10 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
               const SizedBox(
                 width: 16,
                 height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xff4caf50),
+                ),
               )
             else
               Icon(
@@ -847,7 +851,8 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
             const SizedBox(width: 8),
             Text(
               _loadingMore ? 'در حال بارگذاری...' : 'مشاهده بیشتر',
-              style: const TextStyle(
+              style: TextStyle(
+                color: isDark ? txtC : const Color(0xff0f1a2b),
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.3,
@@ -966,10 +971,10 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
           backgroundColor: pnl,
           onRefresh: _refresh,
           child: _posts.isEmpty && _loading
-              ? Padding(
-                  padding: const EdgeInsets.all(14),
+              ? const Padding(
+                  padding: EdgeInsets.all(14),
                   child: Column(
-                    children: const [
+                    children: [
                       FeaturedSkeleton(),
                       SizedBox(height: 12),
                       PostSkeleton(),
@@ -1010,15 +1015,17 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
                                   child: _buildLoadMoreButton(),
                                 ),
                               if (!_hasMore && _posts.length > 5)
-                                const Padding(
-                                  padding: EdgeInsets.only(
+                                Padding(
+                                  padding: const EdgeInsets.only(
                                       top: 12, bottom: 30),
                                   child: Text(
                                     'همه مطالب نمایش داده شد.',
-                                    style: TextStyle(fontSize: 12),
+                                    style: TextStyle(
+                                      color: mutC,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ),
-                              const SizedBox(height: 30),
                             ],
                           ),
                         ),
@@ -1058,7 +1065,10 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
               const SizedBox(
                 width: 16,
                 height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xff4caf50),
+                ),
               )
             else
               Icon(
@@ -1069,7 +1079,8 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
             const SizedBox(width: 8),
             Text(
               _loadingMore ? 'در حال بارگذاری...' : 'مشاهده بیشتر',
-              style: const TextStyle(
+              style: TextStyle(
+                color: isDark ? txtC : const Color(0xff0f1a2b),
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.3,
@@ -1186,10 +1197,10 @@ class _NewsPageState extends State<NewsPage> {
             ),
             Expanded(
               child: _posts.isEmpty && _loading
-                  ? Padding(
-                      padding: const EdgeInsets.all(14),
+                  ? const Padding(
+                      padding: EdgeInsets.all(14),
                       child: Column(
-                        children: const [
+                        children: [
                           PostSkeleton(),
                           PostSkeleton(),
                           PostSkeleton(),
@@ -1314,10 +1325,10 @@ class _ShopPageState extends State<ShopPage> {
             buildHeader(context, 'فروشگاه'),
             Expanded(
               child: _products.isEmpty && _loading
-                  ? Padding(
-                      padding: const EdgeInsets.all(14),
+                  ? const Padding(
+                      padding: EdgeInsets.all(14),
                       child: Column(
-                        children: const [
+                        children: [
                           PostSkeleton(),
                           PostSkeleton(),
                           PostSkeleton(),
@@ -1455,10 +1466,10 @@ class _SearchPageState extends State<SearchPage> {
                       builder: (c, s) {
                         if (s.connectionState ==
                             ConnectionState.waiting) {
-                          return Padding(
-                            padding: const EdgeInsets.all(14),
+                          return const Padding(
+                            padding: EdgeInsets.all(14),
                             child: Column(
-                              children: const [
+                              children: [
                                 PostSkeleton(),
                                 PostSkeleton(),
                                 PostSkeleton(),
@@ -2008,10 +2019,10 @@ class LatestPostsSection extends StatelessWidget {
             future: postsFuture,
             builder: (c, s) {
               if (s.connectionState == ConnectionState.waiting) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                return const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 14),
                   child: Column(
-                    children: const [
+                    children: [
                       FeaturedSkeleton(),
                       SizedBox(height: 12),
                       PostSkeleton(),
@@ -2879,10 +2890,10 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
             builder: (context, snapshot) {
               if (snapshot.connectionState ==
                   ConnectionState.waiting) {
-                return Padding(
-                  padding: const EdgeInsets.all(20),
+                return const Padding(
+                  padding: EdgeInsets.all(20),
                   child: Column(
-                    children: const [
+                    children: [
                       PostSkeleton(),
                       PostSkeleton(),
                       PostSkeleton(),
@@ -3334,10 +3345,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: pnl,
-        title: Text(
-          'حذف خبر',
-          style: TextStyle(color: txtC),
-        ),
+        title: Text('حذف خبر', style: TextStyle(color: txtC)),
         content: Text(
           'آیا از حذف «${pTitle(post)}» مطمئن هستید؟',
           style: TextStyle(color: mutC),
@@ -3345,10 +3353,8 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text(
-              'انصراف',
-              style: TextStyle(color: mutC),
-            ),
+            child: Text('انصراف',
+                style: TextStyle(color: mutC)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -3674,10 +3680,8 @@ Widget buildHeader(BuildContext context, [String? t]) {
                 errorBuilder: (_, __, ___) => Image.network(
                   logoNet,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Icon(
-                    Icons.sports,
-                    color: accentGreen,
-                  ),
+                  errorBuilder: (_, __, ___) =>
+                      Icon(Icons.sports, color: accentGreen),
                 ),
               ),
             ),
@@ -3750,10 +3754,8 @@ Widget buildHeaderWithAdmin(BuildContext context, [String? t]) {
                 errorBuilder: (_, __, ___) => Image.network(
                   logoNet,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Icon(
-                    Icons.sports,
-                    color: accentGreen,
-                  ),
+                  errorBuilder: (_, __, ___) =>
+                      Icon(Icons.sports, color: accentGreen),
                 ),
               ),
             ),
@@ -3838,11 +3840,7 @@ Widget buildHero() {
         errorBuilder: (_, __, ___) => Container(
           height: 180,
           color: pnl2,
-          child: Icon(
-            Icons.sports_soccer,
-            color: accentGreen,
-            size: 60,
-          ),
+          child: Icon(Icons.sports_soccer, color: accentGreen, size: 60),
         ),
       ),
     ),
