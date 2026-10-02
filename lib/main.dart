@@ -56,7 +56,7 @@ const cats = <Cat>[
   Cat('ورزش برای گروه‌ها و نیازهای ویژه', 'exercise-for-special-groups-and-needs', Icons.accessibility_new_outlined),
   Cat('تکنولوژی و نوآوری در ورزش', 'technology-and-innovation-in-sports', Icons.memory_outlined),
 ];
-// 👇 باز کردن لینک در صفحه داخلی اپ (WebPage)
+// 👇 باز کردن لینک در صفحه داخلی اپ
 Future<void> openUrl(BuildContext context, String url, {String title = 'مشاهده'}) async {
   if (url.isEmpty) return;
   Navigator.push(
@@ -67,7 +67,7 @@ Future<void> openUrl(BuildContext context, String url, {String title = 'مشاه
   );
 }
 
-// 👇 باز کردن لینک در مرورگر بیرونی (برای لینک‌های خاص مثل شبکه‌های اجتماعی)
+// 👇 باز کردن لینک در مرورگر بیرونی
 Future<void> openExternalUrl(String url) async {
   if (url.isEmpty) return;
   final uri = Uri.parse(url);
@@ -112,7 +112,7 @@ String pExcerpt(dynamic p, {int maxChars = 200}) {
   } catch (_) { return ''; }
 }
 
-// 👇 استخراج تمام زیردسته‌ها و اتصال آن‌ها با علامت •
+// 👇 استخراج تمام زیردسته‌ها با علامت •
 String pCategory(dynamic p) {
   try {
     final terms = p['_embedded']?['wp:term'];
@@ -180,7 +180,7 @@ List<int> _toJalali(int gy, int gm, int gd) {
   return [jy, jm, jd];
 }
 
-// 👇 کش برای جلوگیری از درخواست‌های تکراری و افزایش سرعت
+// 👇 کش برای سرعت بالاتر
 final Map<String, List> _postsCache = {};
 final Map<String, int> _postsCacheTime = {};
 const int _cacheDurationSeconds = 300;
@@ -767,76 +767,76 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
           foregroundColor: txtC,
           elevation: 0,
         ),
-        body: RefreshIndicator(
-          color: accentGreen,
-          backgroundColor: pnl,
-          onRefresh: _refresh,
-          child: SingleChildScrollView(
-            controller: _scroll,
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              children: [
-                if (_posts.isNotEmpty || _loading)
-                  const SectionTitleWidget(
-                    title: 'جدیدترین نوشته‌ها',
-                    icon: Icons.article_outlined,
-                  ),
+        body: SafeArea(
+          bottom: true,
+          child: RefreshIndicator(
+            color: accentGreen,
+            backgroundColor: pnl,
+            onRefresh: _refresh,
+            child: SingleChildScrollView(
+              controller: _scroll,
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(0, 0, 0, 60),
+              child: Column(
+                children: [
+                  // ⚠️ بلوک "جدیدترین نوشته‌ها" حذف شد
 
-                if (_posts.isEmpty && _loading)
-                  const Padding(
-                    padding: EdgeInsets.all(14),
-                    child: Column(
-                      children: [
-                        FeaturedSkeleton(),
-                        SizedBox(height: 12),
-                        PostSkeleton(),
-                        SizedBox(height: 12),
-                        PostSkeleton(),
-                      ],
-                    ),
-                  )
-                else if (_posts.isEmpty && _error != null)
-                  ErrorBox(
-                    message: 'خطا در دریافت مطالب.\n$_error',
-                    onRetry: _refresh,
-                  )
-                else if (_posts.isEmpty)
-                  const EmptyWidget(text: 'مطلبی در این دسته پیدا نشد.')
-                else
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    child: Column(
-                      children: [
-                        FeaturedPostCard(post: _posts.first),
-                        const SizedBox(height: 14),
-                        ..._posts.skip(1).map((post) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: SidePostCard(post: post),
-                          );
-                        }).toList(),
-                        if (_hasMore)
-                          Padding(
-                            padding: const EdgeInsets.only(
-                                top: 6, bottom: 6),
-                            child: _buildLoadMoreButton(),
-                          ),
-                        if (!_hasMore && _posts.length > 5)
-                          Padding(
-                            padding: const EdgeInsets.only(
-                                top: 12, bottom: 30),
-                            child: Text(
-                              'همه مطالب نمایش داده شد.',
-                              style: TextStyle(
-                                color: mutC,
-                                fontSize: 12,
+                  if (_posts.isEmpty && _loading)
+                    const Padding(
+                      padding: EdgeInsets.all(14),
+                      child: Column(
+                        children: [
+                          FeaturedSkeleton(),
+                          SizedBox(height: 12),
+                          PostSkeleton(),
+                          SizedBox(height: 12),
+                          PostSkeleton(),
+                        ],
+                      ),
+                    )
+                  else if (_posts.isEmpty && _error != null)
+                    ErrorBox(
+                      message: 'خطا در دریافت مطالب.\n$_error',
+                      onRetry: _refresh,
+                    )
+                  else if (_posts.isEmpty)
+                    const EmptyWidget(text: 'مطلبی در این دسته پیدا نشد.')
+                  else
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      child: Column(
+                        children: [
+                          FeaturedPostCard(post: _posts.first),
+                          const SizedBox(height: 14),
+                          ..._posts.skip(1).map((post) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: SidePostCard(post: post),
+                            );
+                          }).toList(),
+                          if (_hasMore)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                  top: 6, bottom: 6),
+                              child: _buildLoadMoreButton(),
+                            ),
+                          if (!_hasMore && _posts.length > 5)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                  top: 12, bottom: 30),
+                              child: Text(
+                                'همه مطالب نمایش داده شد.',
+                                style: TextStyle(
+                                  color: mutC,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -1004,69 +1004,71 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
           foregroundColor: txtC,
           elevation: 0,
         ),
-        body: RefreshIndicator(
-          color: accentGreen,
-          backgroundColor: pnl,
-          onRefresh: _refresh,
-          child: _posts.isEmpty && _loading
-              ? const Padding(
-                  padding: EdgeInsets.all(14),
-                  child: Column(
-                    children: [
-                      FeaturedSkeleton(),
-                      SizedBox(height: 12),
-                      PostSkeleton(),
-                      SizedBox(height: 12),
-                      PostSkeleton(),
-                    ],
-                  ),
-                )
-              : _posts.isEmpty && _error != null
-                  ? ErrorBox(
-                      message: 'خطا در دریافت مطالب.\n$_error',
-                      onRetry: _refresh,
-                    )
-                  : _posts.isEmpty
-                      ? const EmptyWidget(text: 'مطلبی پیدا نشد.')
-                      : SingleChildScrollView(
-                          controller: _scroll,
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 14,
-                          ),
-                          child: Column(
-                            children: [
-                              FeaturedPostCard(post: _posts.first),
-                              const SizedBox(height: 14),
-                              ..._posts.skip(1).map((post) {
-                                return Padding(
-                                  padding:
-                                      const EdgeInsets.only(bottom: 10),
-                                  child: SidePostCard(post: post),
-                                );
-                              }).toList(),
-                              if (_hasMore)
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                      top: 6, bottom: 6),
-                                  child: _buildLoadMoreButton(),
-                                ),
-                              if (!_hasMore && _posts.length > 5)
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                      top: 12, bottom: 30),
-                                  child: Text(
-                                    'همه مطالب نمایش داده شد.',
-                                    style: TextStyle(
-                                      color: mutC,
-                                      fontSize: 12,
+        body: SafeArea(
+          bottom: true,
+          child: RefreshIndicator(
+            color: accentGreen,
+            backgroundColor: pnl,
+            onRefresh: _refresh,
+            child: _posts.isEmpty && _loading
+                ? const Padding(
+                    padding: EdgeInsets.all(14),
+                    child: Column(
+                      children: [
+                        FeaturedSkeleton(),
+                        SizedBox(height: 12),
+                        PostSkeleton(),
+                        SizedBox(height: 12),
+                        PostSkeleton(),
+                      ],
+                    ),
+                  )
+                : _posts.isEmpty && _error != null
+                    ? ErrorBox(
+                        message: 'خطا در دریافت مطالب.\n$_error',
+                        onRetry: _refresh,
+                      )
+                    : _posts.isEmpty
+                        ? const EmptyWidget(text: 'مطلبی پیدا نشد.')
+                        : SingleChildScrollView(
+                            controller: _scroll,
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(0, 0, 0, 60),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                              child: Column(
+                                children: [
+                                  FeaturedPostCard(post: _posts.first),
+                                  const SizedBox(height: 14),
+                                  ..._posts.skip(1).map((post) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 10),
+                                      child: SidePostCard(post: post),
+                                    );
+                                  }).toList(),
+                                  if (_hasMore)
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          top: 6, bottom: 6),
+                                      child: _buildLoadMoreButton(),
                                     ),
-                                  ),
-                                ),
-                            ],
+                                  if (!_hasMore && _posts.length > 5)
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          top: 12, bottom: 30),
+                                      child: Text(
+                                        'همه مطالب نمایش داده شد.',
+                                        style: TextStyle(
+                                          color: mutC,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
+          ),
         ),
       ),
     );
@@ -2033,6 +2035,7 @@ class _ServicesSectionWidgetState extends State<ServicesSectionWidget> {
     );
   }
 }
+
 /* ==================== LATEST POSTS SECTION ==================== */
 
 class LatestPostsSection extends StatelessWidget {
@@ -2177,7 +2180,7 @@ class FeaturedPostCard extends StatelessWidget {
                     ? CachedNetworkImage(
                         imageUrl: img,
                         fit: BoxFit.cover,
-                        memCacheWidth: 600,
+                        memCacheWidth: 1080,
                         placeholder: (_, __) =>
                             Container(color: pnl2),
                         errorWidget: (_, __, ___) => Container(
@@ -2476,7 +2479,7 @@ class SidePostCard extends StatelessWidget {
                     ? CachedNetworkImage(
                         imageUrl: img,
                         fit: BoxFit.cover,
-                        memCacheWidth: 200,
+                        memCacheWidth: 400,
                         placeholder: (_, __) =>
                             Container(color: pnl2),
                         errorWidget: (_, __, ___) => Container(
@@ -3904,6 +3907,7 @@ Widget buildHero() {
         fit: BoxFit.cover,
         width: double.infinity,
         filterQuality: FilterQuality.high,
+        cacheWidth: 1080,
         loadingBuilder: (c, ch, pr) {
           if (pr == null) return ch;
           return Container(
@@ -3953,7 +3957,7 @@ Widget buildPostCard(BuildContext context, dynamic p) {
                       imageUrl: i,
                       fit: BoxFit.cover,
                       filterQuality: FilterQuality.high,
-                      memCacheWidth: 300,
+                      memCacheWidth: 500,
                       fadeInDuration: const Duration(milliseconds: 200),
                       placeholder: (_, __) => Container(
                         color: pnl2,
@@ -4059,7 +4063,7 @@ Widget buildProductCard(BuildContext context, dynamic p) {
                       imageUrl: img,
                       fit: BoxFit.cover,
                       filterQuality: FilterQuality.high,
-                      memCacheWidth: 300,
+                      memCacheWidth: 500,
                       fadeInDuration: const Duration(milliseconds: 200),
                       placeholder: (_, __) => Container(
                         color: pnl2,
