@@ -4,7 +4,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:share_plus/share_plus.dart';
@@ -22,7 +21,6 @@ const int perPageSize = 10;
 final _storage = const FlutterSecureStorage();
 final darkModeNotifier = ValueNotifier<bool>(true);
 final bookmarkNotifier = ValueNotifier<Set<String>>({});
-final notificationsPlugin = FlutterLocalNotificationsPlugin();
 
 /* ==================== THEME COLORS ==================== */
 
@@ -103,57 +101,6 @@ Future<void> toggleBookmark(String id) async {
 
 bool isBookmarked(String id) => bookmarkNotifier.value.contains(id);
 
-/* ==================== NOTIFICATIONS ==================== */
-
-Future<void> initNotifications() async {
-  const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-  const iosInit = DarwinInitializationSettings();
-  const settings = InitializationSettings(
-    android: androidInit,
-    iOS: iosInit,
-  );
-  try {
-    await notificationsPlugin.initialize(settings);
-    await notificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
-  } catch (_) {}
-}
-
-Future<void> showNewsNotification(String title, String body) async {
-  const androidDetails = AndroidNotificationDetails(
-    'news_channel',
-    'اخبار فوری',
-    channelDescription: 'اطلاع از اخبار فوری جدید',
-    importance: Importance.high,
-    priority: Priority.high,
-  );
-  const details = NotificationDetails(android: androidDetails);
-  try {
-    await notificationsPlugin.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      title,
-      body,
-      details,
-    );
-  } catch (_) {}
-}
-
-Future<void> checkNewNews() async {
-  try {
-    final list = await getNewNewsList();
-    if (list.isEmpty) return;
-    final latest = list.first;
-    final latestId = pId(latest);
-    final saved = await _storage.read(key: 'last_news_id');
-    if (saved != null && saved != latestId) {
-      await showNewsNotification('خبر فوری جدید', pTitle(latest));
-    }
-    await _storage.write(key: 'last_news_id', value: latestId);
-  } catch (_) {}
-}
-
 /* ==================== NAVIGATION ==================== */
 
 Future<void> openUrl(BuildContext context, String url,
@@ -175,7 +122,6 @@ Future<void> openExternalUrl(String url) async {
   }
 }
 
-// 👇 اشتراک‌گذاری بومی با share_plus
 Future<void> sharePost(String url, String title) async {
   if (url.isEmpty) return;
   try {
@@ -406,7 +352,6 @@ final Map<String, List> _postsCache = {};
 final Map<String, int> _postsCacheTime = {};
 const int _cacheDurationSeconds = 300;
 
-// 👇 با قابلیت کش آفلاین
 Future<List> getPostsPaged({
   int perPage = perPageSize,
   int page = 1,
@@ -431,13 +376,11 @@ Future<List> getPostsPaged({
     final list = json.decode(r.body) as List;
     _postsCache[u] = list;
     _postsCacheTime[u] = now;
-    // 👇 ذخیره در کش آفلاین
     try {
       await _storage.write(key: 'cache_$u', value: r.body);
     } catch (_) {}
     return list;
   } catch (e) {
-    // 👇 اگر شبکه قطع بود، از کش آفلاین بخوان
     try {
       final cached = await _storage.read(key: 'cache_$u');
       if (cached != null && cached.isNotEmpty) {
@@ -617,7 +560,6 @@ void main() async {
     final saved = await _storage.read(key: 'dark_mode');
     darkModeNotifier.value = saved == null ? true : saved == 'true';
     await loadBookmarks();
-    await initNotifications();
   } catch (_) {}
   runApp(const App());
 }
@@ -848,7 +790,6 @@ class _HomeState extends State<Home> {
   Future<List>? _f;
   Future<List>? _newsFuture;
   Key _bannerKey = UniqueKey();
-  Timer? _newsTimer;
 
   @override
   void initState() {
@@ -858,18 +799,7 @@ class _HomeState extends State<Home> {
       try {
         precacheImage(NetworkImage(heroImg), context);
       } catch (_) {}
-      checkNewNews();
     });
-    _newsTimer = Timer.periodic(
-      const Duration(minutes: 30),
-      (_) => checkNewNews(),
-    );
-  }
-
-  @override
-  void dispose() {
-    _newsTimer?.cancel();
-    super.dispose();
   }
 
   void _load() {
@@ -2561,7 +2491,6 @@ class _AccountPageState extends State<AccountPage> {
     } catch (_) {}
   }
 
-  // 👇 Whitelist برای درگاه پرداخت
   bool _isTrustedUrl(String url) {
     return url.contains('itarbiatbadani.ir') ||
         url.contains('zarinpal.com') ||
@@ -2626,11 +2555,9 @@ class _AccountPageState extends State<AccountPage> {
                     },
                     shouldOverrideUrlLoading: (controller, action) async {
                       final url = action.request.url.toString();
-                      // درگاه پرداخت و صفحات خودی در WebView باز شوند
                       if (_isTrustedUrl(url)) {
                         return NavigationActionPolicy.ALLOW;
                       }
-                      // لینک‌های دیگر (شبکه‌های اجتماعی) در مرورگر بیرونی
                       if (await canLaunchUrl(Uri.parse(url))) {
                         await launchUrl(Uri.parse(url),
                             mode: LaunchMode.externalApplication);
@@ -2671,7 +2598,6 @@ class _ModernWebPageState extends State<ModernWebPage> {
   double _progress = 0;
   InAppWebViewController? _controller;
 
-  // 👇 Whitelist برای درگاه پرداخت
   bool _isTrustedUrl(String url) {
     return url.contains('itarbiatbadani.ir') ||
         url.contains('zarinpal.com') ||
@@ -2759,11 +2685,9 @@ class _ModernWebPageState extends State<ModernWebPage> {
             },
             shouldOverrideUrlLoading: (controller, action) async {
               final url = action.request.url.toString();
-              // درگاه پرداخت و صفحات خودی در WebView باز شوند
               if (_isTrustedUrl(url)) {
                 return NavigationActionPolicy.ALLOW;
               }
-              // لینک‌های دیگر در مرورگر بیرونی
               if (await canLaunchUrl(Uri.parse(url))) {
                 await launchUrl(Uri.parse(url),
                     mode: LaunchMode.externalApplication);
