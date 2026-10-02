@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -18,56 +19,100 @@ const int perPageSize = 10;
 
 final _storage = const FlutterSecureStorage();
 final darkModeNotifier = ValueNotifier<bool>(true);
+final bookmarkNotifier = ValueNotifier<Set<String>>({});
 
-Color get bgC => darkModeNotifier.value ? const Color(0xff0a1929) : const Color(0xfff5f9fc);
-Color get pnl => darkModeNotifier.value ? const Color(0xff132f4c) : const Color(0xffffffff);
-Color get pnl2 => darkModeNotifier.value ? const Color(0xff1a3a5c) : const Color(0xffeef4fa);
-Color get txtC => darkModeNotifier.value ? const Color(0xffffffff) : const Color(0xff0a1929);
-Color get mutC => darkModeNotifier.value ? const Color(0xff8899aa) : const Color(0xff5a6b7c);
-Color get accentGreen => darkModeNotifier.value ? const Color(0xff4caf50) : const Color(0xff2e7d32);
-Color get accentBlue => darkModeNotifier.value ? const Color(0xff42a5f5) : const Color(0xff1976d2);
-Color get gold => darkModeNotifier.value ? const Color(0xfffbc531) : const Color(0xffd4a017);
-Color get lineC => darkModeNotifier.value ? const Color(0x404caf50) : const Color(0x332e7d32);
-Color get navBg => darkModeNotifier.value ? const Color(0xff0d1f33) : const Color(0xffffffff);
-Color get skeletonC => darkModeNotifier.value ? const Color(0xff1a3a5c) : const Color(0xffe0e8f0);
-Color get inkSoft => darkModeNotifier.value ? const Color(0xff9fb0bd) : const Color(0xff526478);
-Color get softLine => darkModeNotifier.value ? const Color(0xff1a3a5c) : const Color(0xfff4f7fb);
+/* ==================== THEME COLORS ==================== */
+
+Color get bgC => darkModeNotifier.value ? const Color(0xff0b1220) : const Color(0xfff6f8fb);
+Color get bgGrad1 => darkModeNotifier.value ? const Color(0xff0b1220) : const Color(0xfff6f8fb);
+Color get bgGrad2 => darkModeNotifier.value ? const Color(0xff101a2e) : const Color(0xffeef3fb);
+Color get pnl => darkModeNotifier.value ? const Color(0xff141f36) : const Color(0xffffffff);
+Color get pnl2 => darkModeNotifier.value ? const Color(0xff1c2b48) : const Color(0xffeef3fa);
+Color get pnl3 => darkModeNotifier.value ? const Color(0xff243456) : const Color(0xffe3ecf7);
+Color get txtC => darkModeNotifier.value ? const Color(0xfff1f5fb) : const Color(0xff0c1a2b);
+Color get mutC => darkModeNotifier.value ? const Color(0xff8fa3bf) : const Color(0xff5c6b83);
+Color get accentGreen => const Color(0xff10b981);
+Color get accentGreen2 => const Color(0xff059669);
+Color get accentBlue => const Color(0xff3b82f6);
+Color get accentBlue2 => const Color(0xff1d4ed8);
+Color get gold => darkModeNotifier.value ? const Color(0xfffbbf24) : const Color(0xffd97706);
+Color get rose => const Color(0xfff43f5e);
+Color get purple => const Color(0xff8b5cf6);
+Color get lineC => darkModeNotifier.value ? const Color(0xff223252) : const Color(0xffe4ebf4);
+Color get navBg => darkModeNotifier.value ? const Color(0xff0f1a2e) : const Color(0xffffffff);
+Color get skeletonBase => darkModeNotifier.value ? const Color(0xff1a2740) : const Color(0xffeaf0f8);
+Color get skeletonHi => darkModeNotifier.value ? const Color(0xff253556) : const Color(0xfff5f9ff);
+Color get inkSoft => darkModeNotifier.value ? const Color(0xff9db0ca) : const Color(0xff54637a);
+Color get softLine => darkModeNotifier.value ? const Color(0xff223252) : const Color(0xffeef3fa);
+Color get chipBg => darkModeNotifier.value ? const Color(0xff132a45) : const Color(0xffecfdf5);
+Color get chipFg => darkModeNotifier.value ? const Color(0xff34d399) : const Color(0xff047857);
+
+/* ==================== MODELS ==================== */
 
 class Cat {
   final String n;
   final String s;
   final IconData i;
-  const Cat(this.n, this.s, this.i);
+  final Color c;
+  const Cat(this.n, this.s, this.i, this.c);
 }
 
 const cats = <Cat>[
-  Cat('رشته تربیت بدنی و علوم ورزشی', 'physical-education-sport-sciences', Icons.sports_soccer),
-  Cat('علوم ورزشی', 'sports-science', Icons.science_outlined),
-  Cat('منابع آزمون‌های علوم ورزشی', 'sports-science-exam-resources', Icons.menu_book_outlined),
-  Cat('تغذیه ورزشی', 'sports-nutrition', Icons.restaurant_outlined),
-  Cat('اخبار و رویدادها', 'sports-news-and-events', Icons.newspaper_outlined),
-  Cat('ورزش همگانی، سلامت و تندرستی', 'public-exercise-health-and-wellness', Icons.favorite_outline),
-  Cat('پژوهش در تربیت بدنی', 'research-in-physical-education', Icons.search_outlined),
-  Cat('تربیت بدنی و آموزش', 'physical-education-and-training', Icons.school_outlined),
-  Cat('معرفی منابع و کتب مرجع', 'introduction-to-sources-and-reference-books', Icons.library_books_outlined),
-  Cat('اصول ورزش و فعالیت بدنی', 'principles-of-exercise-and-physical-activity', Icons.fitness_center_outlined),
-  Cat('آزمون‌های استخدامی', 'employment-tests', Icons.assignment_outlined),
-  Cat('معرفی رشته‌های ورزشی', 'introduction-to-sports-disciplines', Icons.sports_handball_outlined),
-  Cat('ورزش برای گروه‌ها و نیازهای ویژه', 'exercise-for-special-groups-and-needs', Icons.accessibility_new_outlined),
-  Cat('تکنولوژی و نوآوری در ورزش', 'technology-and-innovation-in-sports', Icons.memory_outlined),
+  Cat('رشته تربیت بدنی و علوم ورزشی', 'physical-education-sport-sciences', Icons.sports_soccer_rounded, Color(0xff3b82f6)),
+  Cat('علوم ورزشی', 'sports-science', Icons.science_rounded, Color(0xff8b5cf6)),
+  Cat('منابع آزمون‌ها', 'sports-science-exam-resources', Icons.menu_book_rounded, Color(0xfff59e0b)),
+  Cat('تغذیه ورزشی', 'sports-nutrition', Icons.restaurant_rounded, Color(0xff10b981)),
+  Cat('اخبار و رویدادها', 'sports-news-and-events', Icons.newspaper_rounded, Color(0xffef4444)),
+  Cat('ورزش همگانی', 'public-exercise-health-and-wellness', Icons.favorite_rounded, Color(0xffec4899)),
+  Cat('پژوهش در تربیت بدنی', 'research-in-physical-education', Icons.search_rounded, Color(0xff06b6d4)),
+  Cat('تربیت بدنی و آموزش', 'physical-education-and-training', Icons.school_rounded, Color(0xff6366f1)),
+  Cat('منابع و کتب مرجع', 'introduction-to-sources-and-reference-books', Icons.library_books_rounded, Color(0xff14b8a6)),
+  Cat('اصول ورزش', 'principles-of-exercise-and-physical-activity', Icons.fitness_center_rounded, Color(0xfff97316)),
+  Cat('آزمون‌های استخدامی', 'employment-tests', Icons.assignment_rounded, Color(0xffe11d48)),
+  Cat('معرفی رشته‌ها', 'introduction-to-sports-disciplines', Icons.sports_handball_rounded, Color(0xff0ea5e9)),
+  Cat('ورزش گروه‌های ویژه', 'exercise-for-special-groups-and-needs', Icons.accessibility_new_rounded, Color(0xffa855f7)),
+  Cat('تکنولوژی در ورزش', 'technology-and-innovation-in-sports', Icons.memory_rounded, Color(0xff22c55e)),
 ];
-// 👇 باز کردن لینک در صفحه داخلی اپ
-Future<void> openUrl(BuildContext context, String url, {String title = 'مشاهده'}) async {
+/* ==================== BOOKMARKS ==================== */
+
+Future<void> loadBookmarks() async {
+  try {
+    final saved = await _storage.read(key: 'bookmarks');
+    if (saved != null && saved.isNotEmpty) {
+      final list = (json.decode(saved) as List).cast<String>();
+      bookmarkNotifier.value = list.toSet();
+    }
+  } catch (_) {}
+}
+
+Future<void> toggleBookmark(String id) async {
+  final set = Set<String>.from(bookmarkNotifier.value);
+  if (set.contains(id)) {
+    set.remove(id);
+  } else {
+    set.add(id);
+  }
+  bookmarkNotifier.value = set;
+  try {
+    await _storage.write(key: 'bookmarks', value: json.encode(set.toList()));
+  } catch (_) {}
+}
+
+bool isBookmarked(String id) => bookmarkNotifier.value.contains(id);
+
+/* ==================== NAVIGATION HELPERS ==================== */
+
+Future<void> openUrl(BuildContext context, String url,
+    {String title = 'مشاهده'}) async {
   if (url.isEmpty) return;
   Navigator.push(
     context,
     MaterialPageRoute(
-      builder: (_) => WebPage(url: url, title: title),
+      builder: (_) => ModernWebPage(url: url, title: title),
     ),
   );
 }
 
-// 👇 باز کردن لینک در مرورگر بیرونی
 Future<void> openExternalUrl(String url) async {
   if (url.isEmpty) return;
   final uri = Uri.parse(url);
@@ -75,6 +120,49 @@ Future<void> openExternalUrl(String url) async {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }
+
+Future<void> sharePost(String url, String title) async {
+  if (url.isEmpty) return;
+  final uri = Uri.parse(url);
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+}
+
+void showSnack(BuildContext context, String msg, {bool error = false}) {
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Row(
+        children: [
+          Icon(
+            error ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+            color: Colors.white,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              msg,
+              style: const TextStyle(
+                fontFamily: 'Vazirmatn',
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
+      backgroundColor: error ? rose : accentGreen2,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      margin: const EdgeInsets.all(14),
+      duration: const Duration(seconds: 2),
+    ),
+  );
+}
+
+/* ==================== TEXT HELPERS ==================== */
 
 String clean(String v) => v
     .replaceAll(RegExp(r'<[^>]*>'), '')
@@ -84,20 +172,57 @@ String clean(String v) => v
     .replaceAll('&#8217;', '’')
     .replaceAll('&#8220;', '“')
     .replaceAll('&#8221;', '”')
+    .replaceAll('&#8230;', '…')
     .trim();
 
 String pTitle(dynamic p) {
-  try { return clean(p['title']['rendered'] ?? ''); } catch (_) { return ''; }
+  try {
+    return clean(p['title']['rendered'] ?? '');
+  } catch (_) {
+    return '';
+  }
 }
 
 String pLink(dynamic p) {
-  try { return p['link'] ?? ''; } catch (_) { return ''; }
+  try {
+    return p['link'] ?? '';
+  } catch (_) {
+    return '';
+  }
+}
+
+String pId(dynamic p) {
+  try {
+    return (p['id'] ?? '').toString();
+  } catch (_) {
+    return '';
+  }
 }
 
 String pImg(dynamic p) {
   try {
     final m = p['_embedded']?['wp:featuredmedia'];
-    if (m is List && m.isNotEmpty) return m[0]['source_url'] ?? '';
+    if (m is List && m.isNotEmpty) {
+      final item = m[0];
+      return item['source_url'] ??
+          item['media_details']?['sizes']?['large']?['source_url'] ??
+          '';
+    }
+  } catch (_) {}
+  return '';
+}
+
+String pImgFull(dynamic p) {
+  try {
+    final m = p['_embedded']?['wp:featuredmedia'];
+    if (m is List && m.isNotEmpty) {
+      final sizes = m[0]['media_details']?['sizes'];
+      if (sizes != null) {
+        final full = sizes['full']?['source_url'];
+        if (full != null && full.toString().isNotEmpty) return full;
+      }
+      return m[0]['source_url'] ?? '';
+    }
   } catch (_) {}
   return '';
 }
@@ -109,10 +234,11 @@ String pExcerpt(dynamic p, {int maxChars = 200}) {
     final text = clean(raw);
     if (text.length > maxChars) return '${text.substring(0, maxChars)}...';
     return text;
-  } catch (_) { return ''; }
+  } catch (_) {
+    return '';
+  }
 }
 
-// 👇 فقط نام زیردسته (آخرین دسته در لیست) را برمی‌گرداند
 String pCategory(dynamic p) {
   try {
     final terms = p['_embedded']?['wp:term'];
@@ -138,7 +264,7 @@ String pAuthor(dynamic p) {
 String pAuthorAvatar(dynamic p) {
   try {
     final a = p['_embedded']?['author'];
-    if (a is List && a.isNotEmpty) return a[0]['avatar_urls']?['48'] ?? '';
+    if (a is List && a.isNotEmpty) return a[0]['avatar_urls']?['96'] ?? '';
   } catch (_) {}
   return '';
 }
@@ -148,12 +274,29 @@ String pDate(dynamic p) {
     final d = DateTime.parse(p['date']).toLocal();
     final j = _toJalali(d.year, d.month, d.day);
     return '${j[2]} ${_monthName(j[1])} ${j[0]}';
-  } catch (_) { return ''; }
+  } catch (_) {
+    return '';
+  }
+}
+
+String pTimeAgo(dynamic p) {
+  try {
+    final d = DateTime.parse(p['date']).toLocal();
+    final diff = DateTime.now().difference(d);
+    if (diff.inMinutes < 60) return '${diff.inMinutes} دقیقه پیش';
+    if (diff.inHours < 24) return '${diff.inHours} ساعت پیش';
+    if (diff.inDays < 30) return '${diff.inDays} روز پیش';
+    return pDate(p);
+  } catch (_) {
+    return '';
+  }
 }
 
 String _monthName(int m) {
-  const months = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور',
-                  'مهر','آبان','آذر','دی','بهمن','اسفند'];
+  const months = [
+    'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
+    'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
+  ];
   if (m >= 1 && m <= 12) return months[m - 1];
   return '';
 }
@@ -162,31 +305,47 @@ List<int> _toJalali(int gy, int gm, int gd) {
   const gdm = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   const jdm = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29];
   var gy2 = (gm > 2) ? (gy + 1) : gy;
-  var days = 355666 + (365 * gy) + ((gy2 + 3) ~/ 4) - ((gy2 + 99) ~/ 100) + ((gy2 + 399) ~/ 400) + gd;
+  var days = 355666 +
+      (365 * gy) +
+      ((gy2 + 3) ~/ 4) -
+      ((gy2 + 99) ~/ 100) +
+      ((gy2 + 399) ~/ 400) +
+      gd;
   for (var i = 0; i < gm - 1; i++) days += gdm[i];
   var jy = -1595 + (33 * (days ~/ 12053));
   days %= 12053;
   jy += 4 * (days ~/ 1461);
   days %= 1461;
-  if (days > 365) { jy += (days - 1) ~/ 365; days = (days - 1) % 365; }
+  if (days > 365) {
+    jy += (days - 1) ~/ 365;
+    days = (days - 1) % 365;
+  }
   var jm = 0;
   var jd = days + 1;
   for (var i = 0; i < 12; i++) {
-    if (jd <= jdm[i]) { jm = i + 1; break; }
+    if (jd <= jdm[i]) {
+      jm = i + 1;
+      break;
+    }
     jd -= jdm[i];
   }
   return [jy, jm, jd];
 }
 
-// 👇 کش برای سرعت بالاتر
+/* ==================== API & CACHE ==================== */
+
 final Map<String, List> _postsCache = {};
 final Map<String, int> _postsCacheTime = {};
-const int _cacheDurationSeconds = 300;
+const int _cacheDurationSeconds = 600;
 
-Future<List> getPostsPaged({int perPage = perPageSize, int page = 1, int? catId}) async {
+Future<List> getPostsPaged({
+  int perPage = perPageSize,
+  int page = 1,
+  int? catId,
+}) async {
   var u = '$api/posts?per_page=$perPage&page=$page'
-          '&_embed=wp:featuredmedia,wp:term'
-          '&_fields=id,link,title,date,excerpt,_embedded,_links';
+      '&_embed=wp:featuredmedia,wp:term,author'
+      '&_fields=id,link,title,date,excerpt,_embedded,_links';
   if (catId != null) u += '&categories=$catId';
 
   final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -200,10 +359,8 @@ Future<List> getPostsPaged({int perPage = perPageSize, int page = 1, int? catId}
   if (r.statusCode == 400) return [];
   if (r.statusCode != 200) throw Exception('خطای ${r.statusCode}');
   final list = json.decode(r.body) as List;
-
   _postsCache[u] = list;
   _postsCacheTime[u] = now;
-
   return list;
 }
 
@@ -228,11 +385,17 @@ Future<int?> getCatIdBySlug(String slug) async {
 
 Future<List> searchExact(String query) async {
   final r = await http.get(
-    Uri.parse('$api/posts?search=${Uri.encodeComponent(query)}&per_page=50&_embed=wp:featuredmedia,wp:term&_fields=id,link,title,date,excerpt,_embedded,_links'),
+    Uri.parse(
+        '$api/posts?search=${Uri.encodeComponent(query)}&per_page=50&_embed=wp:featuredmedia,wp:term,author&_fields=id,link,title,date,excerpt,_embedded,_links'),
   );
   if (r.statusCode != 200) throw Exception('خطای ${r.statusCode}');
   final list = json.decode(r.body) as List;
-  final words = query.trim().toLowerCase().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+  final words = query
+      .trim()
+      .toLowerCase()
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .toList();
   return list.where((p) {
     final title = clean((p['title']?['rendered'] ?? '')).toLowerCase();
     return words.every((w) => title.contains(w));
@@ -252,20 +415,10 @@ String formatPrice(String price) {
   return '$buffer تومان';
 }
 
-String _newNewsUrl({int perPage = 10, int page = 1}) {
-  return '$api/new_news?per_page=$perPage&page=$page&orderby=date&order=desc&_embed=wp:featuredmedia,wp:term&_fields=id,link,title,date,excerpt,_embedded,_links';
-}
+/* ==================== NEWS API ==================== */
 
-Future<Map<String, dynamic>?> getNewNews() async {
-  try {
-    final r = await http.get(Uri.parse(_newNewsUrl(perPage: 1)));
-    if (r.statusCode != 200) return null;
-    final list = json.decode(r.body) as List;
-    if (list.isEmpty) return null;
-    return Map<String, dynamic>.from(list.first);
-  } catch (_) {
-    return null;
-  }
+String _newNewsUrl({int perPage = 10, int page = 1}) {
+  return '$api/new_news?per_page=$perPage&page=$page&orderby=date&order=desc&_embed=wp:featuredmedia,wp:term,author&_fields=id,link,title,date,excerpt,_embedded,_links';
 }
 
 Future<List> getNewNewsList() async {
@@ -277,6 +430,8 @@ Future<List> getNewNewsList() async {
     return [];
   }
 }
+
+/* ==================== ADMIN API ==================== */
 
 String _basicAuth(String user, String pass) {
   final clean = pass.replaceAll(' ', '');
@@ -291,7 +446,6 @@ Future<Map<String, dynamic>> postNewNews({
 }) async {
   final auth = _basicAuth(username, appPassword);
   final uri = Uri.parse('$api/new_news');
-
   final r = await http.post(
     uri,
     headers: {
@@ -305,7 +459,6 @@ Future<Map<String, dynamic>> postNewNews({
       'status': 'publish',
     }),
   );
-
   if (r.statusCode == 201 || r.statusCode == 200) {
     final d = jsonDecode(r.body);
     if (d is Map) return Map<String, dynamic>.from(d);
@@ -356,15 +509,23 @@ Future<void> verifyAdmin({
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+    ),
+  );
   try {
     final saved = await _storage.read(key: 'dark_mode');
     darkModeNotifier.value = saved == null ? true : saved == 'true';
+    await loadBookmarks();
   } catch (_) {}
   runApp(const App());
 }
 
 class App extends StatelessWidget {
   const App({super.key});
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
@@ -375,8 +536,10 @@ class App extends StatelessWidget {
           title: 'تربیت بدنی و علوم ورزشی',
           theme: ThemeData(
             fontFamily: 'Vazirmatn',
+            useMaterial3: true,
             brightness: isDark ? Brightness.dark : Brightness.light,
             scaffoldBackgroundColor: bgC,
+            splashFactory: InkSparkle.splashFactory,
             colorScheme: ColorScheme.fromSeed(
               seedColor: accentGreen,
               brightness: isDark ? Brightness.dark : Brightness.light,
@@ -398,6 +561,8 @@ class App extends StatelessWidget {
   }
 }
 
+/* ==================== ROOT ==================== */
+
 class Root extends StatefulWidget {
   const Root({super.key});
   @override
@@ -406,61 +571,158 @@ class Root extends StatefulWidget {
 
 class _RootState extends State<Root> {
   int _i = 0;
+
+  final _pages = const [
+    Home(),
+    ArticlesPage(),
+    NewsPage(),
+    ShopPage(),
+    AccountPage(),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
       valueListenable: darkModeNotifier,
       builder: (context, _, __) => Scaffold(
         backgroundColor: bgC,
-        body: IndexedStack(
-          index: _i,
-          children: const [
-            Home(),
-            ArticlesPage(),
-            NewsPage(),
-            ShopPage(),
-            AccountPage(),
-          ],
-        ),
-        bottomNavigationBar: BottomNavigationBar(
+        extendBody: true,
+        body: IndexedStack(index: _i, children: _pages),
+        bottomNavigationBar: _ModernNavBar(
           currentIndex: _i,
           onTap: (i) => setState(() => _i = i),
-          backgroundColor: navBg,
-          selectedItemColor: gold,
-          unselectedItemColor: mutC,
-          type: BottomNavigationBarType.fixed,
-          showUnselectedLabels: true,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'خانه',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.article_outlined),
-              activeIcon: Icon(Icons.article),
-              label: 'مقالات',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.newspaper_outlined),
-              activeIcon: Icon(Icons.newspaper),
-              label: 'اخبار',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.shopping_cart_outlined),
-              activeIcon: Icon(Icons.shopping_cart),
-              label: 'فروشگاه',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'حساب من',
-            ),
-          ],
         ),
       ),
     );
   }
+}
+
+class _ModernNavBar extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+  const _ModernNavBar({required this.currentIndex, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = darkModeNotifier.value;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+      decoration: BoxDecoration(
+        color: navBg,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: lineC),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withOpacity(0.4)
+                : Colors.black.withOpacity(0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: SizedBox(
+          height: 68,
+          child: Row(
+            children: List.generate(_items.length, (i) {
+              final selected = i == currentIndex;
+              final item = _items[i];
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    onTap(i);
+                  },
+                  behavior: HitTestBehavior.opaque,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? accentGreen.withOpacity(0.15)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        AnimatedScale(
+                          scale: selected ? 1.15 : 1.0,
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOutBack,
+                          child: Icon(
+                            selected ? item.activeIcon : item.icon,
+                            color: selected ? accentGreen : mutC,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 220),
+                          style: TextStyle(
+                            fontFamily: 'Vazirmatn',
+                            color: selected ? accentGreen : mutC,
+                            fontSize: selected ? 11 : 10,
+                            fontWeight: selected
+                                ? FontWeight.w900
+                                : FontWeight.w600,
+                          ),
+                          child: Text(item.label),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static const _items = [
+    _NavItem(
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
+      label: 'خانه',
+    ),
+    _NavItem(
+      icon: Icons.article_outlined,
+      activeIcon: Icons.article_rounded,
+      label: 'مقالات',
+    ),
+    _NavItem(
+      icon: Icons.newspaper_outlined,
+      activeIcon: Icons.newspaper_rounded,
+      label: 'اخبار',
+    ),
+    _NavItem(
+      icon: Icons.shopping_bag_outlined,
+      activeIcon: Icons.shopping_bag_rounded,
+      label: 'فروشگاه',
+    ),
+    _NavItem(
+      icon: Icons.person_outline_rounded,
+      activeIcon: Icons.person_rounded,
+      label: 'حساب من',
+    ),
+  ];
+}
+
+class _NavItem {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+  });
 }
 
 /* ==================== HOME ==================== */
@@ -473,17 +735,26 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   Future<List>? _f;
+  Future<List>? _newsFuture;
   Key _bannerKey = UniqueKey();
 
   @override
   void initState() {
     super.initState();
-    _f = getPostsPaged(perPage: 3, page: 1);
+    _load();
+  }
+
+  void _load() {
+    _f = getPostsPaged(perPage: 7, page: 1);
+    _newsFuture = getNewNewsList();
   }
 
   Future<void> _refresh() async {
+    // پاک کردن کش برای درخواست جدید
+    _postsCache.clear();
+    _postsCacheTime.clear();
     setState(() {
-      _f = getPostsPaged(perPage: 3, page: 1);
+      _load();
       _bannerKey = UniqueKey();
     });
     try {
@@ -495,34 +766,361 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
       valueListenable: darkModeNotifier,
-      builder: (context, _, __) => RefreshIndicator(
-        color: accentGreen,
-        backgroundColor: pnl,
-        onRefresh: _refresh,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(child: buildHeader(context)),
-            SliverToBoxAdapter(child: buildHero()),
-            SliverToBoxAdapter(child: NewNewsBanner(key: _bannerKey)),
-            const SliverToBoxAdapter(child: ServicesSectionWidget()),
-            SliverToBoxAdapter(child: LatestPostsSection(postsFuture: _f)),
-            const SliverToBoxAdapter(
-              child: SectionTitleWidget(
-                title: 'دسته‌بندی مقالات',
-                icon: Icons.grid_view_rounded,
-              ),
+      builder: (context, _, __) => Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [bgGrad1, bgGrad2],
+          ),
+        ),
+        child: RefreshIndicator(
+          color: accentGreen,
+          backgroundColor: pnl,
+          onRefresh: _refresh,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
             ),
-            SliverToBoxAdapter(child: buildCatGrid()),
-            SliverToBoxAdapter(child: buildSocial()),
-            const SliverToBoxAdapter(child: SizedBox(height: 25)),
-          ],
+            slivers: [
+              SliverToBoxAdapter(child: ModernHeader(context)),
+              SliverToBoxAdapter(child: HeroCarousel(postsFuture: _f)),
+              SliverToBoxAdapter(
+                child: ModernNewsBanner(key: _bannerKey, future: _newsFuture),
+              ),
+              const SliverToBoxAdapter(child: ModernServicesSection()),
+              SliverToBoxAdapter(child: ModernLatestSection(postsFuture: _f)),
+              const SliverToBoxAdapter(
+                child: ModernSectionTitle(
+                  title: 'دسته‌بندی مقالات',
+                  icon: Icons.grid_view_rounded,
+                ),
+              ),
+              SliverToBoxAdapter(child: ModernCatGrid()),
+              SliverToBoxAdapter(child: ModernSocial()),
+              const SliverToBoxAdapter(child: SizedBox(height: 120)),
+            ],
+          ),
         ),
       ),
     );
   }
 }
-/* ==================== ARTICLES ==================== */
+
+/* ==================== HERO CAROUSEL ==================== */
+
+class HeroCarousel extends StatefulWidget {
+  final Future<List>? postsFuture;
+  const HeroCarousel({super.key, required this.postsFuture});
+
+  @override
+  State<HeroCarousel> createState() => _HeroCarouselState();
+}
+
+class _HeroCarouselState extends State<HeroCarousel> {
+  final _pageCtrl = PageController(viewportFraction: 0.9);
+  Timer? _timer;
+  int _current = 0;
+  int _count = 0;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pageCtrl.dispose();
+    super.dispose();
+  }
+
+  void _startAuto(int count) {
+    _timer?.cancel();
+    if (count <= 1) return;
+    _timer = Timer.periodic(const Duration(seconds: 5), (t) {
+      if (!mounted || !_pageCtrl.hasClients) return;
+      final next = (_current + 1) % count;
+      _pageCtrl.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 700),
+        curve: Curves.easeInOutCubic,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List>(
+      future: widget.postsFuture,
+      builder: (c, s) {
+        if (s.connectionState == ConnectionState.waiting) {
+          return Container(
+            height: 240,
+            margin: const EdgeInsets.fromLTRB(14, 16, 14, 12),
+            decoration: BoxDecoration(
+              color: pnl,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: lineC),
+            ),
+            child: const ShimmerBox(height: 240, radius: 24),
+          );
+        }
+        final posts = (s.data ?? []).take(5).toList();
+        if (posts.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(14, 16, 14, 12),
+            child: ModernHeroBanner(),
+          );
+        }
+        _count = posts.length;
+        if (_timer == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _startAuto(_count);
+          });
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(top: 16, bottom: 12),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 240,
+                child: PageView.builder(
+                  controller: _pageCtrl,
+                  onPageChanged: (i) => setState(() => _current = i),
+                  itemCount: posts.length,
+                  itemBuilder: (c, i) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: _CarouselCard(post: posts[i]),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildDots(posts.length),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDots(int count) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(count, (i) {
+        final active = i == _current;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          width: active ? 24 : 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: active ? accentGreen : mutC.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(999),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _CarouselCard extends StatelessWidget {
+  final dynamic post;
+  const _CarouselCard({required this.post});
+
+  @override
+  Widget build(BuildContext context) {
+    final title = pTitle(post);
+    final img = pImgFull(post);
+    final cat = pCategory(post);
+    final link = pLink(post);
+
+    return GestureDetector(
+      onTap: () => openUrl(context, link),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (img.isNotEmpty)
+                CachedNetworkImage(
+                  imageUrl: img,
+                  fit: BoxFit.cover,
+                  memCacheWidth: 1080,
+                  fadeInDuration: const Duration(milliseconds: 300),
+                  placeholder: (_, __) => Container(color: pnl2),
+                  errorWidget: (_, __, ___) => Container(
+                    color: pnl2,
+                    child: Icon(
+                      Icons.article_rounded,
+                      color: accentGreen,
+                      size: 60,
+                    ),
+                  ),
+                )
+              else
+                Container(color: pnl2),
+              // Gradient overlay
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.85),
+                    ],
+                    stops: const [0.35, 1.0],
+                  ),
+                ),
+              ),
+              // Content
+              Positioned(
+                left: 18,
+                right: 18,
+                bottom: 18,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (cat.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: accentGreen,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          cat,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 10),
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        height: 1.5,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.schedule_rounded,
+                          color: Colors.white70,
+                          size: 13,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          pTimeAgo(post),
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 11,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.18),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Text(
+                                'مطالعه',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  fontFamily: 'Vazirmatn',
+                                ),
+                              ),
+                              SizedBox(width: 3),
+                              Icon(
+                                Icons.arrow_back_rounded,
+                                color: Colors.white,
+                                size: 12,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ModernHeroBanner extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: pnl,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: lineC),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Image.network(
+          heroImg,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          filterQuality: FilterQuality.high,
+          cacheWidth: 1080,
+          loadingBuilder: (c, ch, pr) {
+            if (pr == null) return ch;
+            return Container(
+              height: 180,
+              color: pnl2,
+              child: Center(
+                child: CircularProgressIndicator(color: accentGreen),
+              ),
+            );
+          },
+          errorBuilder: (_, __, ___) => Container(
+            height: 180,
+            color: pnl2,
+            child: Icon(Icons.sports_soccer_rounded,
+                color: accentGreen, size: 60),
+          ),
+        ),
+      ),
+    );
+  }
+}
+/* ==================== ARTICLES PAGE ==================== */
 
 class ArticlesPage extends StatefulWidget {
   const ArticlesPage({super.key});
@@ -544,7 +1142,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
     _load();
     _scroll.addListener(() {
       if (_scroll.position.pixels >=
-              _scroll.position.maxScrollExtent - 300 &&
+              _scroll.position.maxScrollExtent - 400 &&
           !_loading &&
           _hasMore) {
         _load();
@@ -579,6 +1177,8 @@ class _ArticlesPageState extends State<ArticlesPage> {
   }
 
   Future<void> _refresh() async {
+    _postsCache.clear();
+    _postsCacheTime.clear();
     setState(() {
       _posts.clear();
       _page = 1;
@@ -596,14 +1196,13 @@ class _ArticlesPageState extends State<ArticlesPage> {
         backgroundColor: bgC,
         body: Column(
           children: [
-            buildHeader(context, 'مقالات'),
+            ModernHeader(context, 'مقالات'),
             Expanded(
               child: _posts.isEmpty && _loading
                   ? const Padding(
                       padding: EdgeInsets.all(14),
                       child: Column(
                         children: [
-                          PostSkeleton(),
                           PostSkeleton(),
                           PostSkeleton(),
                           PostSkeleton(),
@@ -625,9 +1224,9 @@ class _ArticlesPageState extends State<ArticlesPage> {
                               child: ListView.builder(
                                 controller: _scroll,
                                 cacheExtent: 800,
-                                padding: const EdgeInsets.all(14),
-                                itemCount:
-                                    _posts.length + (_hasMore ? 1 : 0),
+                                physics: const BouncingScrollPhysics(),
+                                padding: const EdgeInsets.fromLTRB(14, 14, 14, 120),
+                                itemCount: _posts.length + (_hasMore ? 1 : 0),
                                 itemBuilder: (c, i) {
                                   if (i >= _posts.length) {
                                     return Padding(
@@ -639,7 +1238,10 @@ class _ArticlesPageState extends State<ArticlesPage> {
                                       ),
                                     );
                                   }
-                                  return buildPostCard(context, _posts[i]);
+                                  return ModernPostCard(
+                                    post: _posts[i],
+                                    showBookmark: true,
+                                  );
                                 },
                               ),
                             ),
@@ -692,11 +1294,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
 
   Future<void> _loadFirst() async {
     try {
-      final list = await getPostsPaged(
-        perPage: 5,
-        page: 1,
-        catId: _catId,
-      );
+      final list = await getPostsPaged(perPage: 5, page: 1, catId: _catId);
       if (!mounted) return;
       setState(() {
         _posts.clear();
@@ -719,10 +1317,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
     try {
       final nextPage = _page + 1;
       final list = await getPostsPaged(
-        perPage: 5,
-        page: nextPage,
-        catId: _catId,
-      );
+          perPage: 5, page: nextPage, catId: _catId);
       if (!mounted) return;
       setState(() {
         if (list.isEmpty) {
@@ -756,113 +1351,142 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
       valueListenable: darkModeNotifier,
       builder: (context, _, __) => Scaffold(
         backgroundColor: bgC,
-        appBar: AppBar(
-          title: Text(
-            widget.c.n,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          backgroundColor: bgC,
-          foregroundColor: txtC,
-          elevation: 0,
-        ),
-        body: SafeArea(
-          bottom: true,
-          child: RefreshIndicator(
-            color: accentGreen,
-            backgroundColor: pnl,
-            onRefresh: _refresh,
-            child: SingleChildScrollView(
-              controller: _scroll,
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(0, 0, 0, 60),
-              child: Column(
-                children: [
-                  if (_posts.isEmpty && _loading)
-                    const Padding(
-                      padding: EdgeInsets.all(14),
-                      child: Column(
-                        children: [
-                          FeaturedSkeleton(),
-                          SizedBox(height: 12),
-                          PostSkeleton(),
-                          SizedBox(height: 12),
-                          PostSkeleton(),
-                        ],
-                      ),
-                    )
-                  else if (_posts.isEmpty && _error != null)
-                    ErrorBox(
-                      message: 'خطا در دریافت مطالب.\n$_error',
-                      onRetry: _refresh,
-                    )
-                  else if (_posts.isEmpty)
-                    const EmptyWidget(text: 'مطلبی در این دسته پیدا نشد.')
-                  else
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      child: Column(
-                        children: [
-                          FeaturedPostCard(post: _posts.first),
-                          const SizedBox(height: 14),
-                          ..._posts.skip(1).map((post) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: SidePostCard(post: post),
-                            );
-                          }).toList(),
-                          if (_hasMore)
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                  top: 6, bottom: 6),
-                              child: _buildLoadMoreButton(),
-                            ),
-                          if (!_hasMore && _posts.length > 5)
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                  top: 12, bottom: 30),
-                              child: Text(
-                                'همه مطالب نمایش داده شد.',
-                                style: TextStyle(
-                                  color: mutC,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                        ],
+        body: CustomScrollView(
+          controller: _scroll,
+          physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics()),
+          slivers: [
+            SliverAppBar(
+              pinned: true,
+              floating: false,
+              backgroundColor: bgC,
+              foregroundColor: txtC,
+              elevation: 0,
+              expandedHeight: 130,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_forward_rounded, color: txtC),
+                onPressed: () => Navigator.pop(context),
+              ),
+              flexibleSpace: FlexibleSpaceBar(
+                title: Text(
+                  widget.c.n,
+                  style: TextStyle(
+                    color: txtC,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+                titlePadding: const EdgeInsets.fromLTRB(56, 0, 16, 16),
+                background: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        widget.c.c.withOpacity(0.25),
+                        bgC,
+                      ],
+                    ),
+                  ),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 60, top: 20),
+                      child: Icon(
+                        widget.c.i,
+                        color: widget.c.c.withOpacity(0.35),
+                        size: 100,
                       ),
                     ),
-                ],
+                  ),
+                ),
               ),
             ),
-          ),
+            if (_posts.isEmpty && _loading)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(14),
+                  child: Column(
+                    children: [
+                      FeaturedSkeleton(),
+                      SizedBox(height: 12),
+                      PostSkeleton(),
+                      SizedBox(height: 12),
+                      PostSkeleton(),
+                    ],
+                  ),
+                ),
+              )
+            else if (_posts.isEmpty && _error != null)
+              SliverToBoxAdapter(
+                child: ErrorBox(
+                  message: 'خطا در دریافت مطالب.\n$_error',
+                  onRetry: _refresh,
+                ),
+              )
+            else if (_posts.isEmpty)
+              const SliverToBoxAdapter(
+                child: EmptyWidget(text: 'مطلبی در این دسته پیدا نشد.'),
+              )
+            else ...[
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+                  child: FeaturedPostCard(post: _posts.first, showBookmark: true),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (c, i) {
+                      final post = _posts[i + 1];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: SidePostCard(post: post, showBookmark: true),
+                      );
+                    },
+                    childCount: _posts.length - 1,
+                  ),
+                ),
+              ),
+              if (_hasMore)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 40),
+                    child: Center(child: _buildLoadMore()),
+                  ),
+                ),
+              if (!_hasMore && _posts.length > 5)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 16, 14, 60),
+                    child: Center(
+                      child: Text(
+                        'همه مطالب نمایش داده شد.',
+                        style: TextStyle(color: mutC, fontSize: 12),
+                      ),
+                    ),
+                  ),
+                ),
+              const SliverToBoxAdapter(child: SizedBox(height: 120)),
+            ],
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildLoadMoreButton() {
-    final isDark = darkModeNotifier.value;
-
+  Widget _buildLoadMore() {
     return GestureDetector(
       onTap: _loadingMore ? null : _loadMore,
       child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 26, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 12),
         decoration: BoxDecoration(
-          color: isDark ? pnl2 : Colors.white,
+          color: pnl,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: isDark ? lineC : const Color(0xffe9edf3),
-          ),
-          boxShadow: isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 6,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
+          border: Border.all(color: lineC),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -873,23 +1497,20 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
                 height: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Color(0xff4caf50),
+                  color: accentGreen,
                 ),
               )
             else
-              Icon(
-                Icons.arrow_back_ios_new,
-                size: 12,
-                color: isDark ? txtC : const Color(0xff0f1a2b),
-              ),
+              Icon(Icons.arrow_back_ios_new_rounded,
+                  size: 12, color: txtC),
             const SizedBox(width: 8),
             Text(
               _loadingMore ? 'در حال بارگذاری...' : 'مشاهده بیشتر',
               style: TextStyle(
-                color: isDark ? txtC : const Color(0xff0f1a2b),
+                color: txtC,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 0.3,
+                fontFamily: 'Vazirmatn',
               ),
             ),
           ],
@@ -899,7 +1520,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
   }
 }
 
-/* ==================== SUB CATEGORY POSTS PAGE ==================== */
+/* ==================== SUB CATEGORY POSTS ==================== */
 
 class SubCategoryPostsPage extends StatefulWidget {
   final int categoryId;
@@ -934,10 +1555,7 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
     setState(() => _loading = true);
     try {
       final list = await getPostsPaged(
-        perPage: 5,
-        page: 1,
-        catId: widget.categoryId,
-      );
+          perPage: 5, page: 1, catId: widget.categoryId);
       if (!mounted) return;
       setState(() {
         _posts.clear();
@@ -960,10 +1578,7 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
     try {
       final nextPage = _page + 1;
       final list = await getPostsPaged(
-        perPage: 5,
-        page: nextPage,
-        catId: widget.categoryId,
-      );
+          perPage: 5, page: nextPage, catId: widget.categoryId);
       if (!mounted) return;
       setState(() {
         if (list.isEmpty) {
@@ -981,9 +1596,7 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
     }
   }
 
-  Future<void> _refresh() async {
-    await _loadFirst();
-  }
+  Future<void> _refresh() async => _loadFirst();
 
   @override
   Widget build(BuildContext context) {
@@ -994,7 +1607,8 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
         appBar: AppBar(
           title: Text(
             widget.categoryName,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: const TextStyle(
+                fontWeight: FontWeight.w900, fontFamily: 'Vazirmatn'),
           ),
           backgroundColor: bgC,
           foregroundColor: txtC,
@@ -1022,46 +1636,42 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
                 : _posts.isEmpty && _error != null
                     ? ErrorBox(
                         message: 'خطا در دریافت مطالب.\n$_error',
-                        onRetry: _refresh,
-                      )
+                        onRetry: _refresh)
                     : _posts.isEmpty
                         ? const EmptyWidget(text: 'مطلبی پیدا نشد.')
                         : SingleChildScrollView(
                             controller: _scroll,
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(0, 0, 0, 60),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 14),
-                              child: Column(
-                                children: [
-                                  FeaturedPostCard(post: _posts.first),
-                                  const SizedBox(height: 14),
-                                  ..._posts.skip(1).map((post) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 10),
-                                      child: SidePostCard(post: post),
-                                    );
-                                  }).toList(),
-                                  if (_hasMore)
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                          top: 6, bottom: 6),
-                                      child: _buildLoadMoreButton(),
+                            physics: const BouncingScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
+                            child: Column(
+                              children: [
+                                FeaturedPostCard(
+                                    post: _posts.first, showBookmark: true),
+                                const SizedBox(height: 14),
+                                ..._posts.skip(1).map((post) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 10),
+                                    child: SidePostCard(
+                                        post: post, showBookmark: true),
+                                  );
+                                }).toList(),
+                                if (_hasMore)
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        top: 10, bottom: 10),
+                                    child: _buildLoadMore(),
+                                  ),
+                                if (!_hasMore && _posts.length > 5)
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        top: 16, bottom: 40),
+                                    child: Text(
+                                      'همه مطالب نمایش داده شد.',
+                                      style: TextStyle(
+                                          color: mutC, fontSize: 12),
                                     ),
-                                  if (!_hasMore && _posts.length > 5)
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                          top: 12, bottom: 30),
-                                      child: Text(
-                                        'همه مطالب نمایش داده شد.',
-                                        style: TextStyle(
-                                          color: mutC,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
+                                  ),
+                              ],
                             ),
                           ),
           ),
@@ -1070,29 +1680,15 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
     );
   }
 
-  Widget _buildLoadMoreButton() {
-    final isDark = darkModeNotifier.value;
-
+  Widget _buildLoadMore() {
     return GestureDetector(
       onTap: _loadingMore ? null : _loadMore,
       child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 26, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 12),
         decoration: BoxDecoration(
-          color: isDark ? pnl2 : Colors.white,
+          color: pnl,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: isDark ? lineC : const Color(0xffe9edf3),
-          ),
-          boxShadow: isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 6,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
+          border: Border.all(color: lineC),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1102,28 +1698,107 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Color(0xff4caf50),
-                ),
+                    strokeWidth: 2, color: accentGreen),
               )
             else
-              Icon(
-                Icons.arrow_back_ios_new,
-                size: 12,
-                color: isDark ? txtC : const Color(0xff0f1a2b),
-              ),
+              Icon(Icons.arrow_back_ios_new_rounded,
+                  size: 12, color: txtC),
             const SizedBox(width: 8),
             Text(
               _loadingMore ? 'در حال بارگذاری...' : 'مشاهده بیشتر',
               style: TextStyle(
-                color: isDark ? txtC : const Color(0xff0f1a2b),
+                color: txtC,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 0.3,
+                fontFamily: 'Vazirmatn',
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/* ==================== BOOKMARKS PAGE ==================== */
+
+class BookmarksPage extends StatefulWidget {
+  const BookmarksPage({super.key});
+  @override
+  State<BookmarksPage> createState() => _BookmarksPageState();
+}
+
+class _BookmarksPageState extends State<BookmarksPage> {
+  final _allPosts = <dynamic>[];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAll();
+  }
+
+  Future<void> _loadAll() async {
+    setState(() => _loading = true);
+    try {
+      final list = await getPostsPaged(perPage: 50, page: 1);
+      _allPosts.clear();
+      _allPosts.addAll(list);
+    } catch (_) {}
+    if (mounted) setState(() => _loading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => ValueListenableBuilder<Set<String>>(
+        valueListenable: bookmarkNotifier,
+        builder: (context, bookmarks, __) {
+          final saved = _allPosts
+              .where((p) => bookmarks.contains(pId(p)))
+              .toList();
+
+          return Scaffold(
+            backgroundColor: bgC,
+            appBar: AppBar(
+              title: const Text(
+                'نشان‌شده‌ها',
+                style: TextStyle(
+                    fontWeight: FontWeight.w900, fontFamily: 'Vazirmatn'),
+              ),
+              backgroundColor: bgC,
+              foregroundColor: txtC,
+              elevation: 0,
+            ),
+            body: _loading
+                ? const Padding(
+                    padding: EdgeInsets.all(14),
+                    child: Column(
+                      children: [
+                        PostSkeleton(),
+                        PostSkeleton(),
+                        PostSkeleton(),
+                      ],
+                    ),
+                  )
+                : saved.isEmpty
+                    ? const EmptyWidget(
+                        text: 'هنوز مقاله‌ای را نشان نکرده‌اید.\nبا زدن آیکون نشان روی کارت‌ها، اینجا ذخیره می‌شوند.')
+                    : RefreshIndicator(
+                        color: accentGreen,
+                        backgroundColor: pnl,
+                        onRefresh: _loadAll,
+                        child: ListView.builder(
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
+                          itemCount: saved.length,
+                          itemBuilder: (c, i) =>
+                              ModernPostCard(post: saved[i], showBookmark: true),
+                        ),
+                      ),
+          );
+        },
       ),
     );
   }
@@ -1151,7 +1826,7 @@ class _NewsPageState extends State<NewsPage> {
     _init();
     _scroll.addListener(() {
       if (_scroll.position.pixels >=
-              _scroll.position.maxScrollExtent - 300 &&
+              _scroll.position.maxScrollExtent - 400 &&
           !_loading &&
           _hasMore) {
         _load();
@@ -1182,10 +1857,7 @@ class _NewsPageState extends State<NewsPage> {
     });
     try {
       final list = await getPostsPaged(
-        perPage: perPageSize,
-        page: _page,
-        catId: _catId,
-      );
+          perPage: perPageSize, page: _page, catId: _catId);
       setState(() {
         if (list.isEmpty) {
           _hasMore = false;
@@ -1205,6 +1877,8 @@ class _NewsPageState extends State<NewsPage> {
   }
 
   Future<void> _refresh() async {
+    _postsCache.clear();
+    _postsCacheTime.clear();
     setState(() {
       _posts.clear();
       _page = 1;
@@ -1222,15 +1896,7 @@ class _NewsPageState extends State<NewsPage> {
         backgroundColor: bgC,
         body: Column(
           children: [
-            AppBar(
-              title: const Text(
-                'اخبار و رویدادها',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              backgroundColor: bgC,
-              foregroundColor: txtC,
-              elevation: 0,
-            ),
+            ModernHeader(context, 'اخبار و رویدادها'),
             Expanded(
               child: _posts.isEmpty && _loading
                   ? const Padding(
@@ -1247,8 +1913,7 @@ class _NewsPageState extends State<NewsPage> {
                   : _posts.isEmpty && _error != null
                       ? ErrorBox(
                           message: 'خطا در دریافت اخبار.\n$_error',
-                          onRetry: _refresh,
-                        )
+                          onRetry: _refresh)
                       : _posts.isEmpty
                           ? const EmptyWidget(text: 'خبری پیدا نشد.')
                           : RefreshIndicator(
@@ -1258,7 +1923,9 @@ class _NewsPageState extends State<NewsPage> {
                               child: ListView.builder(
                                 controller: _scroll,
                                 cacheExtent: 800,
-                                padding: const EdgeInsets.all(14),
+                                physics: const BouncingScrollPhysics(),
+                                padding:
+                                    const EdgeInsets.fromLTRB(14, 14, 14, 120),
                                 itemCount:
                                     _posts.length + (_hasMore ? 1 : 0),
                                 itemBuilder: (c, i) {
@@ -1267,12 +1934,12 @@ class _NewsPageState extends State<NewsPage> {
                                       padding: const EdgeInsets.all(20),
                                       child: Center(
                                         child: CircularProgressIndicator(
-                                          color: accentGreen,
-                                        ),
+                                            color: accentGreen),
                                       ),
                                     );
                                   }
-                                  return buildPostCard(context, _posts[i]);
+                                  return ModernPostCard(
+                                      post: _posts[i], showBookmark: true);
                                 },
                               ),
                             ),
@@ -1306,7 +1973,7 @@ class _ShopPageState extends State<ShopPage> {
     _load();
     _scroll.addListener(() {
       if (_scroll.position.pixels >=
-              _scroll.position.maxScrollExtent - 300 &&
+              _scroll.position.maxScrollExtent - 400 &&
           !_loading &&
           _hasMore) {
         _load();
@@ -1321,7 +1988,8 @@ class _ShopPageState extends State<ShopPage> {
       _error = null;
     });
     try {
-      final list = await getProductsPaged(perPage: perPageSize, page: _page);
+      final list =
+          await getProductsPaged(perPage: perPageSize, page: _page);
       setState(() {
         if (list.isEmpty) {
           _hasMore = false;
@@ -1358,7 +2026,7 @@ class _ShopPageState extends State<ShopPage> {
         backgroundColor: bgC,
         body: Column(
           children: [
-            buildHeader(context, 'فروشگاه'),
+            ModernHeader(context, 'فروشگاه'),
             Expanded(
               child: _products.isEmpty && _loading
                   ? const Padding(
@@ -1375,8 +2043,7 @@ class _ShopPageState extends State<ShopPage> {
                   : _products.isEmpty && _error != null
                       ? ErrorBox(
                           message: 'خطا در دریافت محصولات.\n$_error',
-                          onRetry: _refresh,
-                        )
+                          onRetry: _refresh)
                       : _products.isEmpty
                           ? const EmptyWidget(text: 'محصولی پیدا نشد.')
                           : RefreshIndicator(
@@ -1386,22 +2053,22 @@ class _ShopPageState extends State<ShopPage> {
                               child: ListView.builder(
                                 controller: _scroll,
                                 cacheExtent: 800,
-                                padding: const EdgeInsets.all(14),
-                                itemCount:
-                                    _products.length + (_hasMore ? 1 : 0),
+                                physics: const BouncingScrollPhysics(),
+                                padding:
+                                    const EdgeInsets.fromLTRB(14, 14, 14, 120),
+                                itemCount: _products.length +
+                                    (_hasMore ? 1 : 0),
                                 itemBuilder: (c, i) {
                                   if (i >= _products.length) {
                                     return Padding(
                                       padding: const EdgeInsets.all(20),
                                       child: Center(
                                         child: CircularProgressIndicator(
-                                          color: accentGreen,
-                                        ),
+                                            color: accentGreen),
                                       ),
                                     );
                                   }
-                                  return buildProductCard(
-                                      context, _products[i]);
+                                  return ModernProductCard(product: _products[i]);
                                 },
                               ),
                             ),
@@ -1413,7 +2080,7 @@ class _ShopPageState extends State<ShopPage> {
   }
 }
 
-/* ==================== SEARCH (Live) ==================== */
+/* ==================== SEARCH ==================== */
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -1423,15 +2090,49 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   final _ctrl = TextEditingController();
+  final _focus = FocusNode();
   Future<List>? _f;
   String _q = '';
   Timer? _debounce;
+  List<String> _history = [];
 
   @override
-  void dispose() {
-    _debounce?.cancel();
-    _ctrl.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _loadHistory();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focus.requestFocus();
+    });
+  }
+
+  Future<void> _loadHistory() async {
+    try {
+      final saved = await _storage.read(key: 'search_history');
+      if (saved != null && saved.isNotEmpty) {
+        _history = (json.decode(saved) as List).cast<String>();
+        if (mounted) setState(() {});
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveHistory(String q) async {
+    if (q.isEmpty) return;
+    _history.remove(q);
+    _history.insert(0, q);
+    if (_history.length > 10) _history = _history.sublist(0, 10);
+    try {
+      await _storage.write(
+          key: 'search_history', value: json.encode(_history));
+    } catch (_) {}
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _clearHistory() async {
+    _history.clear();
+    try {
+      await _storage.delete(key: 'search_history');
+    } catch (_) {}
+    if (mounted) setState(() {});
   }
 
   void _onChanged(String value) {
@@ -1449,7 +2150,21 @@ class _SearchPageState extends State<SearchPage> {
         _q = q;
         _f = searchExact(q);
       });
+      _saveHistory(q);
     });
+  }
+
+  void _searchFromHistory(String q) {
+    _ctrl.text = q;
+    _onChanged(q);
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _ctrl.dispose();
+    _focus.dispose();
+    super.dispose();
   }
 
   @override
@@ -1461,7 +2176,8 @@ class _SearchPageState extends State<SearchPage> {
         appBar: AppBar(
           title: const Text(
             'جستجو',
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+                fontWeight: FontWeight.w900, fontFamily: 'Vazirmatn'),
           ),
           backgroundColor: bgC,
           foregroundColor: txtC,
@@ -1470,33 +2186,49 @@ class _SearchPageState extends State<SearchPage> {
         body: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(14),
-              child: TextField(
-                controller: _ctrl,
-                textInputAction: TextInputAction.search,
-                onChanged: _onChanged,
-                style: TextStyle(color: txtC),
-                decoration: InputDecoration(
-                  hintText: 'عبارت مورد نظر...',
-                  hintStyle: TextStyle(color: mutC),
-                  filled: true,
-                  fillColor: pnl,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  suffixIcon: IconButton(
-                    icon: Icon(Icons.search, color: accentGreen),
-                    onPressed: () => _onChanged(_ctrl.text),
+              padding: const EdgeInsets.fromLTRB(14, 6, 14, 14),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: pnl,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: lineC),
+                ),
+                child: TextField(
+                  controller: _ctrl,
+                  focusNode: _focus,
+                  textInputAction: TextInputAction.search,
+                  onChanged: _onChanged,
+                  style: TextStyle(
+                      color: txtC, fontFamily: 'Vazirmatn', fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'عبارت مورد نظر...',
+                    hintStyle:
+                        TextStyle(color: mutC, fontFamily: 'Vazirmatn'),
+                    prefixIcon:
+                        Icon(Icons.search_rounded, color: accentGreen),
+                    suffixIcon: _ctrl.text.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(Icons.close_rounded,
+                                color: mutC, size: 20),
+                            onPressed: () {
+                              _ctrl.clear();
+                              _onChanged('');
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: Colors.transparent,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
               ),
             ),
             Expanded(
               child: _f == null
-                  ? const EmptyWidget(
-                      text: 'عبارتی برای جستجو وارد کنید',
-                    )
+                  ? _buildHistory()
                   : FutureBuilder<List>(
                       future: _f,
                       builder: (c, s) {
@@ -1515,28 +2247,104 @@ class _SearchPageState extends State<SearchPage> {
                         }
                         if (s.hasError) {
                           return ErrorBox(
-                            message: 'خطا در جستجو.\n${s.error}',
-                            onRetry: null,
-                          );
+                              message: 'خطا در جستجو.\n${s.error}',
+                              onRetry: null);
                         }
                         final posts = s.data ?? [];
                         if (posts.isEmpty) {
                           return EmptyWidget(
-                            text: 'نتیجه‌ای برای «$_q» پیدا نشد.',
-                          );
+                              text: 'نتیجه‌ای برای «$_q» پیدا نشد.');
                         }
                         return ListView.builder(
                           cacheExtent: 800,
-                          padding: const EdgeInsets.all(14),
+                          physics: const BouncingScrollPhysics(),
+                          padding:
+                              const EdgeInsets.fromLTRB(14, 0, 14, 100),
                           itemCount: posts.length,
-                          itemBuilder: (c, i) =>
-                              buildPostCard(context, posts[i]),
+                          itemBuilder: (c, i) => ModernPostCard(
+                              post: posts[i], showBookmark: true),
                         );
                       },
                     ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHistory() {
+    if (_history.isEmpty) {
+      return const EmptyWidget(text: 'عبارتی برای جستجو وارد کنید');
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.history_rounded, color: mutC, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                'جستجوهای اخیر',
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: _clearHistory,
+                child: Text(
+                  'پاک کردن',
+                  style: TextStyle(
+                    color: rose,
+                    fontSize: 12,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _history
+                .map((q) => GestureDetector(
+                      onTap: () => _searchFromHistory(q),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 9),
+                        decoration: BoxDecoration(
+                          color: pnl,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: lineC),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.search_rounded,
+                                color: mutC, size: 14),
+                            const SizedBox(width: 6),
+                            Text(
+                              q,
+                              style: TextStyle(
+                                color: txtC,
+                                fontSize: 12,
+                                fontFamily: 'Vazirmatn',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ))
+                .toList(),
+          ),
+        ],
       ),
     );
   }
@@ -1553,6 +2361,7 @@ class AccountPage extends StatefulWidget {
 class _AccountPageState extends State<AccountPage> {
   InAppWebViewController? _controller;
   bool _l = true;
+  double _progress = 0;
 
   @override
   void initState() {
@@ -1586,15 +2395,13 @@ class _AccountPageState extends State<AccountPage> {
   Future<void> _save() async {
     try {
       if (_controller == null) return;
-      final cookies = await CookieManager.instance().getCookies(
-        url: WebUri(site),
-      );
-      final loginCookies = cookies.where(
-        (c) =>
-            c.name.startsWith('wordpress_logged_in') ||
-            c.name.startsWith('wordpress_sec'),
-      ).toList();
-
+      final cookies =
+          await CookieManager.instance().getCookies(url: WebUri(site));
+      final loginCookies = cookies
+          .where((c) =>
+              c.name.startsWith('wordpress_logged_in') ||
+              c.name.startsWith('wordpress_sec'))
+          .toList();
       if (loginCookies.isNotEmpty) {
         final list = loginCookies
             .map((c) => {
@@ -1623,14 +2430,20 @@ class _AccountPageState extends State<AccountPage> {
         backgroundColor: bgC,
         body: Column(
           children: [
-            buildHeaderWithAdmin(context, 'حساب من'),
+            ModernHeaderWithAdmin(context, 'حساب من'),
+            if (_l && _progress > 0)
+              LinearProgressIndicator(
+                value: _progress,
+                backgroundColor: lineC,
+                color: accentGreen,
+                minHeight: 3,
+              ),
             Expanded(
               child: Stack(
                 children: [
                   InAppWebView(
-                    initialUrlRequest: URLRequest(
-                      url: WebUri('$site/my-account/'),
-                    ),
+                    initialUrlRequest:
+                        URLRequest(url: WebUri('$site/my-account/')),
                     initialSettings: InAppWebViewSettings(
                       javaScriptEnabled: true,
                       useOnDownloadStart: true,
@@ -1640,14 +2453,19 @@ class _AccountPageState extends State<AccountPage> {
                     onWebViewCreated: (c) => _controller = c,
                     onLoadStart: (c, url) => setState(() => _l = true),
                     onLoadStop: (c, url) async {
-                      setState(() => _l = false);
+                      setState(() {
+                        _l = false;
+                        _progress = 0;
+                      });
                       await _save();
                     },
+                    onProgressChanged: (c, p) =>
+                        setState(() => _progress = p / 100),
                     onDownloadStartRequest: (controller, request) async {
                       await openExternalUrl(request.url.toString());
                     },
                   ),
-                  if (_l)
+                  if (_l && _progress == 0)
                     Center(
                       child: CircularProgressIndicator(color: accentGreen),
                     ),
@@ -1661,22 +2479,23 @@ class _AccountPageState extends State<AccountPage> {
   }
 }
 
-/* ==================== WEB PAGE ==================== */
+/* ==================== MODERN WEB PAGE ==================== */
 
-class WebPage extends StatefulWidget {
+class ModernWebPage extends StatefulWidget {
   final String url;
   final String title;
-  const WebPage({
+  const ModernWebPage({
     super.key,
     required this.url,
     required this.title,
   });
   @override
-  State<WebPage> createState() => _WebPageState();
+  State<ModernWebPage> createState() => _ModernWebPageState();
 }
 
-class _WebPageState extends State<WebPage> {
+class _ModernWebPageState extends State<ModernWebPage> {
   bool _l = true;
+  double _progress = 0;
   InAppWebViewController? _controller;
 
   @override
@@ -1686,20 +2505,42 @@ class _WebPageState extends State<WebPage> {
       appBar: AppBar(
         title: Text(
           widget.title,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          style: const TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: 14,
+            fontFamily: 'Vazirmatn',
+          ),
         ),
         backgroundColor: bgC,
         foregroundColor: txtC,
         elevation: 0,
         actions: [
           IconButton(
+            onPressed: () => sharePost(widget.url, widget.title),
+            icon: Icon(Icons.ios_share_rounded, color: txtC),
+            tooltip: 'اشتراک',
+          ),
+          IconButton(
             onPressed: () {
-              if (_controller != null) _controller!.reload();
+              _controller?.reload();
             },
-            icon: Icon(Icons.refresh, color: txtC),
+            icon: Icon(Icons.refresh_rounded, color: txtC),
             tooltip: 'رفرش',
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(2),
+          child: AnimatedOpacity(
+            opacity: _l ? 1 : 0,
+            duration: const Duration(milliseconds: 300),
+            child: LinearProgressIndicator(
+              value: _progress > 0 ? _progress : null,
+              backgroundColor: lineC,
+              color: accentGreen,
+              minHeight: 2,
+            ),
+          ),
+        ),
       ),
       body: Stack(
         children: [
@@ -1710,10 +2551,16 @@ class _WebPageState extends State<WebPage> {
               useShouldOverrideUrlLoading: true,
               mediaPlaybackRequiresUserGesture: false,
               useOnDownloadStart: true,
+              supportZoom: true,
             ),
             onWebViewCreated: (c) => _controller = c,
             onLoadStart: (c, url) => setState(() => _l = true),
-            onLoadStop: (c, url) => setState(() => _l = false),
+            onLoadStop: (c, url) => setState(() {
+              _l = false;
+              _progress = 0;
+            }),
+            onProgressChanged: (c, p) =>
+                setState(() => _progress = p / 100),
             onDownloadStartRequest: (controller, request) async {
               await openExternalUrl(request.url.toString());
             },
@@ -1729,101 +2576,424 @@ class _WebPageState extends State<WebPage> {
               return NavigationActionPolicy.CANCEL;
             },
           ),
-          if (_l)
-            Center(
-              child: CircularProgressIndicator(color: accentGreen),
-            ),
+          if (_l && _progress == 0)
+            Center(child: CircularProgressIndicator(color: accentGreen)),
         ],
       ),
     );
   }
 }
-/* ==================== SERVICES SECTION ==================== */
+/* ==================== MODERN HEADER ==================== */
 
-class ServicesSectionWidget extends StatefulWidget {
-  const ServicesSectionWidget({super.key});
-
-  @override
-  State<ServicesSectionWidget> createState() =>
-      _ServicesSectionWidgetState();
+Widget ModernHeader(BuildContext context, [String? t]) {
+  return SafeArea(
+    bottom: false,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(23),
+              border: Border.all(color: lineC),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                logo,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Image.network(
+                  logoNet,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      Icon(Icons.sports_rounded, color: accentGreen),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  t ?? 'تربیت بدنی و علوم ورزشی',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: txtC,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'به اپلیکیشن خوش آمدید',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: mutC,
+                    fontSize: 11,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _HeaderIconButton(
+            icon: Icons.bookmark_outline_rounded,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const BookmarksPage()),
+            ),
+          ),
+          const SizedBox(width: 4),
+          ValueListenableBuilder<bool>(
+            valueListenable: darkModeNotifier,
+            builder: (c, isDark, _) => _HeaderIconButton(
+              icon: isDark
+                  ? Icons.light_mode_rounded
+                  : Icons.dark_mode_rounded,
+              onTap: () async {
+                HapticFeedback.lightImpact();
+                darkModeNotifier.value = !darkModeNotifier.value;
+                await _storage.write(
+                  key: 'dark_mode',
+                  value: darkModeNotifier.value.toString(),
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 4),
+          _HeaderIconButton(
+            icon: Icons.search_rounded,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SearchPage()),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
-class _ServicesSectionWidgetState extends State<ServicesSectionWidget> {
+Widget ModernHeaderWithAdmin(BuildContext context, [String? t]) {
+  return SafeArea(
+    bottom: false,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(23),
+              border: Border.all(color: lineC),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                logo,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Image.network(
+                  logoNet,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      Icon(Icons.sports_rounded, color: accentGreen),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              t ?? 'حساب من',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: txtC,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+          ),
+          _HeaderIconButton(
+            icon: Icons.admin_panel_settings_rounded,
+            color: accentBlue,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AdminLoginPage()),
+            ),
+          ),
+          const SizedBox(width: 4),
+          ValueListenableBuilder<bool>(
+            valueListenable: darkModeNotifier,
+            builder: (c, isDark, _) => _HeaderIconButton(
+              icon: isDark
+                  ? Icons.light_mode_rounded
+                  : Icons.dark_mode_rounded,
+              onTap: () async {
+                HapticFeedback.lightImpact();
+                darkModeNotifier.value = !darkModeNotifier.value;
+                await _storage.write(
+                  key: 'dark_mode',
+                  value: darkModeNotifier.value.toString(),
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 4),
+          _HeaderIconButton(
+            icon: Icons.search_rounded,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SearchPage()),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _HeaderIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color? color;
+  const _HeaderIconButton({
+    required this.icon,
+    required this.onTap,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: pnl,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: lineC),
+        ),
+        child: Icon(icon, color: color ?? txtC, size: 20),
+      ),
+    );
+  }
+}
+
+/* ==================== MODERN NEWS BANNER ==================== */
+
+class ModernNewsBanner extends StatefulWidget {
+  final Future<List>? future;
+  const ModernNewsBanner({super.key, this.future});
+  @override
+  State<ModernNewsBanner> createState() => _ModernNewsBannerState();
+}
+
+class _ModernNewsBannerState extends State<ModernNewsBanner> {
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List>(
+      future: widget.future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox.shrink();
+        }
+        if (snapshot.hasError) return const SizedBox.shrink();
+        final list = snapshot.data ?? [];
+        if (list.isEmpty) return const SizedBox.shrink();
+
+        final items = list.take(3).toList();
+
+        return Container(
+          margin: const EdgeInsets.only(top: 22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [accentBlue2, accentBlue],
+                        ),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const ModernLiveDot(),
+                    const SizedBox(width: 8),
+                    Text(
+                      'اخبار فوری',
+                      style: TextStyle(
+                        color: txtC,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              ...items.map((news) => ModernUrgentNewsCard(news: news)).toList(),
+              if (list.length > 3)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+                  child: Center(
+                    child: GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const UrgentNewsListPage(),
+                        ),
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 22, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: accentBlue.withOpacity(.1),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: accentBlue.withOpacity(.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.list_alt_rounded,
+                                color: accentBlue, size: 18),
+                            const SizedBox(width: 6),
+                            Text(
+                              'مشاهده همه اخبار فوری',
+                              style: TextStyle(
+                                color: accentBlue,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                fontFamily: 'Vazirmatn',
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(Icons.arrow_back_ios_new_rounded,
+                                color: accentBlue, size: 12),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 6),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/* ==================== MODERN SERVICES ==================== */
+
+class ModernServicesSection extends StatefulWidget {
+  const ModernServicesSection({super.key});
+  @override
+  State<ModernServicesSection> createState() => _ModernServicesSectionState();
+}
+
+class _ModernServicesSectionState extends State<ModernServicesSection> {
   final ScrollController _scrollCtrl = ScrollController();
 
   final List<Map<String, dynamic>> _items = [
     {
       'title': 'معرفی رشته',
-      'icon': Icons.info_outline,
-      'color': const Color(0xff1e40af),
-      'soft': const Color(0xffeff6ff),
+      'icon': Icons.info_outline_rounded,
+      'color': const Color(0xff3b82f6),
       'url':
           '$site/introduction-to-the-field-of-physical-education-and-sports-sciences/',
     },
     {
       'title': 'گرایش‌های ارشد',
-      'icon': Icons.layers_outlined,
-      'color': const Color(0xff7c3aed),
-      'soft': const Color(0xfff5f3ff),
+      'icon': Icons.layers_rounded,
+      'color': const Color(0xff8b5cf6),
       'url':
           '$site/%da%af%d8%b1%d8%a7%db%8c%d8%b4%d9%87%d8%a7%db%8c-%da%a9%d8%a7%d8%b1%d8%b4%d9%86%d8%a7%d8%b3%db%8c-%d8%a7%d8%b1%d8%b4%d8%af-%d8%aa%d8%b1%d8%a8%db%8c%d8%aa-%d8%a8%d8%af%d9%86%db%8c-%d9%88/',
     },
     {
       'title': 'گرایش‌های دکتری',
-      'icon': Icons.school_outlined,
+      'icon': Icons.school_rounded,
       'color': const Color(0xff0891b2),
-      'soft': const Color(0xffecfeff),
       'url': '$site/sports-science-phd-exam-resources/',
     },
     {
       'title': 'منابع ارشد',
-      'icon': Icons.menu_book_outlined,
-      'color': const Color(0xff059669),
-      'soft': const Color(0xffecfdf5),
+      'icon': Icons.menu_book_rounded,
+      'color': const Color(0xff10b981),
       'url': '$site/master-of-sports-science-resources/',
     },
     {
       'title': 'منابع دکتری',
-      'icon': Icons.auto_stories_outlined,
-      'color': const Color(0xffb45309),
-      'soft': const Color(0xfffffbeb),
+      'icon': Icons.auto_stories_rounded,
+      'color': const Color(0xfff59e0b),
       'url': '$site/manabe-konkur-doctori-tarbiat-badani/',
     },
     {
       'title': 'منابع استخدامی',
-      'icon': Icons.assignment_outlined,
+      'icon': Icons.assignment_rounded,
       'color': const Color(0xffe11d48),
-      'soft': const Color(0xfffff1f4),
       'url': '$site/employment-tests/',
     },
     {
       'title': 'دانشگاه‌های برتر',
-      'icon': Icons.account_balance,
+      'icon': Icons.account_balance_rounded,
       'color': const Color(0xff2563eb),
-      'soft': const Color(0xffeff6ff),
       'url': '$site/physical-education-sports-science/',
     },
     {
       'title': 'بازار کار',
-      'icon': Icons.work_outline,
+      'icon': Icons.work_outline_rounded,
       'color': const Color(0xff0d9488),
-      'soft': const Color(0xfff0fdfa),
       'url':
           '$site/job-market-in-physical-education-and-sports-sciences/',
     },
     {
       'title': 'طرح درس',
-      'icon': Icons.slideshow_outlined,
+      'icon': Icons.slideshow_rounded,
       'color': const Color(0xff9333ea),
-      'soft': const Color(0xfffaf5ff),
       'url':
           '$site/product-category/%d8%b7%d8%b1%d8%ad-%d8%af%d8%b1%d8%b3-%d8%b1%d9%88%d8%b2%d8%a7%d9%86%d9%87-%d9%85%d8%a7%d9%87%d8%a7%d9%86%d9%87-%d8%b3%d8%a7%d9%84%d8%a7%d9%86%d9%87/',
     },
     {
       'title': 'پاورپوینت',
-      'icon': Icons.file_present_outlined,
+      'icon': Icons.file_present_rounded,
       'color': const Color(0xffea580c),
-      'soft': const Color(0xfffff7ed),
       'url': '$site/product-category/powerpoint/',
     },
   ];
@@ -1836,178 +3006,65 @@ class _ServicesSectionWidgetState extends State<ServicesSectionWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) {
-        final isDark = darkModeNotifier.value;
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 22, 14, 0),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Stack(
-                  children: [
-                    Text(
-                      'خدمات ما',
-                      style: TextStyle(
-                        color: txtC,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    Positioned(
-                      bottom: -2,
-                      right: 0,
-                      left: 0,
-                      child: Container(
-                        height: 3,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [
-                              Color(0xff1e40af),
-                              Color(0xff2563eb),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(3),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xff2563eb)
-                                  .withOpacity(.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: pnl,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: lineC),
-                boxShadow: isDark
-                    ? null
-                    : [
-                        BoxShadow(
-                          color: const Color(0x0c0c2d48),
-                          blurRadius: 24,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-              ),
-              child: Stack(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 20, 0, 20),
-                    child: SizedBox(
-                      height: 130,
-                      child: ListView.separated(
-                        controller: _scrollCtrl,
-                        scrollDirection: Axis.horizontal,
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 18),
-                        itemCount: _items.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(width: 12),
-                        itemBuilder: (c, i) =>
-                            _buildServiceCard(_items[i]),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 0,
-                    bottom: 0,
-                    right: 0,
-                    width: 40,
-                    child: IgnorePointer(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.centerRight,
-                            end: Alignment.centerLeft,
-                            colors: [pnl, pnl.withOpacity(0)],
-                          ),
-                          borderRadius: const BorderRadius.only(
-                            topRight: Radius.circular(18),
-                            bottomRight: Radius.circular(18),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 0,
-                    bottom: 0,
-                    left: 0,
-                    width: 40,
-                    child: IgnorePointer(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [pnl, pnl.withOpacity(0)],
-                          ),
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(18),
-                            bottomLeft: Radius.circular(18),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-        );
-      },
+    return Column(
+      children: [
+        const ModernSectionTitle(
+          title: 'خدمات ما',
+          icon: Icons.auto_awesome_rounded,
+        ),
+        SizedBox(
+          height: 118,
+          child: ListView.separated(
+            controller: _scrollCtrl,
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            itemCount: _items.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (c, i) => _buildCard(_items[i]),
+          ),
+        ),
+        const SizedBox(height: 8),
+      ],
     );
   }
 
-  Widget _buildServiceCard(Map<String, dynamic> item) {
+  Widget _buildCard(Map<String, dynamic> item) {
     final color = item['color'] as Color;
-    final soft = darkModeNotifier.value
-        ? color.withOpacity(0.15)
-        : item['soft'] as Color;
-
     return GestureDetector(
-      onTap: () => openUrl(context, item['url'] as String, title: item['title'] as String),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        openUrl(context, item['url'] as String,
+            title: item['title'] as String);
+      },
       child: Container(
-        width: 145,
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        width: 110,
         decoration: BoxDecoration(
-          color: darkModeNotifier.value ? pnl2 : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: pnl,
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(color: lineC),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
+        padding: const EdgeInsets.all(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 50,
-              height: 50,
+              width: 46,
+              height: 46,
               decoration: BoxDecoration(
-                color: soft,
+                color: color.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(
-                item['icon'] as IconData,
-                color: color,
-                size: 24,
-              ),
+              child: Icon(item['icon'] as IconData, color: color, size: 24),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Expanded(
               child: Center(
                 child: Text(
@@ -2017,10 +3074,10 @@ class _ServicesSectionWidgetState extends State<ServicesSectionWidget> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: txtC,
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w800,
-                    height: 1.4,
-                    letterSpacing: -0.2,
+                    height: 1.35,
+                    fontFamily: 'Vazirmatn',
                   ),
                 ),
               ),
@@ -2032,106 +3089,241 @@ class _ServicesSectionWidgetState extends State<ServicesSectionWidget> {
   }
 }
 
-/* ==================== LATEST POSTS SECTION ==================== */
+/* ==================== MODERN LATEST SECTION ==================== */
 
-class LatestPostsSection extends StatelessWidget {
+class ModernLatestSection extends StatelessWidget {
   final Future<List>? postsFuture;
-  const LatestPostsSection({super.key, required this.postsFuture});
+  const ModernLatestSection({super.key, required this.postsFuture});
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 22, 14, 0),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Stack(
-                children: [
-                  Text(
-                    'جدیدترین نوشته‌ها',
-                    style: TextStyle(
-                      color: txtC,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.7,
-                    ),
-                  ),
-                  Positioned(
-                    bottom: -2,
-                    right: 0,
-                    left: 0,
-                    child: Container(
-                      height: 3,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color(0xff059669),
-                            Color(0xff047857),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          FutureBuilder<List>(
-            future: postsFuture,
-            builder: (c, s) {
-              if (s.connectionState == ConnectionState.waiting) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 14),
-                  child: Column(
-                    children: [
-                      FeaturedSkeleton(),
-                      SizedBox(height: 12),
-                      PostSkeleton(),
-                      SizedBox(height: 12),
-                      PostSkeleton(),
-                    ],
-                  ),
-                );
-              }
-              if (s.hasError) {
-                return ErrorBox(
-                  message: 'خطا در دریافت مطالب.\n${s.error}',
-                  onRetry: null,
-                );
-              }
-              final posts = s.data ?? [];
-              if (posts.isEmpty) {
-                return const EmptyWidget(text: 'مطلبی پیدا نشد.');
-              }
-
-              final featured = posts.first;
-              final others = posts.skip(1).take(4).toList();
-
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const ModernSectionTitle(
+          title: 'جدیدترین نوشته‌ها',
+          icon: Icons.auto_stories_rounded,
+        ),
+        FutureBuilder<List>(
+          future: postsFuture,
+          builder: (c, s) {
+            if (s.connectionState == ConnectionState.waiting) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 14),
                 child: Column(
                   children: [
-                    FeaturedPostCard(post: featured),
-                    const SizedBox(height: 14),
-                    ...others
-                        .map((p) => Padding(
-                              padding:
-                                  const EdgeInsets.only(bottom: 10),
-                              child: SidePostCard(post: p),
-                            ))
-                        .toList(),
+                    PostSkeleton(),
+                    PostSkeleton(),
+                    PostSkeleton(),
                   ],
                 ),
               );
-            },
-          ),
-        ],
+            }
+            if (s.hasError) {
+              return ErrorBox(
+                  message: 'خطا در دریافت مطالب.\n${s.error}',
+                  onRetry: null);
+            }
+            final posts = s.data ?? [];
+            if (posts.isEmpty) {
+              return const EmptyWidget(text: 'مطلبی پیدا نشد.');
+            }
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Column(
+                children: posts
+                    .take(6)
+                    .map((p) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: ModernPostCard(post: p, showBookmark: true),
+                        ))
+                    .toList(),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+/* ==================== MODERN POST CARD ==================== */
+
+class ModernPostCard extends StatefulWidget {
+  final dynamic post;
+  final bool showBookmark;
+  const ModernPostCard({super.key, required this.post, this.showBookmark = true});
+
+  @override
+  State<ModernPostCard> createState() => _ModernPostCardState();
+}
+
+class _ModernPostCardState extends State<ModernPostCard> {
+  @override
+  Widget build(BuildContext context) {
+    final post = widget.post;
+    final title = pTitle(post);
+    final link = pLink(post);
+    final img = pImg(post);
+    final cat = pCategory(post);
+    final date = pTimeAgo(post);
+    final id = pId(post);
+
+    return GestureDetector(
+      onTap: () => openUrl(context, link),
+      child: Container(
+        decoration: BoxDecoration(
+          color: pnl,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: lineC),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topRight: Radius.circular(18),
+                bottomRight: Radius.circular(18),
+              ),
+              child: SizedBox(
+                width: 110,
+                height: 110,
+                child: img.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: img,
+                        fit: BoxFit.cover,
+                        memCacheWidth: 500,
+                        fadeInDuration:
+                            const Duration(milliseconds: 250),
+                        placeholder: (_, __) => Container(color: pnl2),
+                        errorWidget: (_, __, ___) => Container(
+                          color: pnl2,
+                          child: Icon(Icons.article_rounded,
+                              color: accentGreen, size: 32),
+                        ),
+                      )
+                    : Container(
+                        color: pnl2,
+                        child: Icon(Icons.article_rounded,
+                            color: accentGreen, size: 32),
+                      ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        if (cat.isNotEmpty)
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: chipBg,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 5,
+                                    height: 5,
+                                    decoration: BoxDecoration(
+                                      color: chipFg,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      cat,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: chipFg,
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w900,
+                                        fontFamily: 'Vazirmatn',
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        const Spacer(),
+                        if (widget.showBookmark)
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              toggleBookmark(id);
+                              showSnack(
+                                context,
+                                isBookmarked(id)
+                                    ? 'به نشان‌شده‌ها اضافه شد'
+                                    : 'از نشان‌شده‌ها حذف شد',
+                              );
+                            },
+                            child: ValueListenableBuilder<Set<String>>(
+                              valueListenable: bookmarkNotifier,
+                              builder: (c, set, __) => Icon(
+                                set.contains(id)
+                                    ? Icons.bookmark_rounded
+                                    : Icons.bookmark_border_rounded,
+                                color: set.contains(id) ? gold : mutC,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: txtC,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        height: 1.5,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.schedule_rounded,
+                            color: mutC, size: 12),
+                        const SizedBox(width: 4),
+                        Text(
+                          date,
+                          style: TextStyle(
+                            color: mutC,
+                            fontSize: 10,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2141,7 +3333,8 @@ class LatestPostsSection extends StatelessWidget {
 
 class FeaturedPostCard extends StatelessWidget {
   final dynamic post;
-  const FeaturedPostCard({super.key, required this.post});
+  final bool showBookmark;
+  const FeaturedPostCard({super.key, required this.post, this.showBookmark = true});
 
   @override
   Widget build(BuildContext context) {
@@ -2152,54 +3345,99 @@ class FeaturedPostCard extends StatelessWidget {
     final author = pAuthor(post);
     final avatarUrl = pAuthorAvatar(post);
     final date = pDate(post);
-    final excerpt = pExcerpt(post, maxChars: 150);
+    final excerpt = pExcerpt(post, maxChars: 130);
+    final id = pId(post);
 
     return GestureDetector(
       onTap: () => openUrl(context, link),
       child: Container(
         decoration: BoxDecoration(
           color: pnl,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(color: lineC),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ClipRRect(
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(14),
-                topRight: Radius.circular(14),
+                topLeft: Radius.circular(22),
+                topRight: Radius.circular(22),
               ),
               child: AspectRatio(
                 aspectRatio: 16 / 9.5,
-                child: img.isNotEmpty
-                    ? CachedNetworkImage(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (img.isNotEmpty)
+                      CachedNetworkImage(
                         imageUrl: img,
                         fit: BoxFit.cover,
                         memCacheWidth: 1080,
-                        placeholder: (_, __) =>
-                            Container(color: pnl2),
+                        fadeInDuration:
+                            const Duration(milliseconds: 300),
+                        placeholder: (_, __) => Container(color: pnl2),
                         errorWidget: (_, __, ___) => Container(
                           color: pnl2,
-                          child: Icon(
-                            Icons.article_outlined,
-                            color: accentGreen,
-                            size: 60,
-                          ),
+                          child: Icon(Icons.article_rounded,
+                              color: accentGreen, size: 60),
                         ),
                       )
-                    : Container(
+                    else
+                      Container(
                         color: pnl2,
-                        child: Icon(
-                          Icons.article_outlined,
-                          color: accentGreen,
-                          size: 60,
+                        child: Icon(Icons.article_rounded,
+                            color: accentGreen, size: 60),
+                      ),
+                    if (showBookmark)
+                      Positioned(
+                        top: 12,
+                        left: 12,
+                        child: GestureDetector(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            toggleBookmark(id);
+                            showSnack(
+                              context,
+                              isBookmarked(id)
+                                  ? 'به نشان‌شده‌ها اضافه شد'
+                                  : 'از نشان‌شده‌ها حذف شد',
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.55),
+                              shape: BoxShape.circle,
+                            ),
+                            child: ValueListenableBuilder<Set<String>>(
+                              valueListenable: bookmarkNotifier,
+                              builder: (c, set, __) => Icon(
+                                set.contains(id)
+                                    ? Icons.bookmark_rounded
+                                    : Icons.bookmark_border_rounded,
+                                color: set.contains(id)
+                                    ? gold
+                                    : Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
+                  ],
+                ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2208,10 +3446,10 @@ class FeaturedPostCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: const Color(0xffecfdf5),
+                        color: chipBg,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                            color: const Color(0x3305a669)),
+                            color: chipFg.withOpacity(0.25)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -2219,22 +3457,22 @@ class FeaturedPostCard extends StatelessWidget {
                           Container(
                             width: 6,
                             height: 6,
-                            decoration: const BoxDecoration(
-                              color: Color(0xff05a669),
+                            decoration: BoxDecoration(
+                              color: chipFg,
                               shape: BoxShape.circle,
                             ),
                           ),
                           const SizedBox(width: 6),
-                          Expanded(
+                          Flexible(
                             child: Text(
                               cat,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xff047857),
-                                fontSize: 11,
+                              style: TextStyle(
+                                color: chipFg,
+                                fontSize: 10.5,
                                 fontWeight: FontWeight.w900,
-                                letterSpacing: 1.1,
+                                fontFamily: 'Vazirmatn',
                               ),
                             ),
                           ),
@@ -2249,14 +3487,14 @@ class FeaturedPostCard extends StatelessWidget {
                     textAlign: TextAlign.right,
                     style: TextStyle(
                       color: txtC,
-                      fontSize: 17,
+                      fontSize: 16,
                       fontWeight: FontWeight.w900,
-                      height: 1.4,
-                      letterSpacing: -0.4,
+                      height: 1.45,
+                      fontFamily: 'Vazirmatn',
                     ),
                   ),
                   if (excerpt.isNotEmpty) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     Text(
                       excerpt,
                       maxLines: 2,
@@ -2264,51 +3502,48 @@ class FeaturedPostCard extends StatelessWidget {
                       textAlign: TextAlign.right,
                       style: TextStyle(
                         color: inkSoft,
-                        fontSize: 13,
-                        height: 1.85,
+                        fontSize: 12.5,
+                        height: 1.8,
+                        fontFamily: 'Vazirmatn',
                       ),
                     ),
                   ],
                   const SizedBox(height: 14),
                   Divider(height: 1, color: softLine),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       if (avatarUrl.isNotEmpty)
                         ClipOval(
                           child: Image.network(
                             avatarUrl,
-                            width: 36,
-                            height: 36,
+                            width: 34,
+                            height: 34,
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: pnl2,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(Icons.person,
-                                  color: mutC, size: 20),
+                              width: 34,
+                              height: 34,
+                              color: pnl2,
+                              child: Icon(Icons.person_rounded,
+                                  color: mutC, size: 18),
                             ),
                           ),
                         )
                       else
                         Container(
-                          width: 36,
-                          height: 36,
+                          width: 34,
+                          height: 34,
                           decoration: BoxDecoration(
                             color: pnl2,
                             shape: BoxShape.circle,
                           ),
-                          child: Icon(Icons.person,
-                              color: mutC, size: 20),
+                          child: Icon(Icons.person_rounded,
+                              color: mutC, size: 18),
                         ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             if (author.isNotEmpty)
                               Text(
@@ -2317,8 +3552,9 @@ class FeaturedPostCard extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: txtC,
-                                  fontSize: 12,
+                                  fontSize: 11.5,
                                   fontWeight: FontWeight.w800,
+                                  fontFamily: 'Vazirmatn',
                                 ),
                               ),
                             if (date.isNotEmpty)
@@ -2327,7 +3563,7 @@ class FeaturedPostCard extends StatelessWidget {
                                 style: TextStyle(
                                   color: mutC,
                                   fontSize: 10,
-                                  fontWeight: FontWeight.w600,
+                                  fontFamily: 'Vazirmatn',
                                 ),
                               ),
                           ],
@@ -2337,26 +3573,24 @@ class FeaturedPostCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 7),
                         decoration: BoxDecoration(
-                          color: const Color(0xffecfdf5),
-                          borderRadius: BorderRadius.circular(8),
+                          color: accentGreen.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(999),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: const [
+                          children: [
                             Text(
                               'مطالعه',
                               style: TextStyle(
-                                color: Color(0xff047857),
+                                color: accentGreen2,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w900,
+                                fontFamily: 'Vazirmatn',
                               ),
                             ),
-                            SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_back,
-                              color: Color(0xff047857),
-                              size: 12,
-                            ),
+                            const SizedBox(width: 4),
+                            Icon(Icons.arrow_back_rounded,
+                                color: accentGreen2, size: 12),
                           ],
                         ),
                       ),
@@ -2376,7 +3610,8 @@ class FeaturedPostCard extends StatelessWidget {
 
 class SidePostCard extends StatelessWidget {
   final dynamic post;
-  const SidePostCard({super.key, required this.post});
+  final bool showBookmark;
+  const SidePostCard({super.key, required this.post, this.showBookmark = true});
 
   @override
   Widget build(BuildContext context) {
@@ -2384,16 +3619,24 @@ class SidePostCard extends StatelessWidget {
     final link = pLink(post);
     final img = pImg(post);
     final cat = pCategory(post);
-    final date = pDate(post);
+    final date = pTimeAgo(post);
+    final id = pId(post);
 
     return GestureDetector(
       onTap: () => openUrl(context, link),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(11),
         decoration: BoxDecoration(
           color: pnl,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: lineC),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -2401,43 +3644,67 @@ class SidePostCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (cat.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xffecfdf5),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 5,
-                            height: 5,
-                            decoration: const BoxDecoration(
-                              color: Color(0xff05a669),
-                              shape: BoxShape.circle,
+                  Row(
+                    children: [
+                      if (cat.isNotEmpty)
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: chipBg,
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 4,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: chipFg,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 3),
+                                Flexible(
+                                  child: Text(
+                                    cat,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: chipFg,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w900,
+                                      fontFamily: 'Vazirmatn',
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              cat,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xff047857),
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1,
-                              ),
+                        ),
+                      const Spacer(),
+                      if (showBookmark)
+                        GestureDetector(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            toggleBookmark(id);
+                          },
+                          child: ValueListenableBuilder<Set<String>>(
+                            valueListenable: bookmarkNotifier,
+                            builder: (c, set, __) => Icon(
+                              set.contains(id)
+                                  ? Icons.bookmark_rounded
+                                  : Icons.bookmark_border_rounded,
+                              color: set.contains(id) ? gold : mutC,
+                              size: 18,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: 8),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 7),
                   Text(
                     title,
                     maxLines: 2,
@@ -2445,21 +3712,28 @@ class SidePostCard extends StatelessWidget {
                     textAlign: TextAlign.right,
                     style: TextStyle(
                       color: txtC,
-                      fontSize: 13,
+                      fontSize: 12.5,
                       fontWeight: FontWeight.w800,
                       height: 1.5,
-                      letterSpacing: -0.2,
+                      fontFamily: 'Vazirmatn',
                     ),
                   ),
                   if (date.isNotEmpty) ...[
                     const SizedBox(height: 6),
-                    Text(
-                      date,
-                      style: TextStyle(
-                        color: mutC,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Row(
+                      children: [
+                        Icon(Icons.schedule_rounded,
+                            color: mutC, size: 11),
+                        const SizedBox(width: 3),
+                        Text(
+                          date,
+                          style: TextStyle(
+                            color: mutC,
+                            fontSize: 9.5,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ],
@@ -2467,33 +3741,28 @@ class SidePostCard extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             ClipRRect(
-              borderRadius: BorderRadius.circular(9),
+              borderRadius: BorderRadius.circular(11),
               child: SizedBox(
-                width: 90,
-                height: 70,
+                width: 88,
+                height: 72,
                 child: img.isNotEmpty
                     ? CachedNetworkImage(
                         imageUrl: img,
                         fit: BoxFit.cover,
                         memCacheWidth: 400,
-                        placeholder: (_, __) =>
-                            Container(color: pnl2),
+                        fadeInDuration:
+                            const Duration(milliseconds: 200),
+                        placeholder: (_, __) => Container(color: pnl2),
                         errorWidget: (_, __, ___) => Container(
                           color: pnl2,
-                          child: Icon(
-                            Icons.article_outlined,
-                            color: accentGreen,
-                            size: 28,
-                          ),
+                          child: Icon(Icons.article_rounded,
+                              color: accentGreen, size: 26),
                         ),
                       )
                     : Container(
                         color: pnl2,
-                        child: Icon(
-                          Icons.article_outlined,
-                          color: accentGreen,
-                          size: 28,
-                        ),
+                        child: Icon(Icons.article_rounded,
+                            color: accentGreen, size: 26),
                       ),
               ),
             ),
@@ -2503,15 +3772,409 @@ class SidePostCard extends StatelessWidget {
     );
   }
 }
-/* ==================== LIVE DOT ==================== */
 
-class LiveDot extends StatefulWidget {
-  const LiveDot({super.key});
+/* ==================== MODERN PRODUCT CARD ==================== */
+
+class ModernProductCard extends StatelessWidget {
+  final dynamic product;
+  const ModernProductCard({super.key, required this.product});
+
   @override
-  State<LiveDot> createState() => _LiveDotState();
+  Widget build(BuildContext context) {
+    final p = product;
+    final img = (p['images'] as List?)?.isNotEmpty == true
+        ? (p['images'][0]['src'] ?? '')
+        : '';
+    final name = p['name'] ?? '';
+    final link = p['permalink'] ?? '';
+    final inStock = p['stock_status'] == 'instock';
+    final regularPrice = p['regular_price'] ?? '';
+    final salePrice = p['sale_price'] ?? '';
+    final isOnSale = salePrice.isNotEmpty && salePrice != regularPrice;
+
+    return GestureDetector(
+      onTap: () => openUrl(context, link, title: name),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: pnl,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: lineC),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topRight: Radius.circular(18),
+                bottomRight: Radius.circular(18),
+              ),
+              child: SizedBox(
+                width: 110,
+                height: 120,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    img.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: img,
+                            fit: BoxFit.cover,
+                            memCacheWidth: 500,
+                            placeholder: (_, __) =>
+                                Container(color: pnl2),
+                            errorWidget: (_, __, ___) => Container(
+                              color: pnl2,
+                              child: Icon(
+                                  Icons.shopping_bag_rounded,
+                                  color: accentGreen,
+                                  size: 32),
+                            ),
+                          )
+                        : Container(
+                            color: pnl2,
+                            child: Icon(Icons.shopping_bag_rounded,
+                                color: accentGreen, size: 32),
+                          ),
+                    if (isOnSale)
+                      Positioned(
+                        top: 8,
+                        left: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: rose,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'تخفیف',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Vazirmatn',
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: txtC,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        height: 1.5,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (isOnSale) ...[
+                      Row(
+                        children: [
+                          Text(
+                            formatPrice(salePrice),
+                            style: TextStyle(
+                              color: accentGreen2,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Vazirmatn',
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            formatPrice(regularPrice),
+                            style: TextStyle(
+                              color: mutC,
+                              fontSize: 10,
+                              decoration: TextDecoration.lineThrough,
+                              fontFamily: 'Vazirmatn',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ] else if (regularPrice.isNotEmpty) ...[
+                      Text(
+                        formatPrice(regularPrice),
+                        style: TextStyle(
+                          color: txtC,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ] else ...[
+                      Text(
+                        'قیمت نامشخص',
+                        style: TextStyle(color: mutC, fontSize: 11),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          inStock
+                              ? Icons.check_circle_rounded
+                              : Icons.cancel_rounded,
+                          color: inStock ? accentGreen : rose,
+                          size: 13,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          inStock ? 'موجود' : 'ناموجود',
+                          style: TextStyle(
+                            color: inStock ? accentGreen : rose,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _LiveDotState extends State<LiveDot>
+/* ==================== MODERN CAT GRID ==================== */
+
+class ModernCatGrid extends StatelessWidget {
+  const ModernCatGrid({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: cats.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: 1.2,
+        ),
+        itemBuilder: (c, i) {
+          final cat = cats[i];
+          return GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              Navigator.push(
+                c,
+                MaterialPageRoute(
+                    builder: (_) => CategoryPostsPage(c: cat)),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: pnl,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: lineC),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: cat.c.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(cat.i, color: cat.c, size: 24),
+                  ),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        cat.n,
+                        maxLines: 2,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: txtC,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                          height: 1.4,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/* ==================== MODERN SOCIAL ==================== */
+
+class ModernSocial extends StatelessWidget {
+  const ModernSocial({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      ['تلگرام', Icons.send_rounded, 'https://t.me/itarbiatbadani',
+          const Color(0xff229ED9)],
+      ['اینستاگرام', Icons.camera_alt_rounded,
+          'https://instagram.com/itarbiatbadani', const Color(0xffE1306C)],
+      ['بله', Icons.chat_rounded, 'https://ble.ir/itarbiatbadani',
+          const Color(0xff00b4a0)],
+      ['فروشگاه', Icons.shopping_cart_rounded, '$site/shop/',
+          const Color(0xfff59e0b)],
+    ];
+    return Column(
+      children: [
+        const ModernSectionTitle(
+          title: 'ارتباط با ما',
+          icon: Icons.connect_without_contact_rounded,
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: items.length,
+            gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 3.0,
+            ),
+            itemBuilder: (c, i) => GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                openExternalUrl(items[i][2] as String);
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: pnl,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: lineC),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(items[i][1] as IconData,
+                        color: items[i][3] as Color, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      items[i][0] as String,
+                      style: TextStyle(
+                        color: txtC,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12.5,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/* ==================== MODERN SECTION TITLE ==================== */
+
+class ModernSectionTitle extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  const ModernSectionTitle({
+    super.key,
+    required this.title,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 22, 14, 14),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 24,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [accentGreen, accentGreen2],
+              ),
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Icon(icon, color: accentGreen, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              title,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: txtC,
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+/* ==================== MODERN LIVE DOT ==================== */
+
+class ModernLiveDot extends StatefulWidget {
+  const ModernLiveDot({super.key});
+  @override
+  State<ModernLiveDot> createState() => _ModernLiveDotState();
+}
+
+class _ModernLiveDotState extends State<ModernLiveDot>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
 
@@ -2549,8 +4212,7 @@ class _LiveDotState extends State<LiveDot>
                 height: 16 * scale,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xffff3d00)
-                      .withOpacity(opacity * 0.5),
+                  color: rose.withOpacity(opacity * 0.5),
                 ),
               ),
               Container(
@@ -2558,7 +4220,7 @@ class _LiveDotState extends State<LiveDot>
                 height: 8,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(0xffff3d00),
+                  color: Color(0xfff43f5e),
                 ),
               ),
             ],
@@ -2569,349 +4231,187 @@ class _LiveDotState extends State<LiveDot>
   }
 }
 
-/* ==================== URGENT NEWS CARD ==================== */
+/* ==================== MODERN URGENT NEWS CARD ==================== */
 
-class UrgentNewsCard extends StatelessWidget {
+class ModernUrgentNewsCard extends StatelessWidget {
   final dynamic news;
-  const UrgentNewsCard({super.key, required this.news});
+  const ModernUrgentNewsCard({super.key, required this.news});
 
   @override
   Widget build(BuildContext context) {
     final title = pTitle(news);
     final link = pLink(news);
     final date = pDate(news);
-    final excerpt = pExcerpt(news, maxChars: 150);
+    final excerpt = pExcerpt(news, maxChars: 140);
 
     int readTime = 1;
     try {
       final raw = clean(news['content']['rendered'] ?? '');
-      final words = raw
-          .split(RegExp(r'\s+'))
-          .where((w) => w.isNotEmpty)
-          .length;
+      final words =
+          raw.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
       readTime = (words / 200).ceil();
       if (readTime < 1) readTime = 1;
     } catch (_) {}
 
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => GestureDetector(
-        onTap: () => openUrl(context, link),
-        child: Container(
-          margin: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-          padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
-          decoration: BoxDecoration(
-            color: pnl,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: lineC),
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                top: 0,
-                bottom: 0,
-                right: -18,
-                child: Container(
-                  width: 3,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0xff0d47a1),
-                        Color(0xff25b8e8),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(3),
+    return GestureDetector(
+      onTap: () => openUrl(context, link),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        decoration: BoxDecoration(
+          color: pnl,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: lineC),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              top: 0,
+              bottom: 0,
+              right: -16,
+              child: Container(
+                width: 3,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [accentBlue2, accentBlue],
                   ),
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today_outlined,
-                        size: 12,
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.schedule_rounded, size: 12, color: mutC),
+                    const SizedBox(width: 5),
+                    Text(
+                      date,
+                      style: TextStyle(
                         color: mutC,
+                        fontSize: 11,
+                        fontFamily: 'Vazirmatn',
                       ),
-                      const SizedBox(width: 5),
-                      Text(
-                        date,
-                        style: TextStyle(
-                          color: mutC,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                        ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 3,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: mutC.withOpacity(.5),
+                        shape: BoxShape.circle,
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        width: 3,
-                        height: 3,
-                        decoration: BoxDecoration(
-                          color: mutC.withOpacity(.5),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        Icons.access_time,
-                        size: 12,
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(Icons.access_time_rounded, size: 12, color: mutC),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$readTime دقیقه',
+                      style: TextStyle(
                         color: mutC,
+                        fontSize: 11,
+                        fontFamily: 'Vazirmatn',
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$readTime دقیقه',
-                        style: TextStyle(
-                          color: mutC,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: txtC,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w800,
+                    height: 1.6,
+                    fontFamily: 'Vazirmatn',
                   ),
-                  const SizedBox(height: 10),
+                ),
+                if (excerpt.isNotEmpty) ...[
+                  const SizedBox(height: 8),
                   Text(
-                    title,
+                    excerpt,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.right,
                     style: TextStyle(
-                      color: txtC,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      height: 1.6,
-                      letterSpacing: -0.2,
+                      color: inkSoft,
+                      fontSize: 12,
+                      height: 1.8,
+                      fontFamily: 'Vazirmatn',
                     ),
                   ),
-                  if (excerpt.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      excerpt,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        color: mutC,
-                        fontSize: 12.5,
-                        height: 1.8,
+                ],
+                const SizedBox(height: 12),
+                Container(height: 1, color: softLine),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'خواندن کامل',
+                          style: TextStyle(
+                            color: accentBlue,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Icons.arrow_back_ios_new_rounded,
+                            color: accentBlue, size: 11),
+                      ],
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: rose.withOpacity(.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 5,
+                            height: 5,
+                            decoration: const BoxDecoration(
+                              color: Color(0xfff43f5e),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          const Text(
+                            'فوری',
+                            style: TextStyle(
+                              color: Color(0xfff43f5e),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Vazirmatn',
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
-                  const SizedBox(height: 12),
-                  Container(
-                    height: 1,
-                    color: lineC.withOpacity(.5),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            'خواندن کامل',
-                            style: TextStyle(
-                              color: accentBlue,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.arrow_back_ios_new,
-                            color: accentBlue,
-                            size: 11,
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xffff3d00)
-                              .withOpacity(.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 5,
-                              height: 5,
-                              decoration: const BoxDecoration(
-                                color: Color(0xffff3d00),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 5),
-                            const Text(
-                              'فوری',
-                              style: TextStyle(
-                                color: Color(0xffff3d00),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/* ==================== NEW NEWS BANNER ==================== */
-
-class NewNewsBanner extends StatefulWidget {
-  const NewNewsBanner({super.key});
-  @override
-  State<NewNewsBanner> createState() => _NewNewsBannerState();
-}
-
-class _NewNewsBannerState extends State<NewNewsBanner> {
-  late Future<List> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = getNewNewsList();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => FutureBuilder<List>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const SizedBox.shrink();
-          }
-          if (snapshot.hasError) return const SizedBox.shrink();
-          final list = snapshot.data ?? [];
-          if (list.isEmpty) return const SizedBox.shrink();
-
-          final items = list.take(3).toList();
-
-          return Container(
-            margin: const EdgeInsets.only(top: 22),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 4,
-                            height: 22,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Color(0xff0d47a1),
-                                  Color(0xff25b8e8),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          const LiveDot(),
-                          const SizedBox(width: 8),
-                          Text(
-                            'اخبار فوری',
-                            style: TextStyle(
-                              color: txtC,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Container(
-                        height: 2,
-                        decoration: BoxDecoration(
-                          color: lineC,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
-                const SizedBox(height: 14),
-                ...items
-                    .map((news) => UrgentNewsCard(news: news))
-                    .toList(),
-                // 👇 دکمه «مشاهده همه» زیر اخبار فوری (فقط اگر بیش از ۳ خبر وجود داشته باشد)
-                if (list.length > 3)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const UrgentNewsListPage(),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: accentBlue.withOpacity(.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: accentBlue.withOpacity(.3),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.list_alt_outlined,
-                              color: accentBlue,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'مشاهده همه اخبار فوری',
-                              style: TextStyle(
-                                color: accentBlue,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_back_ios_new,
-                              color: accentBlue,
-                              size: 12,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 6),
               ],
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
@@ -2951,7 +4451,7 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
         appBar: AppBar(
           title: Row(
             children: [
-              const LiveDot(),
+              const ModernLiveDot(),
               const SizedBox(width: 8),
               Text(
                 'اخبار فوری',
@@ -2959,6 +4459,7 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
                   color: txtC,
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
                 ),
               ),
             ],
@@ -2974,8 +4475,7 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
           child: FutureBuilder<List>(
             future: _future,
             builder: (context, snapshot) {
-              if (snapshot.connectionState ==
-                  ConnectionState.waiting) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Padding(
                   padding: EdgeInsets.all(20),
                   child: Column(
@@ -2989,22 +4489,19 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
               }
               if (snapshot.hasError) {
                 return ErrorBox(
-                  message:
-                      'خطا در دریافت اخبار.\n${snapshot.error}',
+                  message: 'خطا در دریافت اخبار.\n${snapshot.error}',
                   onRetry: _refresh,
                 );
               }
               final list = snapshot.data ?? [];
               if (list.isEmpty) {
-                return const EmptyWidget(
-                  text: 'هنوز خبری منتشر نشده است.',
-                );
+                return const EmptyWidget(text: 'هنوز خبری منتشر نشده است.');
               }
               return ListView.builder(
+                physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 itemCount: list.length,
-                itemBuilder: (c, i) =>
-                    UrgentNewsCard(news: list[i]),
+                itemBuilder: (c, i) => ModernUrgentNewsCard(news: list[i]),
               );
             },
           ),
@@ -3068,7 +4565,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
       _userCtrl.clear();
       _passCtrl.clear();
       setState(() {});
-      _snack('اطلاعات ورود پاک شد.');
+      showSnack(context, 'اطلاعات ورود پاک شد.');
     } catch (_) {}
   }
 
@@ -3105,17 +4602,6 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     }
   }
 
-  void _snack(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: accentBlue,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
   @override
   void dispose() {
     _userCtrl.dispose();
@@ -3132,7 +4618,8 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
         appBar: AppBar(
           title: const Text(
             'ورود ادمین',
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+                fontWeight: FontWeight.w900, fontFamily: 'Vazirmatn'),
           ),
           backgroundColor: bgC,
           foregroundColor: txtC,
@@ -3140,10 +4627,8 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
           actions: [
             IconButton(
               onPressed: _clearSavedCredentials,
-              icon: const Icon(
-                Icons.delete_sweep_outlined,
-                color: Colors.red,
-              ),
+              icon: const Icon(Icons.delete_sweep_rounded,
+                  color: Colors.red),
               tooltip: 'پاک کردن اطلاعات ذخیره‌شده',
             ),
           ],
@@ -3152,95 +4637,79 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              const SizedBox(height: 30),
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: gold.withOpacity(0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.lock_outline,
-                  color: gold,
-                  size: 40,
-                ),
-              ),
               const SizedBox(height: 20),
+              Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      gold.withOpacity(0.2),
+                      gold.withOpacity(0.05),
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: gold.withOpacity(0.3)),
+                ),
+                child: Icon(Icons.lock_rounded, color: gold, size: 42),
+              ),
+              const SizedBox(height: 22),
               Text(
                 'فقط مدیر سایت',
                 style: TextStyle(
                   color: txtC,
                   fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 'برای مدیریت اخبار فوری وارد شوید',
-                style: TextStyle(color: mutC, fontSize: 13),
+                style: TextStyle(
+                  color: mutC,
+                  fontSize: 12.5,
+                  fontFamily: 'Vazirmatn',
+                ),
               ),
               const SizedBox(height: 30),
-              TextField(
+              _buildField(
                 controller: _userCtrl,
-                textDirection: TextDirection.ltr,
-                style: TextStyle(color: txtC),
-                decoration: InputDecoration(
-                  hintText: 'نام کاربری وردپرس',
-                  hintStyle: TextStyle(color: mutC),
-                  prefixIcon:
-                      Icon(Icons.person, color: accentGreen),
-                  filled: true,
-                  fillColor: pnl,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
+                icon: Icons.person_rounded,
+                hint: 'نام کاربری وردپرس',
               ),
               const SizedBox(height: 12),
-              TextField(
+              _buildField(
                 controller: _passCtrl,
-                obscureText: _obscure,
-                textDirection: TextDirection.ltr,
-                style: TextStyle(color: txtC),
-                decoration: InputDecoration(
-                  hintText: 'Application Password',
-                  hintStyle: TextStyle(color: mutC),
-                  prefixIcon: Icon(Icons.key, color: accentGreen),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscure
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                      color: mutC,
-                      size: 20,
-                    ),
-                    onPressed: () =>
-                        setState(() => _obscure = !_obscure),
+                icon: Icons.key_rounded,
+                hint: 'Application Password',
+                obscure: _obscure,
+                suffix: IconButton(
+                  icon: Icon(
+                    _obscure
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                    color: mutC,
+                    size: 20,
                   ),
-                  filled: true,
-                  fillColor: pnl,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
+                  onPressed: () => setState(() => _obscure = !_obscure),
                 ),
               ),
-              const SizedBox(height: 15),
+              const SizedBox(height: 14),
               GestureDetector(
-                onTap: () =>
-                    setState(() => _rememberMe = !_rememberMe),
+                onTap: () => setState(() => _rememberMe = !_rememberMe),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
+                      horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
                     color: pnl,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: lineC),
                   ),
                   child: Row(
                     children: [
-                      Container(
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
                         width: 22,
                         height: 22,
                         decoration: BoxDecoration(
@@ -3254,11 +4723,8 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                           ),
                         ),
                         child: _rememberMe
-                            ? const Icon(
-                                Icons.check,
-                                color: Colors.white,
-                                size: 16,
-                              )
+                            ? const Icon(Icons.check_rounded,
+                                color: Colors.white, size: 16)
                             : null,
                       ),
                       const SizedBox(width: 10),
@@ -3267,17 +4733,21 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                         style: TextStyle(
                           color: txtC,
                           fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'Vazirmatn',
                         ),
                       ),
                       const Spacer(),
-                      Icon(Icons.lock_outline,
+                      Icon(Icons.lock_outline_rounded,
                           color: mutC, size: 16),
                       const SizedBox(width: 4),
                       Text(
                         'ذخیره امن',
-                        style:
-                            TextStyle(color: mutC, fontSize: 10),
+                        style: TextStyle(
+                          color: mutC,
+                          fontSize: 10,
+                          fontFamily: 'Vazirmatn',
+                        ),
                       ),
                     ],
                   ),
@@ -3288,29 +4758,41 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(10),
+                    color: rose.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: rose.withOpacity(0.3)),
                   ),
-                  child: Text(
-                    _error!,
-                    style: const TextStyle(
-                      color: Colors.orange,
-                      fontSize: 12,
-                    ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline_rounded,
+                          color: rose, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: TextStyle(
+                            color: rose,
+                            fontSize: 12,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
-              const SizedBox(height: 25),
+              const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
-                height: 52,
+                height: 54,
                 child: ElevatedButton(
                   onPressed: _loading ? null : _login,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: accentGreen,
                     foregroundColor: Colors.white,
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                   child: _loading
@@ -3326,7 +4808,8 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                           'ورود',
                           style: TextStyle(
                             fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'Vazirmatn',
                           ),
                         ),
                 ),
@@ -3336,11 +4819,12 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: accentBlue.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: accentBlue.withOpacity(0.15)),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.shield_outlined,
+                    Icon(Icons.shield_rounded,
                         color: accentBlue, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
@@ -3350,6 +4834,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                           color: mutC,
                           fontSize: 11,
                           height: 1.6,
+                          fontFamily: 'Vazirmatn',
                         ),
                       ),
                     ),
@@ -3357,6 +4842,41 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildField({
+    required TextEditingController controller,
+    required IconData icon,
+    required String hint,
+    bool obscure = false,
+    Widget? suffix,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: pnl,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: lineC),
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: obscure,
+        textDirection: TextDirection.ltr,
+        style: TextStyle(color: txtC, fontFamily: 'Vazirmatn'),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: mutC, fontFamily: 'Vazirmatn'),
+          prefixIcon: Icon(icon, color: accentGreen),
+          suffixIcon: suffix,
+          filled: true,
+          fillColor: Colors.transparent,
+          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
           ),
         ),
       ),
@@ -3399,7 +4919,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     final title = _titleCtrl.text.trim();
     final content = _contentCtrl.text.trim();
     if (title.isEmpty || content.isEmpty) {
-      _snack('عنوان و متن خبر را وارد کنید.', Colors.orange);
+      showSnack(context, 'عنوان و متن خبر را وارد کنید.', error: true);
       return;
     }
     setState(() => _sending = true);
@@ -3411,15 +4931,16 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         content: content,
       );
       if (!mounted) return;
-      _snack('✅ خبر فوری منتشر شد!', Colors.green);
+      showSnack(context, 'خبر فوری منتشر شد!');
       _titleCtrl.clear();
       _contentCtrl.clear();
       _reloadList();
     } catch (e) {
       if (!mounted) return;
-      _snack(
-        '❌ خطا: ${e.toString().replaceFirst('Exception: ', '')}',
-        Colors.red,
+      showSnack(
+        context,
+        e.toString().replaceFirst('Exception: ', ''),
+        error: true,
       );
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -3431,23 +4952,35 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: pnl,
-        title: Text('حذف خبر', style: TextStyle(color: txtC)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Text(
+          'حذف خبر',
+          style: TextStyle(
+            color: txtC,
+            fontWeight: FontWeight.w900,
+            fontFamily: 'Vazirmatn',
+          ),
+        ),
         content: Text(
           'آیا از حذف «${pTitle(post)}» مطمئن هستید؟',
-          style: TextStyle(color: mutC),
+          style: TextStyle(color: mutC, fontFamily: 'Vazirmatn'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text('انصراف',
-                style: TextStyle(color: mutC)),
+                style: TextStyle(
+                    color: mutC, fontFamily: 'Vazirmatn')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'حذف',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: Text('حذف',
+                style: TextStyle(
+                    color: rose,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn')),
           ),
         ],
       ),
@@ -3461,25 +4994,16 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         postId: post['id'],
       );
       if (!mounted) return;
-      _snack('🗑 خبر حذف شد.', Colors.blueGrey);
+      showSnack(context, 'خبر حذف شد.');
       _reloadList();
     } catch (e) {
       if (!mounted) return;
-      _snack(
-        '❌ خطا: ${e.toString().replaceFirst('Exception: ', '')}',
-        Colors.red,
+      showSnack(
+        context,
+        e.toString().replaceFirst('Exception: ', ''),
+        error: true,
       );
     }
-  }
-
-  void _snack(String msg, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: color,
-        duration: const Duration(seconds: 3),
-      ),
-    );
   }
 
   @override
@@ -3498,13 +5022,15 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         appBar: AppBar(
           title: const Text(
             'پنل مدیریت اخبار فوری',
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+                fontWeight: FontWeight.w900, fontFamily: 'Vazirmatn'),
           ),
           backgroundColor: bgC,
           foregroundColor: txtC,
           elevation: 0,
         ),
         body: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -3512,99 +5038,120 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: accentBlue.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  color: accentBlue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: accentBlue.withOpacity(0.4),
-                  ),
+                      color: accentBlue.withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline,
+                    Icon(Icons.info_outline_rounded,
                         color: accentBlue, size: 22),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'خبر فوری پس از انتشار، در سایت و بالای صفحه اصلی اپ نمایش داده می‌شود و تا زمانی که شما حذف نکنید باقی می‌ماند.',
+                        'خبر فوری پس از انتشار، بالای صفحه اصلی اپ نمایش داده می‌شود و تا زمانی که حذف نکنید باقی می‌ماند.',
                         style: TextStyle(
                           color: txtC,
                           fontSize: 12,
                           height: 1.6,
+                          fontFamily: 'Vazirmatn',
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
               Text(
                 'عنوان خبر',
                 style: TextStyle(
                   color: accentGreen,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
                 ),
               ),
               const SizedBox(height: 8),
-              TextField(
-                controller: _titleCtrl,
-                textDirection: TextDirection.rtl,
-                textAlign: TextAlign.right,
-                style: TextStyle(color: txtC, fontSize: 15),
-                decoration: InputDecoration(
-                  hintText: 'مثلاً: ثبت‌نام دوره جدید آغاز شد',
-                  hintStyle: TextStyle(color: mutC),
-                  filled: true,
-                  fillColor: pnl,
-                  contentPadding: const EdgeInsets.all(15),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+              Container(
+                decoration: BoxDecoration(
+                  color: pnl,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: lineC),
+                ),
+                child: TextField(
+                  controller: _titleCtrl,
+                  textDirection: TextDirection.rtl,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                      color: txtC, fontSize: 14, fontFamily: 'Vazirmatn'),
+                  decoration: InputDecoration(
+                    hintText: 'مثلاً: ثبت‌نام دوره جدید آغاز شد',
+                    hintStyle: TextStyle(
+                        color: mutC, fontFamily: 'Vazirmatn'),
+                    filled: true,
+                    fillColor: Colors.transparent,
+                    contentPadding: const EdgeInsets.all(15),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
               Text(
                 'متن کامل خبر',
                 style: TextStyle(
                   color: accentGreen,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
                 ),
               ),
               const SizedBox(height: 8),
-              TextField(
-                controller: _contentCtrl,
-                textDirection: TextDirection.rtl,
-                textAlign: TextAlign.right,
-                maxLines: 6,
-                style: TextStyle(
-                  color: txtC,
-                  fontSize: 14,
-                  height: 1.8,
+              Container(
+                decoration: BoxDecoration(
+                  color: pnl,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: lineC),
                 ),
-                decoration: InputDecoration(
-                  hintText: 'توضیحات کامل خبر...',
-                  hintStyle: TextStyle(color: mutC),
-                  filled: true,
-                  fillColor: pnl,
-                  contentPadding: const EdgeInsets.all(15),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+                child: TextField(
+                  controller: _contentCtrl,
+                  textDirection: TextDirection.rtl,
+                  textAlign: TextAlign.right,
+                  maxLines: 6,
+                  style: TextStyle(
+                    color: txtC,
+                    fontSize: 13,
+                    height: 1.8,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'توضیحات کامل خبر...',
+                    hintStyle: TextStyle(
+                        color: mutC, fontFamily: 'Vazirmatn'),
+                    filled: true,
+                    fillColor: Colors.transparent,
+                    contentPadding: const EdgeInsets.all(15),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
               SizedBox(
-                height: 55,
+                height: 54,
                 child: ElevatedButton.icon(
                   onPressed: _sending ? null : _publish,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: accentBlue,
                     foregroundColor: Colors.white,
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                   icon: _sending
@@ -3616,25 +5163,27 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                             color: Colors.white,
                           ),
                         )
-                      : const Icon(Icons.send, size: 22),
+                      : const Icon(Icons.send_rounded, size: 20),
                   label: Text(
                     _sending ? 'در حال ارسال...' : 'انتشار خبر فوری',
                     style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Vazirmatn',
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 30),
               Divider(color: lineC),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               Text(
                 'اخبار منتشر شده',
                 style: TextStyle(
                   color: txtC,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
                 ),
               ),
               const SizedBox(height: 12),
@@ -3647,16 +5196,15 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                       padding: const EdgeInsets.all(20),
                       child: Center(
                         child: CircularProgressIndicator(
-                          color: accentGreen,
-                        ),
+                            color: accentGreen),
                       ),
                     );
                   }
                   if (snapshot.hasError) {
                     return Text(
                       'خطا: ${snapshot.error}',
-                      style:
-                          const TextStyle(color: Colors.orange),
+                      style: TextStyle(
+                          color: rose, fontFamily: 'Vazirmatn'),
                     );
                   }
                   final list = snapshot.data ?? [];
@@ -3666,7 +5214,9 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                       child: Center(
                         child: Text(
                           'هنوز خبری منتشر نشده است.',
-                          style: TextStyle(color: mutC),
+                          style: TextStyle(
+                              color: mutC,
+                              fontFamily: 'Vazirmatn'),
                         ),
                       ),
                     );
@@ -3674,12 +5224,11 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                   return Column(
                     children: list.map((p) {
                       return Container(
-                        margin:
-                            const EdgeInsets.only(bottom: 10),
+                        margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: pnl,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: lineC),
                         ),
                         child: Row(
@@ -3692,14 +5241,14 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                                   Text(
                                     pTitle(p),
                                     maxLines: 2,
-                                    overflow:
-                                        TextOverflow.ellipsis,
+                                    overflow: TextOverflow.ellipsis,
                                     textAlign: TextAlign.right,
                                     style: TextStyle(
                                       color: txtC,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w800,
                                       height: 1.6,
+                                      fontFamily: 'Vazirmatn',
                                     ),
                                   ),
                                   if (pDate(p).isNotEmpty) ...[
@@ -3708,21 +5257,18 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                                       pDate(p),
                                       style: TextStyle(
                                         color: mutC,
-                                        fontSize: 11,
+                                        fontSize: 10.5,
+                                        fontFamily: 'Vazirmatn',
                                       ),
                                     ),
                                   ],
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 8),
                             IconButton(
                               onPressed: () => _delete(p),
-                              icon: const Icon(
-                                Icons.delete_outline,
-                                color: Colors.red,
-                              ),
-                              tooltip: 'حذف',
+                              icon: Icon(Icons.delete_outline_rounded,
+                                  color: rose),
                             ),
                           ],
                         ),
@@ -3738,659 +5284,25 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     );
   }
 }
-/* ==================== HEADER ==================== */
 
-Widget buildHeader(BuildContext context, [String? t]) {
-  return SafeArea(
-    bottom: false,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: bgC,
-        border: Border(bottom: BorderSide(color: lineC)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(23),
-              border: Border.all(color: lineC, width: 1),
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                logo,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Image.network(
-                  logoNet,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                      Icon(Icons.sports, color: accentGreen),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              t ?? 'اپلیکیشن تربیت بدنی و علوم ورزشی',
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                color: txtC,
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: () async {
-              darkModeNotifier.value = !darkModeNotifier.value;
-              await _storage.write(
-                key: 'dark_mode',
-                value: darkModeNotifier.value.toString(),
-              );
-            },
-            icon: ValueListenableBuilder<bool>(
-              valueListenable: darkModeNotifier,
-              builder: (c, isDark, _) => Icon(
-                isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                color: gold,
-                size: 26,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SearchPage()),
-            ),
-            icon: Icon(Icons.search, color: gold, size: 26),
-          ),
-        ],
-      ),
-    ),
-  );
-}
+/* ==================== SHIMMER BOX ==================== */
 
-Widget buildHeaderWithAdmin(BuildContext context, [String? t]) {
-  return SafeArea(
-    bottom: false,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: bgC,
-        border: Border(bottom: BorderSide(color: lineC)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(23),
-              border: Border.all(color: lineC, width: 1),
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                logo,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Image.network(
-                  logoNet,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                      Icon(Icons.sports, color: accentGreen),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              t ?? 'اپلیکیشن تربیت بدنی و علوم ورزشی',
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                color: txtC,
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AdminLoginPage()),
-            ),
-            icon: Icon(Icons.admin_panel_settings, color: accentBlue, size: 26),
-            tooltip: 'پنل مدیریت',
-          ),
-          IconButton(
-            onPressed: () async {
-              darkModeNotifier.value = !darkModeNotifier.value;
-              await _storage.write(
-                key: 'dark_mode',
-                value: darkModeNotifier.value.toString(),
-              );
-            },
-            icon: ValueListenableBuilder<bool>(
-              valueListenable: darkModeNotifier,
-              builder: (c, isDark, _) => Icon(
-                isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                color: gold,
-                size: 26,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SearchPage()),
-            ),
-            icon: Icon(Icons.search, color: gold, size: 26),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-/* ==================== HERO ==================== */
-
-Widget buildHero() {
-  return Container(
-    margin: const EdgeInsets.fromLTRB(14, 18, 14, 10),
-    decoration: BoxDecoration(
-      color: pnl,
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: lineC),
-    ),
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: Image.network(
-        heroImg,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        filterQuality: FilterQuality.high,
-        cacheWidth: 1080,
-        loadingBuilder: (c, ch, pr) {
-          if (pr == null) return ch;
-          return Container(
-            height: 180,
-            color: pnl2,
-            child: Center(
-              child: CircularProgressIndicator(color: accentGreen),
-            ),
-          );
-        },
-        errorBuilder: (_, __, ___) => Container(
-          height: 180,
-          color: pnl2,
-          child: Icon(Icons.sports_soccer, color: accentGreen, size: 60),
-        ),
-      ),
-    ),
-  );
-}
-
-/* ==================== POST CARD ==================== */
-
-Widget buildPostCard(BuildContext context, dynamic p) {
-  final i = pImg(p);
-  final date = pDate(p);
-  return GestureDetector(
-    onTap: () => openUrl(context, pLink(p)),
-    child: Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        color: pnl,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: lineC),
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topRight: Radius.circular(15),
-              bottomRight: Radius.circular(15),
-            ),
-            child: SizedBox(
-              width: 125,
-              height: 110,
-              child: i.isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: i,
-                      fit: BoxFit.cover,
-                      filterQuality: FilterQuality.high,
-                      memCacheWidth: 500,
-                      fadeInDuration: const Duration(milliseconds: 200),
-                      placeholder: (_, __) => Container(
-                        color: pnl2,
-                        child: Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: accentGreen,
-                            ),
-                          ),
-                        ),
-                      ),
-                      errorWidget: (_, __, ___) => Container(
-                        color: pnl2,
-                        child: Icon(
-                          Icons.article_outlined,
-                          color: accentGreen,
-                          size: 40,
-                        ),
-                      ),
-                    )
-                  : Container(
-                      color: pnl2,
-                      child: Icon(
-                        Icons.article_outlined,
-                        color: accentGreen,
-                        size: 40,
-                      ),
-                    ),
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(13),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    pTitle(p),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: txtC,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      height: 1.7,
-                    ),
-                  ),
-                  if (date.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      date,
-                      style: TextStyle(color: mutC, fontSize: 11),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-/* ==================== PRODUCT CARD ==================== */
-
-Widget buildProductCard(BuildContext context, dynamic p) {
-  final img = (p['images'] as List?)?.isNotEmpty == true
-      ? (p['images'][0]['src'] ?? '')
-      : '';
-  final name = p['name'] ?? '';
-  final link = p['permalink'] ?? '';
-  final inStock = p['stock_status'] == 'instock';
-  final regularPrice = p['regular_price'] ?? '';
-  final salePrice = p['sale_price'] ?? '';
-  final isOnSale = salePrice.isNotEmpty && salePrice != regularPrice;
-
-  return GestureDetector(
-    onTap: () => openUrl(context, link, title: name),
-    child: Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        color: pnl,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: lineC),
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topRight: Radius.circular(15),
-              bottomRight: Radius.circular(15),
-            ),
-            child: SizedBox(
-              width: 125,
-              height: 130,
-              child: img.isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: img,
-                      fit: BoxFit.cover,
-                      filterQuality: FilterQuality.high,
-                      memCacheWidth: 500,
-                      fadeInDuration: const Duration(milliseconds: 200),
-                      placeholder: (_, __) => Container(
-                        color: pnl2,
-                        child: Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: accentGreen,
-                            ),
-                          ),
-                        ),
-                      ),
-                      errorWidget: (_, __, ___) => Container(
-                        color: pnl2,
-                        child: Icon(
-                          Icons.shopping_bag_outlined,
-                          color: accentGreen,
-                          size: 40,
-                        ),
-                      ),
-                    )
-                  : Container(
-                      color: pnl2,
-                      child: Icon(
-                        Icons.shopping_bag_outlined,
-                        color: accentGreen,
-                        size: 40,
-                      ),
-                    ),
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(13),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: txtC,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      height: 1.6,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (isOnSale) ...[
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            'تخفیف',
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          formatPrice(regularPrice),
-                          style: TextStyle(
-                            color: mutC,
-                            fontSize: 11,
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      formatPrice(salePrice),
-                      style: TextStyle(
-                        color: txtC,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ] else if (regularPrice.isNotEmpty) ...[
-                    Text(
-                      formatPrice(regularPrice),
-                      style: TextStyle(
-                        color: txtC,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ] else ...[
-                    Text(
-                      'قیمت نامشخص',
-                      style: TextStyle(color: mutC, fontSize: 12),
-                    ),
-                  ],
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(
-                        inStock ? Icons.check_circle : Icons.cancel,
-                        color: inStock ? Colors.green : Colors.red,
-                        size: 14,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        inStock ? 'موجود' : 'ناموجود',
-                        style: TextStyle(
-                          color: inStock ? Colors.green : Colors.red,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-/* ==================== CAT GRID ==================== */
-
-Widget buildCatGrid() {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 14),
-    child: GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: cats.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        childAspectRatio: 1.15,
-      ),
-      itemBuilder: (c, i) => GestureDetector(
-        onTap: () => Navigator.push(
-          c,
-          MaterialPageRoute(builder: (_) => CategoryPostsPage(c: cats[i])),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: pnl,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: lineC),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: accentGreen.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(cats[i].i, color: accentGreen, size: 24),
-              ),
-              const SizedBox(height: 10),
-              Expanded(
-                child: Center(
-                  child: Text(
-                    cats[i].n,
-                    maxLines: 2,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: txtC,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      height: 1.5,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-/* ==================== SOCIAL ==================== */
-
-Widget buildSocial() {
-  final items = [
-    ['تلگرام', Icons.send, 'https://t.me/itarbiatbadani'],
-    ['اینستاگرام', Icons.camera_alt_outlined,
-        'https://instagram.com/itarbiatbadani'],
-    ['بله', Icons.chat_outlined, 'https://ble.ir/itarbiatbadani'],
-    ['فروشگاه', Icons.shopping_cart, '$site/shop/'],
-  ];
-  return Column(
-    children: [
-      const SectionTitleWidget(
-        title: 'ارتباط با ما',
-        icon: Icons.connect_without_contact,
-      ),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        child: GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: items.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            childAspectRatio: 3.2,
-          ),
-          itemBuilder: (c, i) => GestureDetector(
-            onTap: () => openExternalUrl(items[i][2] as String),
-            child: Container(
-              decoration: BoxDecoration(
-                color: pnl,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: lineC),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(items[i][1] as IconData, color: accentBlue, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    items[i][0] as String,
-                    style: TextStyle(
-                      color: txtC,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    ],
-  );
-}
-
-/* ==================== SECTION TITLE ==================== */
-
-class SectionTitleWidget extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  const SectionTitleWidget({
-    super.key,
-    required this.title,
-    required this.icon,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (c, _, __) => Padding(
-        padding: const EdgeInsets.fromLTRB(14, 18, 14, 12),
-        child: Row(
-          children: [
-            Container(
-              width: 4,
-              height: 25,
-              decoration: BoxDecoration(
-                color: gold,
-                borderRadius: BorderRadius.circular(5),
-              ),
-            ),
-            const SizedBox(width: 9),
-            Icon(icon, color: gold, size: 22),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                title,
-                textAlign: TextAlign.right,
-                style: TextStyle(
-                  color: txtC,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/* ==================== SKELETON ==================== */
-
-class SkeletonBox extends StatefulWidget {
-  final double width;
+class ShimmerBox extends StatefulWidget {
   final double height;
+  final double width;
   final double radius;
-  const SkeletonBox({
+  const ShimmerBox({
     super.key,
+    required this.height,
     this.width = double.infinity,
-    this.height = 16,
-    this.radius = 8,
+    this.radius = 16,
   });
+
   @override
-  State<SkeletonBox> createState() => _SkeletonBoxState();
+  State<ShimmerBox> createState() => _ShimmerBoxState();
 }
 
-class _SkeletonBoxState extends State<SkeletonBox>
+class _ShimmerBoxState extends State<ShimmerBox>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   late Animation<double> _anim;
@@ -4400,9 +5312,11 @@ class _SkeletonBoxState extends State<SkeletonBox>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
-    _anim = Tween<double>(begin: 0.4, end: 1.0).animate(_ctrl);
+      duration: const Duration(milliseconds: 1300),
+    )..repeat();
+    _anim = Tween<double>(begin: -1.5, end: 1.5).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -4413,19 +5327,32 @@ class _SkeletonBoxState extends State<SkeletonBox>
 
   @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _anim,
-      child: Container(
-        width: widget.width,
-        height: widget.height,
-        decoration: BoxDecoration(
-          color: skeletonC,
-          borderRadius: BorderRadius.circular(widget.radius),
-        ),
-      ),
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (context, _) {
+        return Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(widget.radius),
+            gradient: LinearGradient(
+              begin: Alignment(_anim.value - 1, 0),
+              end: Alignment(_anim.value + 1, 0),
+              colors: [
+                skeletonBase,
+                skeletonHi,
+                skeletonBase,
+              ],
+              stops: const [0.35, 0.5, 0.65],
+            ),
+          ),
+        );
+      },
     );
   }
 }
+
+/* ==================== SKELETONS ==================== */
 
 class PostSkeleton extends StatelessWidget {
   const PostSkeleton({super.key});
@@ -4433,34 +5360,29 @@ class PostSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: pnl,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: lineC),
       ),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topRight: Radius.circular(15),
-              bottomRight: Radius.circular(15),
-            ),
-            child: const SkeletonBox(width: 125, height: 110, radius: 0),
-          ),
+          const ShimmerBox(height: 90, width: 90, radius: 14),
+          const SizedBox(width: 12),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(13),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  SkeletonBox(height: 14, width: double.infinity),
-                  SizedBox(height: 8),
-                  SkeletonBox(height: 14, width: 200),
-                  SizedBox(height: 8),
-                  SkeletonBox(height: 12, width: 80),
-                ],
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                ShimmerBox(height: 12, width: 80, radius: 6),
+                SizedBox(height: 10),
+                ShimmerBox(height: 14),
+                SizedBox(height: 6),
+                ShimmerBox(height: 14, width: 180),
+                SizedBox(height: 10),
+                ShimmerBox(height: 10, width: 60, radius: 5),
+              ],
             ),
           ),
         ],
@@ -4475,10 +5397,10 @@ class FeaturedSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 18),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: pnl,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: lineC),
       ),
       child: Column(
@@ -4486,21 +5408,23 @@ class FeaturedSkeleton extends StatelessWidget {
         children: [
           const ClipRRect(
             borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(18),
-              topRight: Radius.circular(18),
+              topLeft: Radius.circular(22),
+              topRight: Radius.circular(22),
             ),
-            child: SkeletonBox(height: 200, radius: 0),
+            child: ShimmerBox(height: 200, radius: 0),
           ),
           Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
-                SkeletonBox(height: 16, width: double.infinity),
+                ShimmerBox(height: 12, width: 90, radius: 6),
+                SizedBox(height: 12),
+                ShimmerBox(height: 16),
                 SizedBox(height: 8),
-                SkeletonBox(height: 16, width: 220),
-                SizedBox(height: 10),
-                SkeletonBox(height: 12, width: 90),
+                ShimmerBox(height: 16, width: 220),
+                SizedBox(height: 14),
+                ShimmerBox(height: 40),
               ],
             ),
           ),
@@ -4515,12 +5439,41 @@ class FeaturedSkeleton extends StatelessWidget {
 class EmptyWidget extends StatelessWidget {
   final String text;
   const EmptyWidget({super.key, required this.text});
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(30),
+      padding: const EdgeInsets.all(40),
       child: Center(
-        child: Text(text, style: TextStyle(color: mutC)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: pnl2,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.inbox_rounded,
+                color: mutC,
+                size: 40,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: mutC,
+                fontSize: 13,
+                height: 1.7,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -4534,25 +5487,60 @@ class ErrorBox extends StatelessWidget {
     required this.message,
     this.onRetry,
   });
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: Colors.red, size: 40),
-          const SizedBox(height: 10),
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: rose.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.error_outline_rounded,
+              color: rose,
+              size: 42,
+            ),
+          ),
+          const SizedBox(height: 16),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: TextStyle(color: txtC),
+            style: TextStyle(
+              color: txtC,
+              fontSize: 13,
+              height: 1.7,
+              fontFamily: 'Vazirmatn',
+            ),
           ),
           if (onRetry != null) ...[
-            const SizedBox(height: 15),
-            ElevatedButton(
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
               onPressed: onRetry,
-              child: const Text('تلاش مجدد'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accentGreen,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text(
+                'تلاش مجدد',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
             ),
           ],
         ],
