@@ -41,6 +41,16 @@ jobs:
           rm -f pubspec.lock
           echo "✅ Cleaned cache"
 
+      - name: Download Vazirmatn Fonts
+        run: |
+          mkdir -p assets/fonts
+          curl -L -o assets/fonts/Vazirmatn-Regular.ttf \
+            https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/ttf/Vazirmatn-Regular.ttf
+          curl -L -o assets/fonts/Vazirmatn-Bold.ttf \
+            https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/ttf/Vazirmatn-Bold.ttf
+          ls -la assets/fonts/
+          echo "✅ Fonts downloaded"
+
       - name: Upgrade AGP and Gradle
         run: |
           echo "🔧 Upgrading AGP and Gradle..."
@@ -50,11 +60,13 @@ jobs:
             sed -i "s/version '8.1.0'/version '8.3.0'/g" android/settings.gradle || true
             sed -i 's/version "8.1.1"/version "8.3.0"/g' android/settings.gradle || true
             sed -i "s/version '8.1.1'/version '8.3.0'/g" android/settings.gradle || true
+            echo "✅ settings.gradle updated"
           fi
           
           if [ -f "android/build.gradle" ]; then
             sed -i 's/com.android.tools.build:gradle:8.1.0/com.android.tools.build:gradle:8.3.0/g' android/build.gradle || true
             sed -i 's/com.android.tools.build:gradle:8.1.1/com.android.tools.build:gradle:8.3.0/g' android/build.gradle || true
+            echo "✅ build.gradle updated"
           fi
           
           if [ -f "android/gradle/wrapper/gradle-wrapper.properties" ]; then
@@ -63,9 +75,8 @@ jobs:
             sed -i 's|gradle-8.1-all.zip|gradle-8.4-all.zip|g' android/gradle/wrapper/gradle-wrapper.properties || true
             sed -i 's|gradle-8.2-all.zip|gradle-8.4-all.zip|g' android/gradle/wrapper/gradle-wrapper.properties || true
             sed -i 's|gradle-8.3-all.zip|gradle-8.4-all.zip|g' android/gradle/wrapper/gradle-wrapper.properties || true
+            echo "✅ gradle-wrapper.properties updated"
           fi
-          
-          echo "✅ AGP and Gradle upgraded"
 
       - name: Add namespace to gradle (if needed)
         run: |
