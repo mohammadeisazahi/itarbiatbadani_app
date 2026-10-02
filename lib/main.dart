@@ -56,7 +56,19 @@ const cats = <Cat>[
   Cat('ورزش برای گروه‌ها و نیازهای ویژه', 'exercise-for-special-groups-and-needs', Icons.accessibility_new_outlined),
   Cat('تکنولوژی و نوآوری در ورزش', 'technology-and-innovation-in-sports', Icons.memory_outlined),
 ];
-Future<void> openUrl(String url) async {
+// 👇 باز کردن لینک در صفحه داخلی اپ (WebPage)
+Future<void> openUrl(BuildContext context, String url, {String title = 'مشاهده'}) async {
+  if (url.isEmpty) return;
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => WebPage(url: url, title: title),
+    ),
+  );
+}
+
+// 👇 باز کردن لینک در مرورگر بیرونی (برای لینک‌های خاص مثل شبکه‌های اجتماعی)
+Future<void> openExternalUrl(String url) async {
   if (url.isEmpty) return;
   final uri = Uri.parse(url);
   if (await canLaunchUrl(uri)) {
@@ -100,7 +112,7 @@ String pExcerpt(dynamic p, {int maxChars = 200}) {
   } catch (_) { return ''; }
 }
 
-// 👇 اصلاح شد: استخراج تمام زیردسته‌ها و اتصال آن‌ها با علامت • 👇
+// 👇 استخراج تمام زیردسته‌ها و اتصال آن‌ها با علامت •
 String pCategory(dynamic p) {
   try {
     final terms = p['_embedded']?['wp:term'];
@@ -168,14 +180,33 @@ List<int> _toJalali(int gy, int gm, int gd) {
   return [jy, jm, jd];
 }
 
-// 👇 اصلاح شد: اضافه کردن wp:term به _embed برای دریافت دسته‌بندی‌ها 👇
+// 👇 کش برای جلوگیری از درخواست‌های تکراری و افزایش سرعت
+final Map<String, List> _postsCache = {};
+final Map<String, int> _postsCacheTime = {};
+const int _cacheDurationSeconds = 300;
+
 Future<List> getPostsPaged({int perPage = perPageSize, int page = 1, int? catId}) async {
-  var u = '$api/posts?per_page=$perPage&page=$page&_embed=wp:featuredmedia,wp:term';
+  var u = '$api/posts?per_page=$perPage&page=$page'
+          '&_embed=wp:featuredmedia,wp:term'
+          '&_fields=id,link,title,date,excerpt,_embedded,_links';
   if (catId != null) u += '&categories=$catId';
+
+  final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  if (_postsCache.containsKey(u) &&
+      _postsCacheTime.containsKey(u) &&
+      (now - _postsCacheTime[u]!) < _cacheDurationSeconds) {
+    return _postsCache[u]!;
+  }
+
   final r = await http.get(Uri.parse(u));
   if (r.statusCode == 400) return [];
   if (r.statusCode != 200) throw Exception('خطای ${r.statusCode}');
-  return json.decode(r.body) as List;
+  final list = json.decode(r.body) as List;
+
+  _postsCache[u] = list;
+  _postsCacheTime[u] = now;
+
+  return list;
 }
 
 Future<List> getProductsPaged({int perPage = perPageSize, int page = 1}) async {
@@ -199,7 +230,7 @@ Future<int?> getCatIdBySlug(String slug) async {
 
 Future<List> searchExact(String query) async {
   final r = await http.get(
-    Uri.parse('$api/posts?search=${Uri.encodeComponent(query)}&per_page=50&_embed=wp:featuredmedia,wp:term'),
+    Uri.parse('$api/posts?search=${Uri.encodeComponent(query)}&per_page=50&_embed=wp:featuredmedia,wp:term&_fields=id,link,title,date,excerpt,_embedded,_links'),
   );
   if (r.statusCode != 200) throw Exception('خطای ${r.statusCode}');
   final list = json.decode(r.body) as List;
@@ -224,7 +255,7 @@ String formatPrice(String price) {
 }
 
 String _newNewsUrl({int perPage = 10, int page = 1}) {
-  return '$api/new_news?per_page=$perPage&page=$page&orderby=date&order=desc&_embed=wp:featuredmedia,wp:term';
+  return '$api/new_news?per_page=$perPage&page=$page&orderby=date&order=desc&_embed=wp:featuredmedia,wp:term&_fields=id,link,title,date,excerpt,_embedded,_links';
 }
 
 Future<Map<String, dynamic>?> getNewNews() async {
@@ -449,12 +480,12 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    _f = getPostsPaged(perPage: 5, page: 1);
+    _f = getPostsPaged(perPage: 3, page: 1);
   }
 
   Future<void> _refresh() async {
     setState(() {
-      _f = getPostsPaged(perPage: 5, page: 1);
+      _f = getPostsPaged(perPage: 3, page: 1);
       _bannerKey = UniqueKey();
     });
     try {
@@ -736,81 +767,76 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
           foregroundColor: txtC,
           elevation: 0,
         ),
-        // 👇 اصلاح شد: اضافه کردن SafeArea برای جلوگیری از رفتن دکمه زیر نوار ناوبری 👇
-        body: SafeArea(
-          bottom: true,
-          child: RefreshIndicator(
-            color: accentGreen,
-            backgroundColor: pnl,
-            onRefresh: _refresh,
-            child: SingleChildScrollView(
-              controller: _scroll,
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 20), // تغییر padding
-              child: Column(
-                children: [
-                  if (_posts.isNotEmpty || _loading)
-                    const SectionTitleWidget(
-                      title: 'جدیدترین نوشته‌ها',
-                      icon: Icons.article_outlined,
-                    ),
+        body: RefreshIndicator(
+          color: accentGreen,
+          backgroundColor: pnl,
+          onRefresh: _refresh,
+          child: SingleChildScrollView(
+            controller: _scroll,
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                if (_posts.isNotEmpty || _loading)
+                  const SectionTitleWidget(
+                    title: 'جدیدترین نوشته‌ها',
+                    icon: Icons.article_outlined,
+                  ),
 
-                  if (_posts.isEmpty && _loading)
-                    const Padding(
-                      padding: EdgeInsets.all(14),
-                      child: Column(
-                        children: [
-                          FeaturedSkeleton(),
-                          SizedBox(height: 12),
-                          PostSkeleton(),
-                          SizedBox(height: 12),
-                          PostSkeleton(),
-                        ],
-                      ),
-                    )
-                  else if (_posts.isEmpty && _error != null)
-                    ErrorBox(
-                      message: 'خطا در دریافت مطالب.\n$_error',
-                      onRetry: _refresh,
-                    )
-                  else if (_posts.isEmpty)
-                    const EmptyWidget(text: 'مطلبی در این دسته پیدا نشد.')
-                  else
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      child: Column(
-                        children: [
-                          FeaturedPostCard(post: _posts.first),
-                          const SizedBox(height: 14),
-                          ..._posts.skip(1).map((post) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: SidePostCard(post: post),
-                            );
-                          }).toList(),
-                          if (_hasMore)
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                  top: 6, bottom: 6),
-                              child: _buildLoadMoreButton(),
-                            ),
-                          if (!_hasMore && _posts.length > 5)
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                  top: 12, bottom: 30),
-                              child: Text(
-                                'همه مطالب نمایش داده شد.',
-                                style: TextStyle(
-                                  color: mutC,
-                                  fontSize: 12,
-                                ),
+                if (_posts.isEmpty && _loading)
+                  const Padding(
+                    padding: EdgeInsets.all(14),
+                    child: Column(
+                      children: [
+                        FeaturedSkeleton(),
+                        SizedBox(height: 12),
+                        PostSkeleton(),
+                        SizedBox(height: 12),
+                        PostSkeleton(),
+                      ],
+                    ),
+                  )
+                else if (_posts.isEmpty && _error != null)
+                  ErrorBox(
+                    message: 'خطا در دریافت مطالب.\n$_error',
+                    onRetry: _refresh,
+                  )
+                else if (_posts.isEmpty)
+                  const EmptyWidget(text: 'مطلبی در این دسته پیدا نشد.')
+                else
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: Column(
+                      children: [
+                        FeaturedPostCard(post: _posts.first),
+                        const SizedBox(height: 14),
+                        ..._posts.skip(1).map((post) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: SidePostCard(post: post),
+                          );
+                        }).toList(),
+                        if (_hasMore)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                                top: 6, bottom: 6),
+                            child: _buildLoadMoreButton(),
+                          ),
+                        if (!_hasMore && _posts.length > 5)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                                top: 12, bottom: 30),
+                            child: Text(
+                              'همه مطالب نمایش داده شد.',
+                              style: TextStyle(
+                                color: mutC,
+                                fontSize: 12,
                               ),
                             ),
-                        ],
-                      ),
+                          ),
+                      ],
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
           ),
         ),
@@ -821,60 +847,56 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
   Widget _buildLoadMoreButton() {
     final isDark = darkModeNotifier.value;
 
-    // 👇 اصلاح شد: اضافه کردن Padding از پایین برای کلیک‌پذیر شدن کامل 👇
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 40),
-      child: GestureDetector(
-        onTap: _loadingMore ? null : _loadMore,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 26, vertical: 12),
-          decoration: BoxDecoration(
-            color: isDark ? pnl2 : Colors.white,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: isDark ? lineC : const Color(0xffe9edf3),
-            ),
-            boxShadow: isDark
-                ? null
-                : [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 6,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
+    return GestureDetector(
+      onTap: _loadingMore ? null : _loadMore,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: 26, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDark ? pnl2 : Colors.white,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: isDark ? lineC : const Color(0xffe9edf3),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_loadingMore)
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Color(0xff4caf50),
+          boxShadow: isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 1),
                   ),
-                )
-              else
-                Icon(
-                  Icons.arrow_back_ios_new,
-                  size: 12,
-                  color: isDark ? txtC : const Color(0xff0f1a2b),
+                ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_loadingMore)
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xff4caf50),
                 ),
-              const SizedBox(width: 8),
-              Text(
-                _loadingMore ? 'در حال بارگذاری...' : 'مشاهده بیشتر',
-                style: TextStyle(
-                  color: isDark ? txtC : const Color(0xff0f1a2b),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.3,
-                ),
+              )
+            else
+              Icon(
+                Icons.arrow_back_ios_new,
+                size: 12,
+                color: isDark ? txtC : const Color(0xff0f1a2b),
               ),
-            ],
-          ),
+            const SizedBox(width: 8),
+            Text(
+              _loadingMore ? 'در حال بارگذاری...' : 'مشاهده بیشتر',
+              style: TextStyle(
+                color: isDark ? txtC : const Color(0xff0f1a2b),
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -982,70 +1004,69 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
           foregroundColor: txtC,
           elevation: 0,
         ),
-        // 👇 اصلاح شد: اضافه کردن SafeArea برای جلوگیری از رفتن دکمه زیر نوار ناوبری 👇
-        body: SafeArea(
-          bottom: true,
-          child: RefreshIndicator(
-            color: accentGreen,
-            backgroundColor: pnl,
-            onRefresh: _refresh,
-            child: _posts.isEmpty && _loading
-                ? const Padding(
-                    padding: EdgeInsets.all(14),
-                    child: Column(
-                      children: [
-                        FeaturedSkeleton(),
-                        SizedBox(height: 12),
-                        PostSkeleton(),
-                        SizedBox(height: 12),
-                        PostSkeleton(),
-                      ],
-                    ),
-                  )
-                : _posts.isEmpty && _error != null
-                    ? ErrorBox(
-                        message: 'خطا در دریافت مطالب.\n$_error',
-                        onRetry: _refresh,
-                      )
-                    : _posts.isEmpty
-                        ? const EmptyWidget(text: 'مطلبی پیدا نشد.')
-                        : SingleChildScrollView(
-                            controller: _scroll,
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(14, 14, 14, 20), // تغییر padding
-                            child: Column(
-                              children: [
-                                FeaturedPostCard(post: _posts.first),
-                                const SizedBox(height: 14),
-                                ..._posts.skip(1).map((post) {
-                                  return Padding(
-                                    padding:
-                                        const EdgeInsets.only(bottom: 10),
-                                    child: SidePostCard(post: post),
-                                  );
-                                }).toList(),
-                                if (_hasMore)
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        top: 6, bottom: 6),
-                                    child: _buildLoadMoreButton(),
-                                  ),
-                                if (!_hasMore && _posts.length > 5)
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        top: 12, bottom: 30),
-                                    child: Text(
-                                      'همه مطالب نمایش داده شد.',
-                                      style: TextStyle(
-                                        color: mutC,
-                                        fontSize: 12,
-                                      ),
+        body: RefreshIndicator(
+          color: accentGreen,
+          backgroundColor: pnl,
+          onRefresh: _refresh,
+          child: _posts.isEmpty && _loading
+              ? const Padding(
+                  padding: EdgeInsets.all(14),
+                  child: Column(
+                    children: [
+                      FeaturedSkeleton(),
+                      SizedBox(height: 12),
+                      PostSkeleton(),
+                      SizedBox(height: 12),
+                      PostSkeleton(),
+                    ],
+                  ),
+                )
+              : _posts.isEmpty && _error != null
+                  ? ErrorBox(
+                      message: 'خطا در دریافت مطالب.\n$_error',
+                      onRetry: _refresh,
+                    )
+                  : _posts.isEmpty
+                      ? const EmptyWidget(text: 'مطلبی پیدا نشد.')
+                      : SingleChildScrollView(
+                          controller: _scroll,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 14,
+                          ),
+                          child: Column(
+                            children: [
+                              FeaturedPostCard(post: _posts.first),
+                              const SizedBox(height: 14),
+                              ..._posts.skip(1).map((post) {
+                                return Padding(
+                                  padding:
+                                      const EdgeInsets.only(bottom: 10),
+                                  child: SidePostCard(post: post),
+                                );
+                              }).toList(),
+                              if (_hasMore)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                      top: 6, bottom: 6),
+                                  child: _buildLoadMoreButton(),
+                                ),
+                              if (!_hasMore && _posts.length > 5)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                      top: 12, bottom: 30),
+                                  child: Text(
+                                    'همه مطالب نمایش داده شد.',
+                                    style: TextStyle(
+                                      color: mutC,
+                                      fontSize: 12,
                                     ),
                                   ),
-                              ],
-                            ),
+                                ),
+                            ],
                           ),
-          ),
+                        ),
         ),
       ),
     );
@@ -1054,60 +1075,56 @@ class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
   Widget _buildLoadMoreButton() {
     final isDark = darkModeNotifier.value;
 
-    // 👇 اصلاح شد: اضافه کردن Padding از پایین برای کلیک‌پذیر شدن کامل 👇
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 40),
-      child: GestureDetector(
-        onTap: _loadingMore ? null : _loadMore,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 26, vertical: 12),
-          decoration: BoxDecoration(
-            color: isDark ? pnl2 : Colors.white,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: isDark ? lineC : const Color(0xffe9edf3),
-            ),
-            boxShadow: isDark
-                ? null
-                : [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 6,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
+    return GestureDetector(
+      onTap: _loadingMore ? null : _loadMore,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: 26, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDark ? pnl2 : Colors.white,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: isDark ? lineC : const Color(0xffe9edf3),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_loadingMore)
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Color(0xff4caf50),
+          boxShadow: isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 1),
                   ),
-                )
-              else
-                Icon(
-                  Icons.arrow_back_ios_new,
-                  size: 12,
-                  color: isDark ? txtC : const Color(0xff0f1a2b),
+                ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_loadingMore)
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xff4caf50),
                 ),
-              const SizedBox(width: 8),
-              Text(
-                _loadingMore ? 'در حال بارگذاری...' : 'مشاهده بیشتر',
-                style: TextStyle(
-                  color: isDark ? txtC : const Color(0xff0f1a2b),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.3,
-                ),
+              )
+            else
+              Icon(
+                Icons.arrow_back_ios_new,
+                size: 12,
+                color: isDark ? txtC : const Color(0xff0f1a2b),
               ),
-            ],
-          ),
+            const SizedBox(width: 8),
+            Text(
+              _loadingMore ? 'در حال بارگذاری...' : 'مشاهده بیشتر',
+              style: TextStyle(
+                color: isDark ? txtC : const Color(0xff0f1a2b),
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1629,7 +1646,7 @@ class _AccountPageState extends State<AccountPage> {
                       await _save();
                     },
                     onDownloadStartRequest: (controller, request) async {
-                      await openUrl(request.url.toString());
+                      await openExternalUrl(request.url.toString());
                     },
                   ),
                   if (_l)
@@ -1662,6 +1679,8 @@ class WebPage extends StatefulWidget {
 
 class _WebPageState extends State<WebPage> {
   bool _l = true;
+  InAppWebViewController? _controller;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1669,20 +1688,48 @@ class _WebPageState extends State<WebPage> {
       appBar: AppBar(
         title: Text(
           widget.title,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
         ),
         backgroundColor: bgC,
         foregroundColor: txtC,
         elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: () {
+              if (_controller != null) _controller!.reload();
+            },
+            icon: Icon(Icons.refresh, color: txtC),
+            tooltip: 'رفرش',
+          ),
+        ],
       ),
       body: Stack(
         children: [
           InAppWebView(
             initialUrlRequest: URLRequest(url: WebUri(widget.url)),
-            initialSettings:
-                InAppWebViewSettings(javaScriptEnabled: true),
+            initialSettings: InAppWebViewSettings(
+              javaScriptEnabled: true,
+              useShouldOverrideUrlLoading: true,
+              mediaPlaybackRequiresUserGesture: false,
+              useOnDownloadStart: true,
+            ),
+            onWebViewCreated: (c) => _controller = c,
             onLoadStart: (c, url) => setState(() => _l = true),
             onLoadStop: (c, url) => setState(() => _l = false),
+            onDownloadStartRequest: (controller, request) async {
+              await openExternalUrl(request.url.toString());
+            },
+            shouldOverrideUrlLoading: (controller, action) async {
+              final url = action.request.url.toString();
+              if (url.contains('itarbiatbadani.ir')) {
+                return NavigationActionPolicy.ALLOW;
+              }
+              if (await canLaunchUrl(Uri.parse(url))) {
+                await launchUrl(Uri.parse(url),
+                    mode: LaunchMode.externalApplication);
+              }
+              return NavigationActionPolicy.CANCEL;
+            },
           ),
           if (_l)
             Center(
@@ -1936,7 +1983,7 @@ class _ServicesSectionWidgetState extends State<ServicesSectionWidget> {
         : item['soft'] as Color;
 
     return GestureDetector(
-      onTap: () => openUrl(item['url'] as String),
+      onTap: () => openUrl(context, item['url'] as String, title: item['title'] as String),
       child: Container(
         width: 145,
         padding:
@@ -2109,7 +2156,7 @@ class FeaturedPostCard extends StatelessWidget {
     final excerpt = pExcerpt(post, maxChars: 150);
 
     return GestureDetector(
-      onTap: () => openUrl(link),
+      onTap: () => openUrl(context, link),
       child: Container(
         decoration: BoxDecoration(
           color: pnl,
@@ -2130,6 +2177,7 @@ class FeaturedPostCard extends StatelessWidget {
                     ? CachedNetworkImage(
                         imageUrl: img,
                         fit: BoxFit.cover,
+                        memCacheWidth: 600,
                         placeholder: (_, __) =>
                             Container(color: pnl2),
                         errorWidget: (_, __, ___) => Container(
@@ -2178,7 +2226,6 @@ class FeaturedPostCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          // 👇 اصلاح شد: استفاده از Expanded برای جلوگیری از خرابی UI با متن طولانی 👇
                           Expanded(
                             child: Text(
                               cat,
@@ -2341,7 +2388,7 @@ class SidePostCard extends StatelessWidget {
     final date = pDate(post);
 
     return GestureDetector(
-      onTap: () => openUrl(link),
+      onTap: () => openUrl(context, link),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -2375,7 +2422,6 @@ class SidePostCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          // 👇 اصلاح شد: استفاده از Expanded برای جلوگیری از خرابی UI با متن طولانی 👇
                           Expanded(
                             child: Text(
                               cat,
@@ -2430,6 +2476,7 @@ class SidePostCard extends StatelessWidget {
                     ? CachedNetworkImage(
                         imageUrl: img,
                         fit: BoxFit.cover,
+                        memCacheWidth: 200,
                         placeholder: (_, __) =>
                             Container(color: pnl2),
                         errorWidget: (_, __, ___) => Container(
@@ -2550,7 +2597,7 @@ class UrgentNewsCard extends StatelessWidget {
     return ValueListenableBuilder<bool>(
       valueListenable: darkModeNotifier,
       builder: (context, _, __) => GestureDetector(
-        onTap: () => openUrl(link),
+        onTap: () => openUrl(context, link),
         child: Container(
           margin: const EdgeInsets.fromLTRB(14, 0, 14, 12),
           padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
@@ -2957,6 +3004,7 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
     );
   }
 }
+
 /* ==================== ADMIN LOGIN ==================== */
 
 class AdminLoginPage extends StatefulWidget {
@@ -3882,7 +3930,7 @@ Widget buildPostCard(BuildContext context, dynamic p) {
   final i = pImg(p);
   final date = pDate(p);
   return GestureDetector(
-    onTap: () => openUrl(pLink(p)),
+    onTap: () => openUrl(context, pLink(p)),
     child: Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
@@ -3905,6 +3953,7 @@ Widget buildPostCard(BuildContext context, dynamic p) {
                       imageUrl: i,
                       fit: BoxFit.cover,
                       filterQuality: FilterQuality.high,
+                      memCacheWidth: 300,
                       fadeInDuration: const Duration(milliseconds: 200),
                       placeholder: (_, __) => Container(
                         color: pnl2,
@@ -3987,7 +4036,7 @@ Widget buildProductCard(BuildContext context, dynamic p) {
   final isOnSale = salePrice.isNotEmpty && salePrice != regularPrice;
 
   return GestureDetector(
-    onTap: () => openUrl(link),
+    onTap: () => openUrl(context, link, title: name),
     child: Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
@@ -4010,6 +4059,7 @@ Widget buildProductCard(BuildContext context, dynamic p) {
                       imageUrl: img,
                       fit: BoxFit.cover,
                       filterQuality: FilterQuality.high,
+                      memCacheWidth: 300,
                       fadeInDuration: const Duration(milliseconds: 200),
                       placeholder: (_, __) => Container(
                         color: pnl2,
@@ -4237,7 +4287,7 @@ Widget buildSocial() {
             childAspectRatio: 3.2,
           ),
           itemBuilder: (c, i) => GestureDetector(
-            onTap: () => openUrl(items[i][2] as String),
+            onTap: () => openExternalUrl(items[i][2] as String),
             child: Container(
               decoration: BoxDecoration(
                 color: pnl,
