@@ -155,7 +155,8 @@ void showSnack(BuildContext context, String msg, {bool error = false}) {
           ),
         ],
       ),
-      backgroundColor: error ? const Color(0xfff43f5e) : const Color(0xff059669),
+      backgroundColor:
+          error ? const Color(0xfff43f5e) : const Color(0xff059669),
       behavior: SnackBarBehavior.floating,
       shape:
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -368,7 +369,8 @@ Future<List> getPostsPaged({
 }
 
 Future<List> getProductsPaged({int perPage = perPageSize, int page = 1}) async {
-  final u = '$site/wp-json/wc/v3/products?per_page=$perPage&page=$page&consumer_key=$wcKey&consumer_secret=$wcSecret';
+  final u =
+      '$site/wp-json/wc/v3/products?per_page=$perPage&page=$page&consumer_key=$wcKey&consumer_secret=$wcSecret';
   final r = await http.get(Uri.parse(u));
   if (r.statusCode == 400) return [];
   if (r.statusCode != 200) throw Exception('خطای ${r.statusCode}');
@@ -913,7 +915,9 @@ class _HeroCarouselState extends State<HeroCarousel> {
           width: active ? 24 : 8,
           height: 8,
           decoration: BoxDecoration(
-            color: active ? const Color(0xff10b981) : mutC.withOpacity(0.3),
+            color: active
+                ? const Color(0xff10b981)
+                : mutC.withOpacity(0.3),
             borderRadius: BorderRadius.circular(999),
           ),
         );
@@ -2217,8 +2221,8 @@ class _SearchPageState extends State<SearchPage> {
                     hintText: 'عبارت مورد نظر...',
                     hintStyle:
                         TextStyle(color: mutC, fontFamily: 'Vazirmatn'),
-                    prefixIcon: Icon(Icons.search_rounded,
-                        color: accentGreen),
+                    prefixIcon:
+                        Icon(Icons.search_rounded, color: accentGreen),
                     suffixIcon: _ctrl.text.isNotEmpty
                         ? IconButton(
                             icon: Icon(Icons.close_rounded,
