@@ -612,93 +612,90 @@ class _ModernNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = darkModeNotifier.value;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-      decoration: BoxDecoration(
-        color: navBg,
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(
-          color: isDark
-              ? const Color(0xff2a3b5c)
-              : const Color(0xffdbe4f0),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
+    return SafeArea(
+      bottom: true,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+        decoration: BoxDecoration(
+          color: navBg,
+          borderRadius: BorderRadius.circular(26),
+          border: Border.all(
             color: isDark
-                ? Colors.black.withOpacity(0.5)
-                : const Color(0xff10b981).withOpacity(0.12),
-            blurRadius: 28,
-            offset: const Offset(0, 10),
+                ? const Color(0xff2a3b5c)
+                : const Color(0xffdbe4f0),
+            width: 1.5,
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(26),
-        child: SizedBox(
-          height: 74,
-          child: Row(
-            children: List.generate(_items.length, (i) {
-              final selected = i == currentIndex;
-              final item = _items[i];
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    onTap(i);
-                  },
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: 4, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? accentGreen.withOpacity(0.18)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(18),
-                      border: selected
-                          ? Border.all(
-                              color: accentGreen.withOpacity(0.5),
-                              width: 1.5,
-                            )
-                          : null,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        AnimatedScale(
-                          scale: selected ? 1.15 : 1.0,
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeOutBack,
-                          child: Icon(
+          boxShadow: [
+            BoxShadow(
+              color: isDark
+                  ? Colors.black.withOpacity(0.5)
+                  : const Color(0xff10b981).withOpacity(0.12),
+              blurRadius: 28,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(26),
+          child: SizedBox(
+            height: 74,
+            child: Row(
+              children: List.generate(_items.length, (i) {
+                final selected = i == currentIndex;
+                final item = _items[i];
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      onTap(i);
+                    },
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? accentGreen.withOpacity(0.18)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(18),
+                        border: selected
+                            ? Border.all(
+                                color: accentGreen.withOpacity(0.5),
+                                width: 1.5,
+                              )
+                            : null,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
                             selected ? item.activeIcon : item.icon,
                             color: selected
                                 ? accentGreen
                                 : txtC.withOpacity(0.75),
                             size: selected ? 26 : 24,
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        AnimatedDefaultTextStyle(
-                          duration: const Duration(milliseconds: 220),
-                          style: TextStyle(
-                            fontFamily: 'Vazirmatn',
-                            color: selected
-                                ? accentGreen
-                                : txtC.withOpacity(0.75),
-                            fontSize: selected ? 12 : 11,
-                            fontWeight: selected
-                                ? FontWeight.w900
-                                : FontWeight.w700,
+                          const SizedBox(height: 4),
+                          Text(
+                            item.label,
+                            style: TextStyle(
+                              fontFamily: 'Vazirmatn',
+                              color: selected
+                                  ? accentGreen
+                                  : txtC.withOpacity(0.75),
+                              fontSize: selected ? 12 : 11,
+                              fontWeight: selected
+                                  ? FontWeight.w900
+                                  : FontWeight.w700,
+                            ),
                           ),
-                          child: Text(item.label),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              );
-            }),
+                );
+              }),
+            ),
           ),
         ),
       ),
@@ -808,7 +805,6 @@ class _HomeState extends State<Home> {
                 child: ModernNewsBanner(key: _bannerKey, future: _newsFuture),
               ),
               const SliverToBoxAdapter(child: ModernServicesSection()),
-              SliverToBoxAdapter(child: ModernLatestSection(postsFuture: _f)),
               const SliverToBoxAdapter(
                 child: ModernSectionTitle(
                   title: 'دسته‌بندی مقالات',
@@ -817,7 +813,7 @@ class _HomeState extends State<Home> {
               ),
               SliverToBoxAdapter(child: ModernCatGrid()),
               SliverToBoxAdapter(child: ModernSocial()),
-              const SliverToBoxAdapter(child: SizedBox(height: 120)),
+              const SliverToBoxAdapter(child: SizedBox(height: 110)),
             ],
           ),
         ),
@@ -3128,65 +3124,6 @@ class _ModernServicesSectionState extends State<ModernServicesSection> {
   }
 }
 
-/* ==================== MODERN LATEST SECTION ==================== */
-
-class ModernLatestSection extends StatelessWidget {
-  final Future<List>? postsFuture;
-  const ModernLatestSection({super.key, required this.postsFuture});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const ModernSectionTitle(
-          title: 'جدیدترین نوشته‌ها',
-          icon: Icons.auto_stories_rounded,
-        ),
-        FutureBuilder<List>(
-          future: postsFuture,
-          builder: (c, s) {
-            if (s.connectionState == ConnectionState.waiting) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 14),
-                child: Column(
-                  children: [
-                    PostSkeleton(),
-                    PostSkeleton(),
-                    PostSkeleton(),
-                  ],
-                ),
-              );
-            }
-            if (s.hasError) {
-              return ErrorBox(
-                  message: 'خطا در دریافت مطالب.\n${s.error}',
-                  onRetry: null);
-            }
-            final posts = s.data ?? [];
-            if (posts.isEmpty) {
-              return const EmptyWidget(text: 'مطلبی پیدا نشد.');
-            }
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Column(
-                children: posts
-                    .take(6)
-                    .map((p) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: ModernPostCard(post: p, showBookmark: true),
-                        ))
-                    .toList(),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
 /* ==================== MODERN POST CARD ==================== */
 
 class ModernPostCard extends StatefulWidget {
@@ -3275,25 +3212,30 @@ class _ModernPostCardState extends State<ModernPostCard> {
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Container(
-                                    width: 5,
-                                    height: 5,
-                                    decoration: BoxDecoration(
-                                      color: chipFg,
-                                      shape: BoxShape.circle,
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 3),
+                                    child: Container(
+                                      width: 5,
+                                      height: 5,
+                                      decoration: BoxDecoration(
+                                        color: chipFg,
+                                        shape: BoxShape.circle,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 4),
                                   Flexible(
                                     child: Text(
                                       cat,
-                                      maxLines: 1,
+                                      maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         color: chipFg,
                                         fontSize: 9.5,
                                         fontWeight: FontWeight.w900,
+                                        height: 1.4,
                                         fontFamily: 'Vazirmatn',
                                       ),
                                     ),
@@ -3482,42 +3424,54 @@ class FeaturedPostCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (cat.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: chipBg,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                            color: chipFg.withOpacity(0.25)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
-                              color: chipFg,
-                              shape: BoxShape.circle,
+                              color: chipBg,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: chipFg.withOpacity(0.25)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: BoxDecoration(
+                                      color: chipFg,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    cat,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: chipFg,
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w900,
+                                      height: 1.5,
+                                      fontFamily: 'Vazirmatn',
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              cat,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: chipFg,
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w900,
-                                fontFamily: 'Vazirmatn',
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   const SizedBox(height: 12),
                   Text(
@@ -3691,32 +3645,37 @@ class SidePostCard extends StatelessWidget {
                         Flexible(
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 2.5),
+                                horizontal: 7, vertical: 3),
                             decoration: BoxDecoration(
                               color: chipBg,
-                              borderRadius: BorderRadius.circular(5),
+                              borderRadius: BorderRadius.circular(6),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Container(
-                                  width: 4,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: chipFg,
-                                    shape: BoxShape.circle,
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 3),
+                                  child: Container(
+                                    width: 5,
+                                    height: 5,
+                                    decoration: BoxDecoration(
+                                      color: chipFg,
+                                      shape: BoxShape.circle,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(width: 3),
+                                const SizedBox(width: 4),
                                 Flexible(
                                   child: Text(
                                     cat,
-                                    maxLines: 1,
+                                    maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                       color: chipFg,
-                                      fontSize: 9,
+                                      fontSize: 9.5,
                                       fontWeight: FontWeight.w900,
+                                      height: 1.4,
                                       fontFamily: 'Vazirmatn',
                                     ),
                                   ),
@@ -3745,7 +3704,7 @@ class SidePostCard extends StatelessWidget {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 7),
+                  const SizedBox(height: 8),
                   Text(
                     title,
                     maxLines: 2,
@@ -4190,7 +4149,7 @@ class ModernSectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 22, 14, 14),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
       child: Row(
         children: [
           Container(
