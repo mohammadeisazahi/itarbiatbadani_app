@@ -4,8 +4,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const String site = 'https://itarbiatbadani.ir';
@@ -20,6 +22,7 @@ const int perPageSize = 10;
 final _storage = const FlutterSecureStorage();
 final darkModeNotifier = ValueNotifier<bool>(true);
 final bookmarkNotifier = ValueNotifier<Set<String>>({});
+final notificationsPlugin = FlutterLocalNotificationsPlugin();
 
 /* ==================== THEME COLORS ==================== */
 
@@ -100,6 +103,57 @@ Future<void> toggleBookmark(String id) async {
 
 bool isBookmarked(String id) => bookmarkNotifier.value.contains(id);
 
+/* ==================== NOTIFICATIONS ==================== */
+
+Future<void> initNotifications() async {
+  const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const iosInit = DarwinInitializationSettings();
+  const settings = InitializationSettings(
+    android: androidInit,
+    iOS: iosInit,
+  );
+  try {
+    await notificationsPlugin.initialize(settings);
+    await notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+  } catch (_) {}
+}
+
+Future<void> showNewsNotification(String title, String body) async {
+  const androidDetails = AndroidNotificationDetails(
+    'news_channel',
+    'اخبار فوری',
+    channelDescription: 'اطلاع از اخبار فوری جدید',
+    importance: Importance.high,
+    priority: Priority.high,
+  );
+  const details = NotificationDetails(android: androidDetails);
+  try {
+    await notificationsPlugin.show(
+      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      title,
+      body,
+      details,
+    );
+  } catch (_) {}
+}
+
+Future<void> checkNewNews() async {
+  try {
+    final list = await getNewNewsList();
+    if (list.isEmpty) return;
+    final latest = list.first;
+    final latestId = pId(latest);
+    final saved = await _storage.read(key: 'last_news_id');
+    if (saved != null && saved != latestId) {
+      await showNewsNotification('خبر فوری جدید', pTitle(latest));
+    }
+    await _storage.write(key: 'last_news_id', value: latestId);
+  } catch (_) {}
+}
+
 /* ==================== NAVIGATION ==================== */
 
 Future<void> openUrl(BuildContext context, String url,
@@ -121,11 +175,16 @@ Future<void> openExternalUrl(String url) async {
   }
 }
 
+// 👇 اشتراک‌گذاری بومی با share_plus
 Future<void> sharePost(String url, String title) async {
   if (url.isEmpty) return;
-  final uri = Uri.parse(url);
-  if (await canLaunchUrl(uri)) {
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  try {
+    await Share.share('$title\n\n$url');
+  } catch (_) {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 }
 
@@ -203,7 +262,6 @@ String pId(dynamic p) {
   }
 }
 
-// 👇 بهبود سرعت: استفاده از تصویر medium_large به جای large
 String pImg(dynamic p) {
   try {
     final m = p['_embedded']?['wp:featuredmedia'];
@@ -346,9 +404,9 @@ List<int> _toJalali(int gy, int gm, int gd) {
 
 final Map<String, List> _postsCache = {};
 final Map<String, int> _postsCacheTime = {};
-// 👇 بهبود: کش ۵ دقیقه به جای ۱۰ دقیقه
 const int _cacheDurationSeconds = 300;
 
+// 👇 با قابلیت کش آفلاین
 Future<List> getPostsPaged({
   int perPage = perPageSize,
   int page = 1,
@@ -366,22 +424,50 @@ Future<List> getPostsPaged({
     return _postsCache[u]!;
   }
 
-  final r = await http.get(Uri.parse(u));
-  if (r.statusCode == 400) return [];
-  if (r.statusCode != 200) throw Exception('خطای ${r.statusCode}');
-  final list = json.decode(r.body) as List;
-  _postsCache[u] = list;
-  _postsCacheTime[u] = now;
-  return list;
+  try {
+    final r = await http.get(Uri.parse(u));
+    if (r.statusCode == 400) return [];
+    if (r.statusCode != 200) throw Exception('خطای ${r.statusCode}');
+    final list = json.decode(r.body) as List;
+    _postsCache[u] = list;
+    _postsCacheTime[u] = now;
+    // 👇 ذخیره در کش آفلاین
+    try {
+      await _storage.write(key: 'cache_$u', value: r.body);
+    } catch (_) {}
+    return list;
+  } catch (e) {
+    // 👇 اگر شبکه قطع بود، از کش آفلاین بخوان
+    try {
+      final cached = await _storage.read(key: 'cache_$u');
+      if (cached != null && cached.isNotEmpty) {
+        return json.decode(cached) as List;
+      }
+    } catch (_) {}
+    rethrow;
+  }
 }
 
 Future<List> getProductsPaged({int perPage = perPageSize, int page = 1}) async {
   final u =
       '$site/wp-json/wc/v3/products?per_page=$perPage&page=$page&consumer_key=$wcKey&consumer_secret=$wcSecret';
-  final r = await http.get(Uri.parse(u));
-  if (r.statusCode == 400) return [];
-  if (r.statusCode != 200) throw Exception('خطای ${r.statusCode}');
-  return json.decode(r.body) as List;
+  try {
+    final r = await http.get(Uri.parse(u));
+    if (r.statusCode == 400) return [];
+    if (r.statusCode != 200) throw Exception('خطای ${r.statusCode}');
+    try {
+      await _storage.write(key: 'cache_$u', value: r.body);
+    } catch (_) {}
+    return json.decode(r.body) as List;
+  } catch (e) {
+    try {
+      final cached = await _storage.read(key: 'cache_$u');
+      if (cached != null && cached.isNotEmpty) {
+        return json.decode(cached) as List;
+      }
+    } catch (_) {}
+    rethrow;
+  }
 }
 
 Future<int?> getCatIdBySlug(String slug) async {
@@ -531,6 +617,7 @@ void main() async {
     final saved = await _storage.read(key: 'dark_mode');
     darkModeNotifier.value = saved == null ? true : saved == 'true';
     await loadBookmarks();
+    await initNotifications();
   } catch (_) {}
   runApp(const App());
 }
@@ -618,92 +705,90 @@ class _ModernNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, isDark, _) => SafeArea(
-        bottom: true,
-        child: Container(
-          margin: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-          decoration: BoxDecoration(
-            color: navBg,
-            borderRadius: BorderRadius.circular(26),
-            border: Border.all(
-              color: isDark
-                  ? const Color(0xff2a3b5c)
-                  : const Color(0xffdbe4f0),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: isDark
-                    ? Colors.black.withOpacity(0.5)
-                    : const Color(0xff10b981).withOpacity(0.12),
-                blurRadius: 28,
-                offset: const Offset(0, 10),
-              ),
-            ],
+    final isDark = darkModeNotifier.value;
+    return SafeArea(
+      bottom: true,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+        decoration: BoxDecoration(
+          color: navBg,
+          borderRadius: BorderRadius.circular(26),
+          border: Border.all(
+            color: isDark
+                ? const Color(0xff2a3b5c)
+                : const Color(0xffdbe4f0),
+            width: 1.5,
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(26),
-            child: SizedBox(
-              height: 74,
-              child: Row(
-                children: List.generate(_items.length, (i) {
-                  final selected = i == currentIndex;
-                  final item = _items[i];
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        onTap(i);
-                      },
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(
-                            horizontal: 4, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? accentGreen.withOpacity(0.18)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(18),
-                          border: selected
-                              ? Border.all(
-                                  color: accentGreen.withOpacity(0.5),
-                                  width: 1.5,
-                                )
-                              : null,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              selected ? item.activeIcon : item.icon,
+          boxShadow: [
+            BoxShadow(
+              color: isDark
+                  ? Colors.black.withOpacity(0.5)
+                  : const Color(0xff10b981).withOpacity(0.12),
+              blurRadius: 28,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(26),
+          child: SizedBox(
+            height: 74,
+            child: Row(
+              children: List.generate(_items.length, (i) {
+                final selected = i == currentIndex;
+                final item = _items[i];
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      onTap(i);
+                    },
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? accentGreen.withOpacity(0.18)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(18),
+                        border: selected
+                            ? Border.all(
+                                color: accentGreen.withOpacity(0.5),
+                                width: 1.5,
+                              )
+                            : null,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            selected ? item.activeIcon : item.icon,
+                            color: selected
+                                ? accentGreen
+                                : txtC.withOpacity(0.75),
+                            size: selected ? 26 : 24,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            item.label,
+                            style: TextStyle(
+                              fontFamily: 'Vazirmatn',
                               color: selected
                                   ? accentGreen
                                   : txtC.withOpacity(0.75),
-                              size: selected ? 26 : 24,
+                              fontSize: selected ? 12 : 11,
+                              fontWeight: selected
+                                  ? FontWeight.w900
+                                  : FontWeight.w700,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              item.label,
-                              style: TextStyle(
-                                fontFamily: 'Vazirmatn',
-                                color: selected
-                                    ? accentGreen
-                                    : txtC.withOpacity(0.75),
-                                fontSize: selected ? 12 : 11,
-                                fontWeight: selected
-                                    ? FontWeight.w900
-                                    : FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
-                  );
-                }),
-              ),
+                  ),
+                );
+              }),
             ),
           ),
         ),
@@ -763,6 +848,7 @@ class _HomeState extends State<Home> {
   Future<List>? _f;
   Future<List>? _newsFuture;
   Key _bannerKey = UniqueKey();
+  Timer? _newsTimer;
 
   @override
   void initState() {
@@ -772,7 +858,18 @@ class _HomeState extends State<Home> {
       try {
         precacheImage(NetworkImage(heroImg), context);
       } catch (_) {}
+      checkNewNews();
     });
+    _newsTimer = Timer.periodic(
+      const Duration(minutes: 30),
+      (_) => checkNewNews(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _newsTimer?.cancel();
+    super.dispose();
   }
 
   void _load() {
@@ -2464,6 +2561,26 @@ class _AccountPageState extends State<AccountPage> {
     } catch (_) {}
   }
 
+  // 👇 Whitelist برای درگاه پرداخت
+  bool _isTrustedUrl(String url) {
+    return url.contains('itarbiatbadani.ir') ||
+        url.contains('zarinpal.com') ||
+        url.contains('shaparak.ir') ||
+        url.contains('sep.shaparak.ir') ||
+        url.contains('behpardakht.com') ||
+        url.contains('mellatbank.ir') ||
+        url.contains('asanpardakht.ir') ||
+        url.contains('idpay.ir') ||
+        url.contains('pay.ir') ||
+        url.contains('sadad.ir') ||
+        url.contains('pep.co.ir') ||
+        url.contains('parsianbank.ir') ||
+        url.contains('sb24.ir') ||
+        url.contains('my-account') ||
+        url.contains('checkout') ||
+        url.contains('cart');
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
@@ -2489,6 +2606,7 @@ class _AccountPageState extends State<AccountPage> {
                     initialSettings: InAppWebViewSettings(
                       javaScriptEnabled: true,
                       useOnDownloadStart: true,
+                      useShouldOverrideUrlLoading: true,
                       userAgent:
                           'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
                     ),
@@ -2505,6 +2623,19 @@ class _AccountPageState extends State<AccountPage> {
                         setState(() => _progress = p / 100),
                     onDownloadStartRequest: (controller, request) async {
                       await openExternalUrl(request.url.toString());
+                    },
+                    shouldOverrideUrlLoading: (controller, action) async {
+                      final url = action.request.url.toString();
+                      // درگاه پرداخت و صفحات خودی در WebView باز شوند
+                      if (_isTrustedUrl(url)) {
+                        return NavigationActionPolicy.ALLOW;
+                      }
+                      // لینک‌های دیگر (شبکه‌های اجتماعی) در مرورگر بیرونی
+                      if (await canLaunchUrl(Uri.parse(url))) {
+                        await launchUrl(Uri.parse(url),
+                            mode: LaunchMode.externalApplication);
+                      }
+                      return NavigationActionPolicy.CANCEL;
                     },
                   ),
                   if (_l && _progress == 0)
@@ -2539,6 +2670,26 @@ class _ModernWebPageState extends State<ModernWebPage> {
   bool _l = true;
   double _progress = 0;
   InAppWebViewController? _controller;
+
+  // 👇 Whitelist برای درگاه پرداخت
+  bool _isTrustedUrl(String url) {
+    return url.contains('itarbiatbadani.ir') ||
+        url.contains('zarinpal.com') ||
+        url.contains('shaparak.ir') ||
+        url.contains('sep.shaparak.ir') ||
+        url.contains('behpardakht.com') ||
+        url.contains('mellatbank.ir') ||
+        url.contains('asanpardakht.ir') ||
+        url.contains('idpay.ir') ||
+        url.contains('pay.ir') ||
+        url.contains('sadad.ir') ||
+        url.contains('pep.co.ir') ||
+        url.contains('parsianbank.ir') ||
+        url.contains('sb24.ir') ||
+        url.contains('my-account') ||
+        url.contains('checkout') ||
+        url.contains('cart');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2608,9 +2759,11 @@ class _ModernWebPageState extends State<ModernWebPage> {
             },
             shouldOverrideUrlLoading: (controller, action) async {
               final url = action.request.url.toString();
-              if (url.contains('itarbiatbadani.ir')) {
+              // درگاه پرداخت و صفحات خودی در WebView باز شوند
+              if (_isTrustedUrl(url)) {
                 return NavigationActionPolicy.ALLOW;
               }
+              // لینک‌های دیگر در مرورگر بیرونی
               if (await canLaunchUrl(Uri.parse(url))) {
                 await launchUrl(Uri.parse(url),
                     mode: LaunchMode.externalApplication);
@@ -2628,82 +2781,82 @@ class _ModernWebPageState extends State<ModernWebPage> {
 /* ==================== MODERN HEADER ==================== */
 
 Widget ModernHeader(BuildContext context, [String? t]) {
-  return ValueListenableBuilder<bool>(
-    valueListenable: darkModeNotifier,
-    builder: (context, _, __) => SafeArea(
-      bottom: false,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Row(
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(23),
-                border: Border.all(color: lineC),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: ClipOval(
-                child: Image.asset(
-                  logo,
+  return SafeArea(
+    bottom: false,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(23),
+              border: Border.all(color: lineC),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                logo,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Image.network(
+                  logoNet,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Image.network(
-                    logoNet,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.sports_rounded,
-                      color: Color(0xff10b981),
-                    ),
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.sports_rounded,
+                    color: Color(0xff10b981),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    t ?? 'تربیت بدنی و علوم ورزشی',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: txtC,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'Vazirmatn',
-                    ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  t ?? 'تربیت بدنی و علوم ورزشی',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: txtC,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'به اپلیکیشن خوش آمدید',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: mutC,
-                      fontSize: 11,
-                      fontFamily: 'Vazirmatn',
-                    ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'به اپلیکیشن خوش آمدید',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: mutC,
+                    fontSize: 11,
+                    fontFamily: 'Vazirmatn',
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            _HeaderIconButton(
-              icon: Icons.bookmark_outline_rounded,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const BookmarksPage()),
-              ),
+          ),
+          _HeaderIconButton(
+            icon: Icons.bookmark_outline_rounded,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const BookmarksPage()),
             ),
-            const SizedBox(width: 4),
-            _HeaderIconButton(
-              icon: darkModeNotifier.value
+          ),
+          const SizedBox(width: 4),
+          ValueListenableBuilder<bool>(
+            valueListenable: darkModeNotifier,
+            builder: (c, isDark, _) => _HeaderIconButton(
+              icon: isDark
                   ? Icons.light_mode_rounded
                   : Icons.dark_mode_rounded,
               onTap: () async {
@@ -2715,84 +2868,84 @@ Widget ModernHeader(BuildContext context, [String? t]) {
                 );
               },
             ),
-            const SizedBox(width: 4),
-            _HeaderIconButton(
-              icon: Icons.search_rounded,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SearchPage()),
-              ),
+          ),
+          const SizedBox(width: 4),
+          _HeaderIconButton(
+            icon: Icons.search_rounded,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SearchPage()),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     ),
   );
 }
 
 Widget ModernHeaderWithAdmin(BuildContext context, [String? t]) {
-  return ValueListenableBuilder<bool>(
-    valueListenable: darkModeNotifier,
-    builder: (context, _, __) => SafeArea(
-      bottom: false,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Row(
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(23),
-                border: Border.all(color: lineC),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: ClipOval(
-                child: Image.asset(
-                  logo,
+  return SafeArea(
+    bottom: false,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(23),
+              border: Border.all(color: lineC),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                logo,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Image.network(
+                  logoNet,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Image.network(
-                    logoNet,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.sports_rounded,
-                      color: Color(0xff10b981),
-                    ),
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.sports_rounded,
+                    color: Color(0xff10b981),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                t ?? 'حساب من',
-                textAlign: TextAlign.right,
-                style: TextStyle(
-                  color: txtC,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'Vazirmatn',
-                ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              t ?? 'حساب من',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: txtC,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Vazirmatn',
               ),
             ),
-            _HeaderIconButton(
-              icon: Icons.admin_panel_settings_rounded,
-              color: accentBlue,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AdminLoginPage()),
-              ),
+          ),
+          _HeaderIconButton(
+            icon: Icons.admin_panel_settings_rounded,
+            color: accentBlue,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AdminLoginPage()),
             ),
-            const SizedBox(width: 4),
-            _HeaderIconButton(
-              icon: darkModeNotifier.value
+          ),
+          const SizedBox(width: 4),
+          ValueListenableBuilder<bool>(
+            valueListenable: darkModeNotifier,
+            builder: (c, isDark, _) => _HeaderIconButton(
+              icon: isDark
                   ? Icons.light_mode_rounded
                   : Icons.dark_mode_rounded,
               onTap: () async {
@@ -2804,16 +2957,16 @@ Widget ModernHeaderWithAdmin(BuildContext context, [String? t]) {
                 );
               },
             ),
-            const SizedBox(width: 4),
-            _HeaderIconButton(
-              icon: Icons.search_rounded,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SearchPage()),
-              ),
+          ),
+          const SizedBox(width: 4),
+          _HeaderIconButton(
+            icon: Icons.search_rounded,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SearchPage()),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     ),
   );
@@ -4002,82 +4155,79 @@ class ModernCatGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        child: GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.zero,
-          itemCount: cats.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            mainAxisExtent: 125,
-          ),
-          itemBuilder: (c, i) {
-            final cat = cats[i];
-            return GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                Navigator.push(
-                  c,
-                  MaterialPageRoute(
-                      builder: (_) => CategoryPostsPage(c: cat)),
-                );
-              },
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: pnl,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: lineC),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        itemCount: cats.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          mainAxisExtent: 125,
+        ),
+        itemBuilder: (c, i) {
+          final cat = cats[i];
+          return GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              Navigator.push(
+                c,
+                MaterialPageRoute(
+                    builder: (_) => CategoryPostsPage(c: cat)),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: pnl,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: lineC),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: cat.c.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: cat.c.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(cat.i, color: cat.c, size: 22),
-                    ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          cat.n,
-                          maxLines: 2,
-                          textAlign: TextAlign.center,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: txtC,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            height: 1.35,
-                            fontFamily: 'Vazirmatn',
-                          ),
+                    child: Icon(cat.i, color: cat.c, size: 22),
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        cat.n,
+                        maxLines: 2,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: txtC,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          height: 1.35,
+                          fontFamily: 'Vazirmatn',
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -4116,93 +4266,90 @@ class ModernSocial extends StatelessWidget {
         const Color(0xfff59e0b)
       ],
     ];
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
-            child: Row(
-              children: [
-                Container(
-                  width: 4,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [accentGreen, accentGreen2],
-                    ),
-                    borderRadius: BorderRadius.circular(3),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
+          child: Row(
+            children: [
+              Container(
+                width: 4,
+                height: 24,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [accentGreen, accentGreen2],
                   ),
+                  borderRadius: BorderRadius.circular(3),
                 ),
-                const SizedBox(width: 10),
-                Icon(Icons.connect_without_contact_rounded,
-                    color: accentGreen, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'ارتباط با ما',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: txtC,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'Vazirmatn',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: EdgeInsets.zero,
-              itemCount: items.length,
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-                childAspectRatio: 3.0,
               ),
-              itemBuilder: (c, i) => GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  openExternalUrl(items[i][2] as String);
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: pnl,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: lineC),
+              const SizedBox(width: 10),
+              Icon(Icons.connect_without_contact_rounded,
+                  color: accentGreen, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'ارتباط با ما',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: txtC,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(items[i][1] as IconData,
-                          color: items[i][3] as Color, size: 18),
-                      const SizedBox(width: 8),
-                      Text(
-                        items[i][0] as String,
-                        style: TextStyle(
-                          color: txtC,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12.5,
-                          fontFamily: 'Vazirmatn',
-                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.zero,
+            itemCount: items.length,
+            gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 3.0,
+            ),
+            itemBuilder: (c, i) => GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                openExternalUrl(items[i][2] as String);
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: pnl,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: lineC),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(items[i][1] as IconData,
+                        color: items[i][3] as Color, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      items[i][0] as String,
+                      style: TextStyle(
+                        color: txtC,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12.5,
+                        fontFamily: 'Vazirmatn',
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
