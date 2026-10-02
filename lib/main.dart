@@ -5479,7 +5479,7 @@ class FeaturedSkeleton extends StatelessWidget {
   }
 }
 
-/* ==================== EMPTY / ERROR ==================== */
+/* ==================== EMPTY ==================== */
 
 class EmptyWidget extends StatelessWidget {
   final String text;
@@ -5518,6 +5518,4 @@ class EmptyWidget extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-   
+       
