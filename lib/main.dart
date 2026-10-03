@@ -510,7 +510,6 @@ Future<Map<String, dynamic>> postNewNews({
   throw Exception('خطا در ارسال (${r.statusCode})');
 }
 
-// 👇 تابع جدید: ویرایش خبر
 Future<Map<String, dynamic>> updateNews({
   required String username,
   required String appPassword,
@@ -5756,6 +5755,277 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+/* ==================== SHIMMER BOX ==================== */
+
+class ShimmerBox extends StatefulWidget {
+  final double height;
+  final double width;
+  final double radius;
+  const ShimmerBox({
+    super.key,
+    required this.height,
+    this.width = double.infinity,
+    this.radius = 16,
+  });
+
+  @override
+  State<ShimmerBox> createState() => _ShimmerBoxState();
+}
+
+class _ShimmerBoxState extends State<ShimmerBox>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1300),
+    )..repeat();
+    _anim = Tween<double>(begin: -1.5, end: 1.5).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (context, _) {
+        return Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(widget.radius),
+            gradient: LinearGradient(
+              begin: Alignment(_anim.value - 1, 0),
+              end: Alignment(_anim.value + 1, 0),
+              colors: [
+                skeletonBase,
+                skeletonHi,
+                skeletonBase,
+              ],
+              stops: const [0.35, 0.5, 0.65],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/* ==================== POST SKELETON ==================== */
+
+class PostSkeleton extends StatelessWidget {
+  const PostSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: pnl,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: lineC),
+      ),
+      child: Row(
+        children: const [
+          ShimmerBox(height: 90, width: 90, radius: 14),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ShimmerBox(height: 12, width: 80, radius: 6),
+                SizedBox(height: 10),
+                ShimmerBox(height: 14),
+                SizedBox(height: 6),
+                ShimmerBox(height: 14, width: 180),
+                SizedBox(height: 10),
+                ShimmerBox(height: 10, width: 60, radius: 5),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/* ==================== FEATURED SKELETON ==================== */
+
+class FeaturedSkeleton extends StatelessWidget {
+  const FeaturedSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: pnl,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: lineC),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(22),
+              topRight: Radius.circular(22),
+            ),
+            child: ShimmerBox(height: 200, radius: 0),
+          ),
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ShimmerBox(height: 12, width: 90, radius: 6),
+                SizedBox(height: 12),
+                ShimmerBox(height: 16),
+                SizedBox(height: 8),
+                ShimmerBox(height: 16, width: 220),
+                SizedBox(height: 14),
+                ShimmerBox(height: 40),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/* ==================== EMPTY WIDGET ==================== */
+
+class EmptyWidget extends StatelessWidget {
+  final String text;
+  const EmptyWidget({super.key, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(40),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: pnl2,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.inbox_rounded,
+                color: mutC,
+                size: 40,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: mutC,
+                fontSize: 13,
+                height: 1.7,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/* ==================== ERROR BOX ==================== */
+
+class ErrorBox extends StatelessWidget {
+  final String message;
+  final VoidCallback? onRetry;
+  const ErrorBox({
+    super.key,
+    required this.message,
+    this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: rose.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error_outline_rounded,
+                color: rose,
+                size: 42,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: txtC,
+                fontSize: 13,
+                height: 1.7,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+            if (onRetry != null) ...[
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: onRetry,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff10b981),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text(
+                  'تلاش مجدد',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
