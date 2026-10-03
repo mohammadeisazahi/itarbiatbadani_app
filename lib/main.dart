@@ -459,7 +459,7 @@ String formatPrice(String price) {
 /* ==================== NEWS API ==================== */
 
 String _newNewsUrl({int perPage = 10, int page = 1}) {
-  return '$api/new_news?per_page=$perPage&page=$page&orderby=date&order=desc&_embed=wp:featuredmedia,wp:term,author&_fields=id,link,title,date,excerpt,_embedded,_links';
+  return '$api/new_news?per_page=$perPage&page=$page&orderby=date&order=desc&_embed=wp:featuredmedia,wp:term,author&_fields=id,link,title,date,excerpt,content,_embedded,_links';
 }
 
 Future<List> getNewNewsList() async {
@@ -508,6 +508,38 @@ Future<Map<String, dynamic>> postNewNews({
   if (r.statusCode == 401) throw Exception('نام کاربری یا رمز اشتباه است.');
   if (r.statusCode == 403) throw Exception('شما اجازه ارسال ندارید.');
   throw Exception('خطا در ارسال (${r.statusCode})');
+}
+
+// 👇 تابع جدید: ویرایش خبر
+Future<Map<String, dynamic>> updateNews({
+  required String username,
+  required String appPassword,
+  required int postId,
+  required String title,
+  required String content,
+}) async {
+  final auth = _basicAuth(username, appPassword);
+  final uri = Uri.parse('$api/new_news/$postId');
+  final r = await http.put(
+    uri,
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': 'Basic $auth',
+    },
+    body: jsonEncode({
+      'title': title,
+      'content': content,
+    }),
+  );
+  if (r.statusCode == 200 || r.statusCode == 201) {
+    final d = jsonDecode(r.body);
+    if (d is Map) return Map<String, dynamic>.from(d);
+    throw Exception('پاسخ نامعتبر');
+  }
+  if (r.statusCode == 401) throw Exception('نام کاربری یا رمز اشتباه است.');
+  if (r.statusCode == 403) throw Exception('شما اجازه ویرایش ندارید.');
+  throw Exception('خطا در ویرایش (${r.statusCode})');
 }
 
 Future<void> deleteNews({
@@ -4607,6 +4639,9 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 👇 محاسبه پدینگ پایین بر اساس نوار ناوبری سیستم
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
     return ValueListenableBuilder<bool>(
       valueListenable: darkModeNotifier,
       builder: (context, _, __) => Scaffold(
@@ -4662,7 +4697,13 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
               }
               return ListView.builder(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                // 👇 پدینگ پایین = ارتفاع نوار ناوبری گوشی + 100
+                padding: EdgeInsets.fromLTRB(
+                  0,
+                  14,
+                  0,
+                  bottomInset + 100,
+                ),
                 itemCount: list.length,
                 itemBuilder: (c, i) => ModernUrgentNewsCard(news: list[i]),
               );
@@ -5111,6 +5152,260 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     }
   }
 
+  // 👇 دیالوگ ویرایش خبر
+  Future<void> _showEditDialog(dynamic post) async {
+    final titleCtrl = TextEditingController(text: pTitle(post));
+    final contentCtrl = TextEditingController(
+      text: clean(post['content']?['rendered'] ?? ''),
+    );
+    bool saving = false;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return Dialog(
+              backgroundColor: pnl,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              insetPadding: const EdgeInsets.all(16),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: accentBlue.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(Icons.edit_rounded,
+                                color: accentBlue, size: 20),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'ویرایش خبر فوری',
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                color: txtC,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                fontFamily: 'Vazirmatn',
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: saving
+                                ? null
+                                : () => Navigator.pop(ctx),
+                            icon: Icon(Icons.close_rounded,
+                                color: mutC, size: 22),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        'عنوان خبر',
+                        style: TextStyle(
+                          color: accentGreen,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: bgC,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: lineC),
+                        ),
+                        child: TextField(
+                          controller: titleCtrl,
+                          textDirection: TextDirection.rtl,
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                            color: txtC,
+                            fontSize: 13.5,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'عنوان خبر...',
+                            hintStyle: TextStyle(
+                                color: mutC, fontFamily: 'Vazirmatn'),
+                            filled: true,
+                            fillColor: Colors.transparent,
+                            contentPadding: const EdgeInsets.all(12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'متن کامل خبر',
+                        style: TextStyle(
+                          color: accentGreen,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: bgC,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: lineC),
+                        ),
+                        child: TextField(
+                          controller: contentCtrl,
+                          textDirection: TextDirection.rtl,
+                          textAlign: TextAlign.right,
+                          maxLines: 6,
+                          style: TextStyle(
+                            color: txtC,
+                            fontSize: 12.5,
+                            height: 1.8,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'متن خبر...',
+                            hintStyle: TextStyle(
+                                color: mutC, fontFamily: 'Vazirmatn'),
+                            filled: true,
+                            fillColor: Colors.transparent,
+                            contentPadding: const EdgeInsets.all(12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: saving
+                                  ? null
+                                  : () => Navigator.pop(ctx),
+                              style: TextButton.styleFrom(
+                                backgroundColor: bgC,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(color: lineC),
+                                ),
+                              ),
+                              child: Text(
+                                'انصراف',
+                                style: TextStyle(
+                                  color: mutC,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  fontFamily: 'Vazirmatn',
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            flex: 2,
+                            child: ElevatedButton.icon(
+                              onPressed: saving
+                                  ? null
+                                  : () async {
+                                      final t = titleCtrl.text.trim();
+                                      final c = contentCtrl.text.trim();
+                                      if (t.isEmpty || c.isEmpty) {
+                                        showSnack(ctx,
+                                            'عنوان و متن را وارد کنید.',
+                                            error: true);
+                                        return;
+                                      }
+                                      setDialogState(() => saving = true);
+                                      try {
+                                        await updateNews(
+                                          username: widget.username,
+                                          appPassword: widget.password,
+                                          postId: post['id'],
+                                          title: t,
+                                          content: c,
+                                        );
+                                        if (!mounted) return;
+                                        Navigator.pop(ctx);
+                                        showSnack(context,
+                                            '✅ خبر با موفقیت ویرایش شد!');
+                                        _reloadList();
+                                      } catch (e) {
+                                        if (!mounted) return;
+                                        setDialogState(() => saving = false);
+                                        showSnack(
+                                          ctx,
+                                          e.toString()
+                                              .replaceFirst('Exception: ', ''),
+                                          error: true,
+                                        );
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: accentBlue,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              icon: saving
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Icon(Icons.save_rounded, size: 18),
+                              label: Text(
+                                saving ? 'در حال ذخیره...' : 'ذخیره تغییرات',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w900,
+                                  fontFamily: 'Vazirmatn',
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _delete(dynamic post) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -5179,6 +5474,9 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 👇 محاسبه پدینگ پایین بر اساس نوار ناوبری سیستم
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
     return ValueListenableBuilder<bool>(
       valueListenable: darkModeNotifier,
       builder: (context, _, __) => Scaffold(
@@ -5195,7 +5493,8 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         ),
         body: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.all(20),
+          // 👇 پدینگ پایین = ارتفاع نوار ناوبری گوشی + 120
+          padding: EdgeInsets.fromLTRB(20, 20, 20, bottomInset + 120),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -5429,10 +5728,24 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                                 ],
                               ),
                             ),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              onPressed: () => _showEditDialog(p),
+                              icon: Icon(
+                                Icons.edit_rounded,
+                                color: accentBlue,
+                                size: 22,
+                              ),
+                              tooltip: 'ویرایش',
+                            ),
                             IconButton(
                               onPressed: () => _delete(p),
-                              icon: Icon(Icons.delete_outline_rounded,
-                                  color: rose),
+                              icon: Icon(
+                                Icons.delete_outline_rounded,
+                                color: rose,
+                                size: 22,
+                              ),
+                              tooltip: 'حذف',
                             ),
                           ],
                         ),
@@ -5443,277 +5756,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-/* ==================== SHIMMER BOX ==================== */
-
-class ShimmerBox extends StatefulWidget {
-  final double height;
-  final double width;
-  final double radius;
-  const ShimmerBox({
-    super.key,
-    required this.height,
-    this.width = double.infinity,
-    this.radius = 16,
-  });
-
-  @override
-  State<ShimmerBox> createState() => _ShimmerBoxState();
-}
-
-class _ShimmerBoxState extends State<ShimmerBox>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _anim;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1300),
-    )..repeat();
-    _anim = Tween<double>(begin: -1.5, end: 1.5).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _anim,
-      builder: (context, _) {
-        return Container(
-          width: widget.width,
-          height: widget.height,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(widget.radius),
-            gradient: LinearGradient(
-              begin: Alignment(_anim.value - 1, 0),
-              end: Alignment(_anim.value + 1, 0),
-              colors: [
-                skeletonBase,
-                skeletonHi,
-                skeletonBase,
-              ],
-              stops: const [0.35, 0.5, 0.65],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-/* ==================== POST SKELETON ==================== */
-
-class PostSkeleton extends StatelessWidget {
-  const PostSkeleton({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: pnl,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: lineC),
-      ),
-      child: Row(
-        children: const [
-          ShimmerBox(height: 90, width: 90, radius: 14),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ShimmerBox(height: 12, width: 80, radius: 6),
-                SizedBox(height: 10),
-                ShimmerBox(height: 14),
-                SizedBox(height: 6),
-                ShimmerBox(height: 14, width: 180),
-                SizedBox(height: 10),
-                ShimmerBox(height: 10, width: 60, radius: 5),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/* ==================== FEATURED SKELETON ==================== */
-
-class FeaturedSkeleton extends StatelessWidget {
-  const FeaturedSkeleton({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: pnl,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: lineC),
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(22),
-              topRight: Radius.circular(22),
-            ),
-            child: ShimmerBox(height: 200, radius: 0),
-          ),
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ShimmerBox(height: 12, width: 90, radius: 6),
-                SizedBox(height: 12),
-                ShimmerBox(height: 16),
-                SizedBox(height: 8),
-                ShimmerBox(height: 16, width: 220),
-                SizedBox(height: 14),
-                ShimmerBox(height: 40),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/* ==================== EMPTY WIDGET ==================== */
-
-class EmptyWidget extends StatelessWidget {
-  final String text;
-  const EmptyWidget({super.key, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(40),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: pnl2,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.inbox_rounded,
-                color: mutC,
-                size: 40,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              text,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: mutC,
-                fontSize: 13,
-                height: 1.7,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/* ==================== ERROR BOX ==================== */
-
-class ErrorBox extends StatelessWidget {
-  final String message;
-  final VoidCallback? onRetry;
-  const ErrorBox({
-    super.key,
-    required this.message,
-    this.onRetry,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: rose.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.error_outline_rounded,
-                color: rose,
-                size: 42,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: txtC,
-                fontSize: 13,
-                height: 1.7,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-            if (onRetry != null) ...[
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: onRetry,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff10b981),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text(
-                  'تلاش مجدد',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-              ),
-            ],
-          ],
         ),
       ),
     );
