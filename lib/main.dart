@@ -80,7 +80,6 @@ Color get inkSoft => darkModeNotifier.value ? const Color(0xff9db0ca) : const Co
 Color get softLine => darkModeNotifier.value ? const Color(0xff223252) : const Color(0xffeef3fa);
 Color get chipBg => darkModeNotifier.value ? const Color(0xff132a45) : const Color(0xffecfdf5);
 Color get chipFg => darkModeNotifier.value ? const Color(0xff34d399) : const Color(0xff047857);
-
 /* ==================== MODELS ==================== */
 
 class Cat {
@@ -379,7 +378,6 @@ List<int> _toJalali(int gy, int gm, int gd) {
   }
   return [jy, jm, jd];
 }
-
 /* ==================== API & CACHE ==================== */
 
 final Map<String, List> _postsCache = {};
@@ -805,8 +803,8 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: accentNotifier.value
-                                  .withOpacity(0.45),
+                              color:
+                                  accentNotifier.value.withOpacity(0.45),
                               blurRadius: 40,
                               spreadRadius: 4,
                             ),
@@ -967,7 +965,6 @@ class _DotsLoaderState extends State<_DotsLoader>
     );
   }
 }
-
 /* ==================== ROOT ==================== */
 
 class Root extends StatefulWidget {
@@ -1201,7 +1198,6 @@ class _HomeState extends State<Home> {
         ),
         child: Stack(
           children: [
-            // Mesh Gradient متحرک
             Positioned(
               top: -100,
               right: -100,
@@ -1340,7 +1336,7 @@ class _AnimatedBlobState extends State<_AnimatedBlob>
     );
   }
 }
-/* ==================== MODERN HEADER (PRO) ==================== */
+/* ==================== MODERN HEADER ==================== */
 
 Widget ModernHeader(BuildContext context, [String? t]) {
   return SafeArea(
@@ -1423,7 +1419,8 @@ Widget ModernHeader(BuildContext context, [String? t]) {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: accentNotifier.value.withOpacity(0.6),
+                            color:
+                                accentNotifier.value.withOpacity(0.6),
                             blurRadius: 6,
                           ),
                         ],
@@ -1730,7 +1727,7 @@ class _LiveNewsTickerState extends State<LiveNewsTicker> {
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _WhiteLiveDot(),
+                _WhiteLiveDotSmall(),
                 SizedBox(width: 5),
                 Text(
                   'LIVE',
@@ -1782,7 +1779,6 @@ class _LiveNewsTickerState extends State<LiveNewsTicker> {
     );
   }
 }
-
 /* ==================== CATEGORY CHIPS BAR ==================== */
 
 class CategoryChipsBar extends StatefulWidget {
@@ -1914,16 +1910,16 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
   }
 }
 
-/* ==================== WHITE LIVE DOT ==================== */
+/* ==================== WHITE LIVE DOT SMALL ==================== */
 
-class _WhiteLiveDot extends StatefulWidget {
-  const _WhiteLiveDot();
+class _WhiteLiveDotSmall extends StatefulWidget {
+  const _WhiteLiveDotSmall();
 
   @override
-  State<_WhiteLiveDot> createState() => _WhiteLiveDotState();
+  State<_WhiteLiveDotSmall> createState() => _WhiteLiveDotSmallState();
 }
 
-class _WhiteLiveDotState extends State<_WhiteLiveDot>
+class _WhiteLiveDotSmallState extends State<_WhiteLiveDotSmall>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
 
@@ -1979,6 +1975,7 @@ class _WhiteLiveDotState extends State<_WhiteLiveDot>
     );
   }
 }
+
 /* ==================== HERO CAROUSEL ==================== */
 
 class HeroCarousel extends StatefulWidget {
@@ -2172,7 +2169,8 @@ class _CarouselCardState extends State<_CarouselCard>
                         imageUrl: img,
                         fit: BoxFit.cover,
                         memCacheWidth: 1080,
-                        fadeInDuration: const Duration(milliseconds: 400),
+                        fadeInDuration:
+                            const Duration(milliseconds: 400),
                         placeholder: (_, __) => Container(color: pnl2),
                         errorWidget: (_, __, ___) => Container(
                           color: pnl2,
@@ -2375,7 +2373,6 @@ class ModernHeroBanner extends StatelessWidget {
     );
   }
 }
-
 /* ==================== MODERN NEWS BANNER ==================== */
 
 class ModernNewsBanner extends StatefulWidget {
@@ -2422,7 +2419,7 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    const _WhiteLiveDotRed(),
+                    const ModernLiveDot(),
                     const SizedBox(width: 8),
                     Text(
                       'اخبار فوری',
@@ -2494,70 +2491,7 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
   }
 }
 
-class _WhiteLiveDotRed extends StatefulWidget {
-  const _WhiteLiveDotRed();
-  @override
-  State<_WhiteLiveDotRed> createState() => _WhiteLiveDotRedState();
-}
-
-class _WhiteLiveDotRedState extends State<_WhiteLiveDotRed>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (context, _) {
-        final t = _ctrl.value;
-        final scale = 1.0 + (t < 0.5 ? t * 0.6 : (1 - t) * 0.6);
-        final opacity = 1.0 - t;
-        return SizedBox(
-          width: 14,
-          height: 14,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: 14 * scale,
-                height: 14 * scale,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xfff43f5e).withOpacity(opacity * 0.5),
-                ),
-              ),
-              Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xfff43f5e),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-/* ==================== MODERN SERVICES ==================== */
+/* ==================== MODERN SERVICES SECTION ==================== */
 
 class ModernServicesSection extends StatefulWidget {
   const ModernServicesSection({super.key});
@@ -2734,7 +2668,8 @@ class _ModernServicesSectionState extends State<ModernServicesSection> {
                 color: color.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(item['icon'] as IconData, color: color, size: 24),
+              child:
+                  Icon(item['icon'] as IconData, color: color, size: 24),
             ),
             const SizedBox(height: 8),
             Expanded(
@@ -3888,7 +3823,8 @@ class _ModernLiveDotState extends State<ModernLiveDot>
                 height: 16 * scale,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xfff43f5e).withOpacity(opacity * 0.5),
+                  color: const Color(0xfff43f5e)
+                      .withOpacity(opacity * 0.5),
                 ),
               ),
               const DecoratedBox(
@@ -4011,7 +3947,8 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
           border: Border.all(
             color: _pressed
                 ? const Color(0xfff43f5e)
-                : const Color(0xfff43f5e).withOpacity(isDark ? 0.35 : 0.25),
+                : const Color(0xfff43f5e)
+                    .withOpacity(isDark ? 0.35 : 0.25),
             width: _pressed ? 2 : 1.2,
           ),
           boxShadow: [
@@ -4344,72 +4281,1328 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
     );
   }
 }
+/* ==================== ARTICLES PAGE ==================== */
 
-/* ==================== WHITE LIVE DOT SMALL ==================== */
-
-class _WhiteLiveDotSmall extends StatefulWidget {
-  const _WhiteLiveDotSmall();
-
+class ArticlesPage extends StatefulWidget {
+  const ArticlesPage({super.key});
   @override
-  State<_WhiteLiveDotSmall> createState() => _WhiteLiveDotSmallState();
+  State<ArticlesPage> createState() => _ArticlesPageState();
 }
 
-class _WhiteLiveDotSmallState extends State<_WhiteLiveDotSmall>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
+class _ArticlesPageState extends State<ArticlesPage> {
+  final _posts = <dynamic>[];
+  int _page = 1;
+  bool _loading = false;
+  bool _hasMore = true;
+  String? _error;
+  final _scroll = ScrollController(keepScrollOffset: false);
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat();
+    _load();
+    _scroll.addListener(() {
+      if (_scroll.position.pixels >=
+              _scroll.position.maxScrollExtent - 400 &&
+          !_loading &&
+          _hasMore) {
+        _load();
+      }
+    });
+  }
+
+  Future<void> _load() async {
+    if (_loading || !_hasMore) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final list = await getPostsPaged(perPage: perPageSize, page: _page);
+      setState(() {
+        if (list.isEmpty) {
+          _hasMore = false;
+        } else {
+          _posts.addAll(list);
+          _page++;
+          if (list.length < perPageSize) _hasMore = false;
+        }
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _refresh() async {
+    _postsCache.clear();
+    _postsCacheTime.clear();
+    setState(() {
+      _posts.clear();
+      _page = 1;
+      _hasMore = true;
+      _error = null;
+    });
+    await _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Scaffold(
+        backgroundColor: bgC,
+        body: Column(
+          children: [
+            ModernHeader(context, 'مقالات'),
+            Expanded(
+              child: _posts.isEmpty && _loading
+                  ? const Padding(
+                      padding: EdgeInsets.all(14),
+                      child: Column(
+                        children: [
+                          PostSkeleton(),
+                          PostSkeleton(),
+                          PostSkeleton(),
+                          PostSkeleton(),
+                        ],
+                      ),
+                    )
+                  : _posts.isEmpty && _error != null
+                      ? ErrorBox(
+                          message: 'خطا در دریافت مقالات.\n$_error',
+                          onRetry: _refresh,
+                        )
+                      : _posts.isEmpty
+                          ? const EmptyWidget(text: 'مقاله‌ای پیدا نشد.')
+                          : RefreshIndicator(
+                              color: accentNotifier.value,
+                              backgroundColor: pnl,
+                              onRefresh: _refresh,
+                              child: ListView.builder(
+                                controller: _scroll,
+                                cacheExtent: 800,
+                                physics: const BouncingScrollPhysics(),
+                                padding: const EdgeInsets.fromLTRB(
+                                    14, 14, 14, 120),
+                                itemCount:
+                                    _posts.length + (_hasMore ? 1 : 0),
+                                itemBuilder: (c, i) {
+                                  if (i >= _posts.length) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(20),
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          color: accentNotifier.value,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  return ModernPostCard(
+                                    post: _posts[i],
+                                    showBookmark: true,
+                                  );
+                                },
+                              ),
+                            ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/* ==================== CATEGORY POSTS PAGE ==================== */
+
+class CategoryPostsPage extends StatefulWidget {
+  final Cat c;
+  const CategoryPostsPage({super.key, required this.c});
+  @override
+  State<CategoryPostsPage> createState() => _CategoryPostsPageState();
+}
+
+class _CategoryPostsPageState extends State<CategoryPostsPage> {
+  final _posts = <dynamic>[];
+  int _page = 1;
+  bool _loading = false;
+  bool _loadingMore = false;
+  bool _hasMore = true;
+  String? _error;
+  int? _catId;
+  final _scroll = ScrollController(keepScrollOffset: false);
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    setState(() => _loading = true);
+    try {
+      _catId = await getCatIdBySlug(widget.c.s);
+      if (_catId == null) throw Exception('دسته‌بندی یافت نشد');
+      await _loadFirst();
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _loadFirst() async {
+    try {
+      final list = await getPostsPaged(perPage: 5, page: 1, catId: _catId);
+      if (!mounted) return;
+      setState(() {
+        _posts.clear();
+        _posts.addAll(list);
+        _page = 1;
+        _hasMore = list.length >= 5;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore) return;
+    setState(() => _loadingMore = true);
+    try {
+      final nextPage = _page + 1;
+      final list = await getPostsPaged(
+          perPage: 5, page: nextPage, catId: _catId);
+      if (!mounted) return;
+      setState(() {
+        if (list.isEmpty) {
+          _hasMore = false;
+        } else {
+          _posts.addAll(list);
+          _page = nextPage;
+          if (list.length < 5) _hasMore = false;
+        }
+        _loadingMore = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingMore = false);
+    }
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _posts.clear();
+      _page = 1;
+      _hasMore = true;
+      _error = null;
+    });
+    await _loadFirst();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Scaffold(
+        backgroundColor: bgC,
+        body: CustomScrollView(
+          controller: _scroll,
+          physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics()),
+          slivers: [
+            SliverAppBar(
+              pinned: true,
+              floating: false,
+              backgroundColor: bgC,
+              foregroundColor: txtC,
+              elevation: 0,
+              expandedHeight: 130,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_forward_rounded, color: txtC),
+                onPressed: () => Navigator.pop(context),
+              ),
+              flexibleSpace: FlexibleSpaceBar(
+                title: Text(
+                  widget.c.n,
+                  style: TextStyle(
+                    color: txtC,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+                titlePadding: const EdgeInsets.fromLTRB(56, 0, 16, 16),
+                background: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        widget.c.c.withOpacity(0.25),
+                        bgC,
+                      ],
+                    ),
+                  ),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 60, top: 20),
+                      child: Icon(
+                        widget.c.i,
+                        color: widget.c.c.withOpacity(0.35),
+                        size: 100,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            if (_posts.isEmpty && _loading)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(14),
+                  child: Column(
+                    children: [
+                      FeaturedSkeleton(),
+                      SizedBox(height: 12),
+                      PostSkeleton(),
+                      SizedBox(height: 12),
+                      PostSkeleton(),
+                    ],
+                  ),
+                ),
+              )
+            else if (_posts.isEmpty && _error != null)
+              SliverToBoxAdapter(
+                child: ErrorBox(
+                  message: 'خطا در دریافت مطالب.\n$_error',
+                  onRetry: _refresh,
+                ),
+              )
+            else if (_posts.isEmpty)
+              const SliverToBoxAdapter(
+                child: EmptyWidget(text: 'مطلبی در این دسته پیدا نشد.'),
+              )
+            else ...[
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+                  child: FeaturedPostCard(
+                      post: _posts.first, showBookmark: true),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (c, i) {
+                      final post = _posts[i + 1];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child:
+                            SidePostCard(post: post, showBookmark: true),
+                      );
+                    },
+                    childCount: _posts.length - 1,
+                  ),
+                ),
+              ),
+              if (_hasMore)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 40),
+                    child: Center(child: _buildLoadMore()),
+                  ),
+                ),
+              if (!_hasMore && _posts.length > 5)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 16, 14, 60),
+                    child: Center(
+                      child: Text(
+                        'همه مطالب نمایش داده شد.',
+                        style: TextStyle(color: mutC, fontSize: 12),
+                      ),
+                    ),
+                  ),
+                ),
+              const SliverToBoxAdapter(child: SizedBox(height: 120)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadMore() {
+    return GestureDetector(
+      onTap: _loadingMore ? null : _loadMore,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 12),
+        decoration: BoxDecoration(
+          color: pnl,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: lineC),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_loadingMore)
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: accentNotifier.value,
+                ),
+              )
+            else
+              Icon(Icons.arrow_back_ios_new_rounded,
+                  size: 12, color: txtC),
+            const SizedBox(width: 8),
+            Text(
+              _loadingMore ? 'در حال بارگذاری...' : 'مشاهده بیشتر',
+              style: TextStyle(
+                color: txtC,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+/* ==================== BOOKMARKS PAGE ==================== */
+
+class BookmarksPage extends StatefulWidget {
+  const BookmarksPage({super.key});
+  @override
+  State<BookmarksPage> createState() => _BookmarksPageState();
+}
+
+class _BookmarksPageState extends State<BookmarksPage> {
+  final _allPosts = <dynamic>[];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAll();
+  }
+
+  Future<void> _loadAll() async {
+    setState(() => _loading = true);
+    try {
+      final list = await getPostsPaged(perPage: 50, page: 1);
+      _allPosts.clear();
+      _allPosts.addAll(list);
+    } catch (_) {}
+    if (mounted) setState(() => _loading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => ValueListenableBuilder<Set<String>>(
+        valueListenable: bookmarkNotifier,
+        builder: (context, bookmarks, __) {
+          final saved =
+              _allPosts.where((p) => bookmarks.contains(pId(p))).toList();
+
+          return Scaffold(
+            backgroundColor: bgC,
+            appBar: AppBar(
+              title: const Text(
+                'نشان‌شده‌ها',
+                style: TextStyle(
+                    fontWeight: FontWeight.w900, fontFamily: 'Vazirmatn'),
+              ),
+              backgroundColor: bgC,
+              foregroundColor: txtC,
+              elevation: 0,
+            ),
+            body: _loading
+                ? const Padding(
+                    padding: EdgeInsets.all(14),
+                    child: Column(
+                      children: [
+                        PostSkeleton(),
+                        PostSkeleton(),
+                        PostSkeleton(),
+                      ],
+                    ),
+                  )
+                : saved.isEmpty
+                    ? const EmptyWidget(
+                        text:
+                            'هنوز مقاله‌ای را نشان نکرده‌اید.\nبا زدن آیکون نشان روی کارت‌ها، اینجا ذخیره می‌شوند.')
+                    : RefreshIndicator(
+                        color: accentNotifier.value,
+                        backgroundColor: pnl,
+                        onRefresh: _loadAll,
+                        child: ListView.builder(
+                          physics: const BouncingScrollPhysics(),
+                          padding:
+                              const EdgeInsets.fromLTRB(14, 14, 14, 100),
+                          itemCount: saved.length,
+                          itemBuilder: (c, i) => ModernPostCard(
+                              post: saved[i], showBookmark: true),
+                        ),
+                      ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/* ==================== SEARCH PAGE ==================== */
+
+class SearchPage extends StatefulWidget {
+  const SearchPage({super.key});
+  @override
+  State<SearchPage> createState() => _SearchPageState();
+}
+
+class _SearchPageState extends State<SearchPage> {
+  final _ctrl = TextEditingController();
+  final _focus = FocusNode();
+  Future<List>? _f;
+  String _q = '';
+  Timer? _debounce;
+  List<String> _history = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focus.requestFocus();
+    });
+  }
+
+  Future<void> _loadHistory() async {
+    try {
+      final saved = await _storage.read(key: 'search_history');
+      if (saved != null && saved.isNotEmpty) {
+        _history = (json.decode(saved) as List).cast<String>();
+        if (mounted) setState(() {});
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveHistory(String q) async {
+    if (q.isEmpty) return;
+    _history.remove(q);
+    _history.insert(0, q);
+    if (_history.length > 10) _history = _history.sublist(0, 10);
+    try {
+      await _storage.write(
+          key: 'search_history', value: json.encode(_history));
+    } catch (_) {}
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _clearHistory() async {
+    _history.clear();
+    try {
+      await _storage.delete(key: 'search_history');
+    } catch (_) {}
+    if (mounted) setState(() {});
+  }
+
+  void _onChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      final q = value.trim();
+      if (q.isEmpty) {
+        setState(() {
+          _q = '';
+          _f = null;
+        });
+        return;
+      }
+      setState(() {
+        _q = q;
+        _f = searchExact(q);
+      });
+      _saveHistory(q);
+    });
+  }
+
+  void _searchFromHistory(String q) {
+    _ctrl.text = q;
+    _onChanged(q);
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _ctrl.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (context, _) {
-        final t = _ctrl.value;
-        final scale = 1.0 + (t < 0.5 ? t * 0.6 : (1 - t) * 0.6);
-        final opacity = 1.0 - t;
-        return SizedBox(
-          width: 12,
-          height: 12,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: 12 * scale,
-                height: 12 * scale,
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Scaffold(
+        backgroundColor: bgC,
+        appBar: AppBar(
+          title: const Text(
+            'جستجو',
+            style: TextStyle(
+                fontWeight: FontWeight.w900, fontFamily: 'Vazirmatn'),
+          ),
+          backgroundColor: bgC,
+          foregroundColor: txtC,
+          elevation: 0,
+        ),
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 6, 14, 14),
+              child: Container(
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(opacity * 0.6),
+                  color: pnl,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: lineC),
+                ),
+                child: TextField(
+                  controller: _ctrl,
+                  focusNode: _focus,
+                  textInputAction: TextInputAction.search,
+                  onChanged: _onChanged,
+                  style: TextStyle(
+                      color: txtC, fontFamily: 'Vazirmatn', fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'عبارت مورد نظر...',
+                    hintStyle:
+                        TextStyle(color: mutC, fontFamily: 'Vazirmatn'),
+                    prefixIcon: Icon(Icons.search_rounded,
+                        color: accentNotifier.value),
+                    suffixIcon: _ctrl.text.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(Icons.close_rounded,
+                                color: mutC, size: 20),
+                            onPressed: () {
+                              _ctrl.clear();
+                              _onChanged('');
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: Colors.transparent,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
                 ),
               ),
-              Container(
-                width: 7,
-                height: 7,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
+            ),
+            Expanded(
+              child: _f == null
+                  ? _buildHistory()
+                  : FutureBuilder<List>(
+                      future: _f,
+                      builder: (c, s) {
+                        if (s.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Padding(
+                            padding: EdgeInsets.all(14),
+                            child: Column(
+                              children: [
+                                PostSkeleton(),
+                                PostSkeleton(),
+                                PostSkeleton(),
+                              ],
+                            ),
+                          );
+                        }
+                        if (s.hasError) {
+                          return ErrorBox(
+                              message: 'خطا در جستجو.\n${s.error}',
+                              onRetry: null);
+                        }
+                        final posts = s.data ?? [];
+                        if (posts.isEmpty) {
+                          return EmptyWidget(
+                              text: 'نتیجه‌ای برای «$_q» پیدا نشد.');
+                        }
+                        return ListView.builder(
+                          cacheExtent: 800,
+                          physics: const BouncingScrollPhysics(),
+                          padding:
+                              const EdgeInsets.fromLTRB(14, 0, 14, 100),
+                          itemCount: posts.length,
+                          itemBuilder: (c, i) => ModernPostCard(
+                              post: posts[i], showBookmark: true),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistory() {
+    if (_history.isEmpty) {
+      return const EmptyWidget(text: 'عبارتی برای جستجو وارد کنید');
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.history_rounded, color: mutC, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                'جستجوهای اخیر',
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: _clearHistory,
+                child: Text(
+                  'پاک کردن',
+                  style: TextStyle(
+                    color: rose,
+                    fontSize: 12,
+                    fontFamily: 'Vazirmatn',
+                  ),
                 ),
               ),
             ],
           ),
-        );
-      },
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _history
+                .map((q) => GestureDetector(
+                      onTap: () => _searchFromHistory(q),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 9),
+                        decoration: BoxDecoration(
+                          color: pnl,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: lineC),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.search_rounded,
+                                color: mutC, size: 14),
+                            const SizedBox(width: 6),
+                            Text(
+                              q,
+                              style: TextStyle(
+                                color: txtC,
+                                fontSize: 12,
+                                fontFamily: 'Vazirmatn',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ))
+                .toList(),
+          ),
+        ],
+      ),
     );
   }
 }
+
+/* ==================== SHOP PAGE ==================== */
+
+class ShopPage extends StatefulWidget {
+  const ShopPage({super.key});
+  @override
+  State<ShopPage> createState() => _ShopPageState();
+}
+
+class _ShopPageState extends State<ShopPage> {
+  final _products = <dynamic>[];
+  int _page = 1;
+  bool _loading = false;
+  bool _hasMore = true;
+  String? _error;
+  final _scroll = ScrollController(keepScrollOffset: false);
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    _scroll.addListener(() {
+      if (_scroll.position.pixels >=
+              _scroll.position.maxScrollExtent - 400 &&
+          !_loading &&
+          _hasMore) {
+        _load();
+      }
+    });
+  }
+
+  Future<void> _load() async {
+    if (_loading || !_hasMore) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final list =
+          await getProductsPaged(perPage: perPageSize, page: _page);
+      setState(() {
+        if (list.isEmpty) {
+          _hasMore = false;
+        } else {
+          _products.addAll(list);
+          _page++;
+          if (list.length < perPageSize) _hasMore = false;
+        }
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _products.clear();
+      _page = 1;
+      _hasMore = true;
+      _error = null;
+    });
+    await _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Scaffold(
+        backgroundColor: bgC,
+        body: Column(
+          children: [
+            ModernHeader(context, 'فروشگاه'),
+            Expanded(
+              child: _products.isEmpty && _loading
+                  ? const Padding(
+                      padding: EdgeInsets.all(14),
+                      child: Column(
+                        children: [
+                          PostSkeleton(),
+                          PostSkeleton(),
+                          PostSkeleton(),
+                          PostSkeleton(),
+                        ],
+                      ),
+                    )
+                  : _products.isEmpty && _error != null
+                      ? ErrorBox(
+                          message: 'خطا در دریافت محصولات.\n$_error',
+                          onRetry: _refresh)
+                      : _products.isEmpty
+                          ? const EmptyWidget(text: 'محصولی پیدا نشد.')
+                          : RefreshIndicator(
+                              color: accentNotifier.value,
+                              backgroundColor: pnl,
+                              onRefresh: _refresh,
+                              child: ListView.builder(
+                                controller: _scroll,
+                                cacheExtent: 800,
+                                physics: const BouncingScrollPhysics(),
+                                padding: const EdgeInsets.fromLTRB(
+                                    14, 14, 14, 120),
+                                itemCount: _products.length +
+                                    (_hasMore ? 1 : 0),
+                                itemBuilder: (c, i) {
+                                  if (i >= _products.length) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(20),
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                            color: accentNotifier.value),
+                                      ),
+                                    );
+                                  }
+                                  return ModernProductCard(
+                                      product: _products[i]);
+                                },
+                              ),
+                            ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/* ==================== NEWS PAGE ==================== */
+
+class NewsPage extends StatefulWidget {
+  const NewsPage({super.key});
+  @override
+  State<NewsPage> createState() => _NewsPageState();
+}
+
+class _NewsPageState extends State<NewsPage> {
+  final _posts = <dynamic>[];
+  int _page = 1;
+  bool _loading = false;
+  bool _hasMore = true;
+  String? _error;
+  int? _catId;
+  final _scroll = ScrollController(keepScrollOffset: false);
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+    _scroll.addListener(() {
+      if (_scroll.position.pixels >=
+              _scroll.position.maxScrollExtent - 400 &&
+          !_loading &&
+          _hasMore) {
+        _load();
+      }
+    });
+  }
+
+  Future<void> _init() async {
+    setState(() => _loading = true);
+    try {
+      _catId = await getCatIdBySlug('sports-news-and-events');
+      if (_catId == null) throw Exception('دسته‌بندی اخبار یافت نشد');
+      await _load();
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _load() async {
+    if (_loading && _posts.isNotEmpty) return;
+    if (!_hasMore) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final list = await getPostsPaged(
+          perPage: perPageSize, page: _page, catId: _catId);
+      setState(() {
+        if (list.isEmpty) {
+          _hasMore = false;
+        } else {
+          _posts.addAll(list);
+          _page++;
+          if (list.length < perPageSize) _hasMore = false;
+        }
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _refresh() async {
+    _postsCache.clear();
+    _postsCacheTime.clear();
+    setState(() {
+      _posts.clear();
+      _page = 1;
+      _hasMore = true;
+      _error = null;
+    });
+    await _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Scaffold(
+        backgroundColor: bgC,
+        body: Column(
+          children: [
+            ModernHeader(context, 'اخبار و رویدادها'),
+            Expanded(
+              child: _posts.isEmpty && _loading
+                  ? const Padding(
+                      padding: EdgeInsets.all(14),
+                      child: Column(
+                        children: [
+                          PostSkeleton(),
+                          PostSkeleton(),
+                          PostSkeleton(),
+                          PostSkeleton(),
+                        ],
+                      ),
+                    )
+                  : _posts.isEmpty && _error != null
+                      ? ErrorBox(
+                          message: 'خطا در دریافت اخبار.\n$_error',
+                          onRetry: _refresh)
+                      : _posts.isEmpty
+                          ? const EmptyWidget(text: 'خبری پیدا نشد.')
+                          : RefreshIndicator(
+                              color: accentNotifier.value,
+                              backgroundColor: pnl,
+                              onRefresh: _refresh,
+                              child: ListView.builder(
+                                controller: _scroll,
+                                cacheExtent: 800,
+                                physics: const BouncingScrollPhysics(),
+                                padding: const EdgeInsets.fromLTRB(
+                                    14, 14, 14, 120),
+                                itemCount:
+                                    _posts.length + (_hasMore ? 1 : 0),
+                                itemBuilder: (c, i) {
+                                  if (i >= _posts.length) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(20),
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                            color: accentNotifier.value),
+                                      ),
+                                    );
+                                  }
+                                  return ModernPostCard(
+                                      post: _posts[i], showBookmark: true);
+                                },
+                              ),
+                            ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+/* ==================== ACCOUNT PAGE ==================== */
+
+class AccountPage extends StatefulWidget {
+  const AccountPage({super.key});
+  @override
+  State<AccountPage> createState() => _AccountPageState();
+}
+
+class _AccountPageState extends State<AccountPage> {
+  InAppWebViewController? _controller;
+  bool _l = true;
+  double _progress = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _restore();
+  }
+
+  Future<void> _restore() async {
+    try {
+      final saved = await _storage.read(key: 'wc_cookies');
+      if (saved != null && saved.isNotEmpty) {
+        final list = json.decode(saved) as List;
+        for (var item in list) {
+          await CookieManager.instance().setCookie(
+            url: WebUri(site),
+            name: item['name'],
+            value: item['value'],
+            domain: item['domain'],
+            path: item['path'],
+            isHttpOnly: item['httponly'] ?? false,
+            isSecure: item['secure'] ?? false,
+            expiresDate: item['expiry'] != null
+                ? (item['expiry'] as int) * 1000
+                : null,
+          );
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _save() async {
+    try {
+      if (_controller == null) return;
+      final cookies =
+          await CookieManager.instance().getCookies(url: WebUri(site));
+      final loginCookies = cookies
+          .where((c) =>
+              c.name.startsWith('wordpress_logged_in') ||
+              c.name.startsWith('wordpress_sec'))
+          .toList();
+      if (loginCookies.isNotEmpty) {
+        final list = loginCookies
+            .map((c) => {
+                  'name': c.name,
+                  'value': c.value,
+                  'domain': c.domain,
+                  'path': c.path,
+                  'httponly': c.isHttpOnly,
+                  'secure': c.isSecure,
+                  'expiry': c.expiresDate,
+                })
+            .toList();
+        await _storage.write(key: 'wc_cookies', value: json.encode(list));
+      } else {
+        await _storage.delete(key: 'wc_cookies');
+        await CookieManager.instance().deleteAllCookies();
+      }
+    } catch (_) {}
+  }
+
+  bool _isTrustedUrl(String url) {
+    return url.contains('itarbiatbadani.ir') ||
+        url.contains('zarinpal.com') ||
+        url.contains('shaparak.ir') ||
+        url.contains('sep.shaparak.ir') ||
+        url.contains('behpardakht.com') ||
+        url.contains('mellatbank.ir') ||
+        url.contains('asanpardakht.ir') ||
+        url.contains('idpay.ir') ||
+        url.contains('pay.ir') ||
+        url.contains('sadad.ir') ||
+        url.contains('pep.co.ir') ||
+        url.contains('parsianbank.ir') ||
+        url.contains('sb24.ir') ||
+        url.contains('my-account') ||
+        url.contains('checkout') ||
+        url.contains('cart');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Scaffold(
+        backgroundColor: bgC,
+        body: Column(
+          children: [
+            ModernHeaderWithAdmin(context, 'حساب من'),
+            if (_l && _progress > 0)
+              LinearProgressIndicator(
+                value: _progress,
+                backgroundColor: lineC,
+                color: accentNotifier.value,
+                minHeight: 3,
+              ),
+            Expanded(
+              child: Stack(
+                children: [
+                  InAppWebView(
+                    initialUrlRequest:
+                        URLRequest(url: WebUri('$site/my-account/')),
+                    initialSettings: InAppWebViewSettings(
+                      javaScriptEnabled: true,
+                      useOnDownloadStart: true,
+                      useShouldOverrideUrlLoading: true,
+                      userAgent:
+                          'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+                    ),
+                    onWebViewCreated: (c) => _controller = c,
+                    onLoadStart: (c, url) => setState(() => _l = true),
+                    onLoadStop: (c, url) async {
+                      setState(() {
+                        _l = false;
+                        _progress = 0;
+                      });
+                      await _save();
+                    },
+                    onProgressChanged: (c, p) =>
+                        setState(() => _progress = p / 100),
+                    onDownloadStartRequest: (controller, request) async {
+                      await openExternalUrl(request.url.toString());
+                    },
+                    shouldOverrideUrlLoading: (controller, action) async {
+                      final url = action.request.url.toString();
+                      if (_isTrustedUrl(url)) {
+                        return NavigationActionPolicy.ALLOW;
+                      }
+                      if (await canLaunchUrl(Uri.parse(url))) {
+                        await launchUrl(Uri.parse(url),
+                            mode: LaunchMode.externalApplication);
+                      }
+                      return NavigationActionPolicy.CANCEL;
+                    },
+                  ),
+                  if (_l && _progress == 0)
+                    Center(
+                      child: CircularProgressIndicator(
+                          color: accentNotifier.value),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/* ==================== MODERN WEB PAGE ==================== */
+
+class ModernWebPage extends StatefulWidget {
+  final String url;
+  final String title;
+  const ModernWebPage({
+    super.key,
+    required this.url,
+    required this.title,
+  });
+  @override
+  State<ModernWebPage> createState() => _ModernWebPageState();
+}
+
+class _ModernWebPageState extends State<ModernWebPage> {
+  bool _l = true;
+  double _progress = 0;
+  InAppWebViewController? _controller;
+
+  bool _isTrustedUrl(String url) {
+    return url.contains('itarbiatbadani.ir') ||
+        url.contains('zarinpal.com') ||
+        url.contains('shaparak.ir') ||
+        url.contains('sep.shaparak.ir') ||
+        url.contains('behpardakht.com') ||
+        url.contains('mellatbank.ir') ||
+        url.contains('asanpardakht.ir') ||
+        url.contains('idpay.ir') ||
+        url.contains('pay.ir') ||
+        url.contains('sadad.ir') ||
+        url.contains('pep.co.ir') ||
+        url.contains('parsianbank.ir') ||
+        url.contains('sb24.ir') ||
+        url.contains('my-account') ||
+        url.contains('checkout') ||
+        url.contains('cart');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: bgC,
+      appBar: AppBar(
+        title: Text(
+          widget.title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: 14,
+            fontFamily: 'Vazirmatn',
+          ),
+        ),
+        backgroundColor: bgC,
+        foregroundColor: txtC,
+        elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: () => sharePost(widget.url, widget.title),
+            icon: Icon(Icons.ios_share_rounded, color: txtC),
+            tooltip: 'اشتراک',
+          ),
+          IconButton(
+            onPressed: () {
+              _controller?.reload();
+            },
+            icon: Icon(Icons.refresh_rounded, color: txtC),
+            tooltip: 'رفرش',
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(2),
+          child: AnimatedOpacity(
+            opacity: _l ? 1 : 0,
+            duration: const Duration(milliseconds: 300),
+            child: LinearProgressIndicator(
+              value: _progress > 0 ? _progress : null,
+              backgroundColor: lineC,
+              color: accentNotifier.value,
+              minHeight: 2,
+            ),
+          ),
+        ),
+      ),
+      body: Stack(
+        children: [
+          InAppWebView(
+            initialUrlRequest: URLRequest(url: WebUri(widget.url)),
+            initialSettings: InAppWebViewSettings(
+              javaScriptEnabled: true,
+              useShouldOverrideUrlLoading: true,
+              mediaPlaybackRequiresUserGesture: false,
+              useOnDownloadStart: true,
+              supportZoom: true,
+            ),
+            onWebViewCreated: (c) => _controller = c,
+            onLoadStart: (c, url) => setState(() => _l = true),
+            onLoadStop: (c, url) => setState(() {
+              _l = false;
+              _progress = 0;
+            }),
+            onProgressChanged: (c, p) =>
+                setState(() => _progress = p / 100),
+            onDownloadStartRequest: (controller, request) async {
+              await openExternalUrl(request.url.toString());
+            },
+            shouldOverrideUrlLoading: (controller, action) async {
+              final url = action.request.url.toString();
+              if (_isTrustedUrl(url)) {
+                return NavigationActionPolicy.ALLOW;
+              }
+              if (await canLaunchUrl(Uri.parse(url))) {
+                await launchUrl(Uri.parse(url),
+                    mode: LaunchMode.externalApplication);
+              }
+              return NavigationActionPolicy.CANCEL;
+            },
+          ),
+          if (_l && _progress == 0)
+            Center(
+                child: CircularProgressIndicator(
+                    color: accentNotifier.value)),
+        ],
+      ),
+    );
+  }
+}
+
 /* ==================== URGENT NEWS DETAIL PAGE ==================== */
 
 class UrgentNewsDetailPage extends StatefulWidget {
@@ -5344,8 +6537,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
       ),
     );
   }
-
-  Widget _buildRelatedSection() {
+    Widget _buildRelatedSection() {
     return FutureBuilder<List>(
       future: getNewNewsList(),
       builder: (context, snapshot) {
@@ -5463,6 +6655,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
     );
   }
 }
+
 /* ==================== URGENT NEWS LIST PAGE ==================== */
 
 class UrgentNewsListPage extends StatefulWidget {
@@ -5563,7 +6756,6 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
     );
   }
 }
-
 /* ==================== ADMIN LOGIN ==================== */
 
 class AdminLoginPage extends StatefulWidget {
@@ -6764,6 +7956,7 @@ class FeaturedSkeleton extends StatelessWidget {
     );
   }
 }
+
 /* ==================== EMPTY WIDGET ==================== */
 
 class EmptyWidget extends StatelessWidget {
@@ -6809,6 +8002,7 @@ class EmptyWidget extends StatelessWidget {
     );
   }
 }
+
 /* ==================== ERROR BOX ==================== */
 
 class ErrorBox extends StatelessWidget {
