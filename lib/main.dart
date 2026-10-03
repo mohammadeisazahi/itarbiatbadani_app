@@ -74,6 +74,7 @@ const cats = <Cat>[
   Cat('ورزش گروه‌های ویژه', 'exercise-for-special-groups-and-needs', Icons.accessibility_new_rounded, Color(0xffa855f7)),
   Cat('تکنولوژی در ورزش', 'technology-and-innovation-in-sports', Icons.memory_rounded, Color(0xff22c55e)),
 ];
+
 /* ==================== BOOKMARKS ==================== */
 
 Future<void> loadBookmarks() async {
@@ -1902,6 +1903,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
     );
   }
 }
+
 /* ==================== NEWS ==================== */
 
 class NewsPage extends StatefulWidget {
@@ -2049,7 +2051,6 @@ class _NewsPageState extends State<NewsPage> {
     );
   }
 }
-
 /* ==================== SHOP ==================== */
 
 class ShopPage extends StatefulWidget {
@@ -4361,488 +4362,1263 @@ class ModernSectionTitle extends StatelessWidget {
     );
   }
 }
-/* ==================== NEWS DETAIL PAGE (طراحی حرفه‌ای) ==================== */
 
-class NewsDetailPage extends StatefulWidget {
-  final dynamic news;
-  const NewsDetailPage({super.key, required this.news});
+/* ==================== MODERN LIVE DOT ==================== */
+
+class ModernLiveDot extends StatefulWidget {
+  const ModernLiveDot({super.key});
   @override
-  State<NewsDetailPage> createState() => _NewsDetailPageState();
+  State<ModernLiveDot> createState() => _ModernLiveDotState();
 }
 
-class _NewsDetailPageState extends State<NewsDetailPage> {
-  bool _loading = true;
-  double _progress = 0;
-  InAppWebViewController? _controller;
-  late bool _bookmarked;
-  late String _id;
+class _ModernLiveDotState extends State<ModernLiveDot>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
 
   @override
   void initState() {
     super.initState();
-    _id = pId(widget.news);
-    _bookmarked = isBookmarked(_id);
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat();
   }
 
-  String _buildStyledHtml() {
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        final t = _ctrl.value;
+        final scale = 1.0 + (t < 0.5 ? t * 0.5 : (1 - t) * 0.5);
+        final opacity = 1.0 - t;
+        return SizedBox(
+          width: 16,
+          height: 16,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 16 * scale,
+                height: 16 * scale,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: rose.withOpacity(opacity * 0.5),
+                ),
+              ),
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xfff43f5e),
+                ),
+                child: SizedBox(width: 8, height: 8),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/* ==================== MODERN URGENT NEWS CARD (NO INDEX) ==================== */
+
+class ModernUrgentNewsCard extends StatefulWidget {
+  final dynamic news;
+  const ModernUrgentNewsCard({
+    super.key,
+    required this.news,
+  });
+
+  @override
+  State<ModernUrgentNewsCard> createState() => _ModernUrgentNewsCardState();
+}
+
+class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseCtrl;
+  bool _pressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _pulseCtrl.dispose();
+    super.dispose();
+  }
+
+  int _readTimeMinutes(dynamic news) {
+    try {
+      final raw = clean(news['content']?['rendered'] ?? '');
+      final words =
+          raw.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+      final m = (words / 200).ceil();
+      return m < 1 ? 1 : m;
+    } catch (_) {
+      return 1;
+    }
+  }
+
+  double _freshnessValue(dynamic news) {
+    try {
+      final d = DateTime.parse(news['date']).toLocal();
+      final diff = DateTime.now().difference(d);
+      if (diff.inMinutes < 60) return 1.0;
+      if (diff.inHours < 6) return 0.75;
+      if (diff.inHours < 24) return 0.5;
+      if (diff.inDays < 3) return 0.3;
+      return 0.15;
+    } catch (_) {
+      return 0.2;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final news = widget.news;
     final title = pTitle(news);
-    final content = news['content']?['rendered'] ?? '';
+    final date = pTimeAgo(news);
+    final excerpt = pExcerpt(news, maxChars: 120);
+    final readTime = _readTimeMinutes(news);
+    final freshness = _freshnessValue(news);
+
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => UrgentNewsDetailPage(news: news),
+          ),
+        );
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+        decoration: BoxDecoration(
+          color: pnl,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: _pressed ? rose.withOpacity(0.6) : lineC,
+            width: _pressed ? 1.5 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: rose.withOpacity(_pressed ? 0.15 : 0.06),
+              blurRadius: _pressed ? 20 : 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            children: [
+              Positioned(
+                top: 0,
+                bottom: 0,
+                right: 0,
+                child: AnimatedBuilder(
+                  animation: _pulseCtrl,
+                  builder: (context, _) {
+                    final t = _pulseCtrl.value;
+                    final opacity = 0.6 + (t < 0.5 ? t : 1 - t) * 0.4;
+                    return Container(
+                      width: 5,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            rose.withOpacity(opacity),
+                            const Color(0xffbe123c),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 20, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xfff43f5e),
+                                Color(0xffbe123c),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(9),
+                            boxShadow: [
+                              BoxShadow(
+                                color: rose.withOpacity(0.35),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.bolt_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: rose.withOpacity(.12),
+                            borderRadius: BorderRadius.circular(7),
+                            border: Border.all(
+                                color: rose.withOpacity(.3), width: 0.8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const ModernLiveDot(),
+                              const SizedBox(width: 5),
+                              const Text(
+                                'فوری',
+                                style: TextStyle(
+                                  color: Color(0xfff43f5e),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  fontFamily: 'Vazirmatn',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        Icon(Icons.schedule_rounded,
+                            size: 12, color: mutC),
+                        const SizedBox(width: 4),
+                        Text(
+                          date,
+                          style: TextStyle(
+                            color: mutC,
+                            fontSize: 10.5,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: txtC,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        height: 1.6,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                    if (excerpt.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        excerpt,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          color: inkSoft,
+                          fontSize: 12,
+                          height: 1.8,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: Container(
+                        height: 3,
+                        color: lineC,
+                        child: FractionallySizedBox(
+                          alignment: Alignment.centerRight,
+                          widthFactor: freshness,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Color(0xfff43f5e),
+                                  Color(0xfffb923c),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(height: 1, color: softLine),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Icon(Icons.access_time_rounded,
+                            size: 12, color: mutC),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$readTime دقیقه مطالعه',
+                          style: TextStyle(
+                            color: mutC,
+                            fontSize: 10.5,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          'خواندن کامل',
+                          style: TextStyle(
+                            color: rose,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w800,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Icons.arrow_back_ios_new_rounded,
+                            color: rose, size: 11),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+/* ==================== URGENT NEWS DETAIL PAGE ==================== */
+
+class UrgentNewsDetailPage extends StatefulWidget {
+  final dynamic news;
+  const UrgentNewsDetailPage({
+    super.key,
+    required this.news,
+  });
+
+  @override
+  State<UrgentNewsDetailPage> createState() => _UrgentNewsDetailPageState();
+}
+
+class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _entryCtrl;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
+  final _scroll = ScrollController();
+  bool _showAppBar = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _entryCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _fadeAnim = CurvedAnimation(
+      parent: _entryCtrl,
+      curve: Curves.easeOutCubic,
+    );
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _entryCtrl,
+      curve: Curves.easeOutCubic,
+    ));
+    _entryCtrl.forward();
+
+    _scroll.addListener(() {
+      final show = _scroll.offset > 120;
+      if (show != _showAppBar) {
+        setState(() => _showAppBar = show);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _entryCtrl.dispose();
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  String _fullContent(dynamic news) {
+    try {
+      final raw = news['content']?['rendered'] ?? '';
+      return clean(raw);
+    } catch (_) {
+      return '';
+    }
+  }
+
+  int _wordCount(String text) {
+    if (text.isEmpty) return 0;
+    return text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+  }
+
+  int _readTime(int words) {
+    final m = (words / 200).ceil();
+    return m < 1 ? 1 : m;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final news = widget.news;
+    final title = pTitle(news);
     final date = pDate(news);
-    final timeAgo = pTimeAgo(news);
-    final author = pAuthor(news);
-    final readTime = newsReadTime(news);
-    final isDark = darkModeNotifier.value;
-    final accent = newsAccentColors(news);
+    final link = pLink(news);
+    final content = _fullContent(news);
+    final words = _wordCount(content);
+    final readTime = _readTime(words);
 
-    final safeTitle = const HtmlEscape().convert(title);
-    final safeAuthor = const HtmlEscape().convert(author);
+    final paragraphs = content
+        .split(RegExp(r'\n+'))
+        .map((p) => p.trim())
+        .where((p) => p.isNotEmpty)
+        .toList();
 
-    // Colors
-    final bgColor = isDark ? '#0b1220' : '#f6f8fb';
-    final cardColor = isDark ? '#141f36' : '#ffffff';
-    final textColor = isDark ? '#f1f5fb' : '#0c1a2b';
-    final softText = isDark ? '#9db0ca' : '#54637a';
-    final borderColor = isDark ? '#223252' : '#e4ebf4';
-    final blueColor = '#3b82f6';
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            backgroundColor: bgC,
+            body: Stack(
+              children: [
+                CustomScrollView(
+                  controller: _scroll,
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: MediaQuery.of(context).padding.top + 60,
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: FadeTransition(
+                        opacity: _fadeAnim,
+                        child: SlideTransition(
+                          position: _slideAnim,
+                          child: _buildTitleCard(
+                              title, date, readTime, words),
+                        ),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: FadeTransition(
+                        opacity: _fadeAnim,
+                        child: SlideTransition(
+                          position: _slideAnim,
+                          child: _buildContentCard(paragraphs),
+                        ),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: FadeTransition(
+                        opacity: _fadeAnim,
+                        child: _buildShareSection(title, link),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: _buildRelatedSection(),
+                    ),
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 60),
+                    ),
+                  ],
+                ),
+                _buildGlassAppBar(title),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
-    final accentHex1 =
-        '#${accent[0].value.toRadixString(16).substring(2)}';
-    final accentHex2 =
-        '#${accent[1].value.toRadixString(16).substring(2)}';
+  Widget _buildGlassAppBar(String title) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      height: MediaQuery.of(context).padding.top + 56,
+      decoration: BoxDecoration(
+        color: _showAppBar
+            ? (darkModeNotifier.value
+                ? const Color(0xff0b1220).withOpacity(0.85)
+                : Colors.white.withOpacity(0.85))
+            : Colors.transparent,
+        border: _showAppBar
+            ? Border(
+                bottom: BorderSide(color: lineC, width: 0.5))
+            : null,
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(
+            children: [
+              _glassIconBtn(
+                icon: Icons.arrow_forward_rounded,
+                onTap: () => Navigator.pop(context),
+              ),
+              const SizedBox(width: 8),
+              if (_showAppBar)
+                Expanded(
+                  child: AnimatedOpacity(
+                    opacity: _showAppBar ? 1 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: txtC,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ),
+                )
+              else
+                const Spacer(),
+              _glassIconBtn(
+                icon: Icons.ios_share_rounded,
+                onTap: () => sharePost(
+                  pLink(widget.news),
+                  pTitle(widget.news),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-    return '''
-<!DOCTYPE html>
-<html dir="rtl" lang="fa">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body {
-    background: $bgColor;
-    font-family: 'Vazirmatn', -apple-system, Tahoma, sans-serif;
-    direction: rtl;
-    color: $textColor;
-    line-height: 1.9;
-    font-size: 15.5px;
-    -webkit-font-smoothing: antialiased;
-    scroll-behavior: smooth;
+  Widget _glassIconBtn({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: _showAppBar ? pnl : pnl.withOpacity(0.85),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: lineC),
+        ),
+        child: Icon(icon, color: txtC, size: 20),
+      ),
+    );
   }
-  
-  /* ============ Top gradient band ============ */
-  .top-band {
-    height: 6px;
-    background: linear-gradient(90deg, $accentHex1, $accentHex2, $accentHex1);
-    background-size: 200% 100%;
-    animation: shimmer 3s ease-in-out infinite;
+
+  Widget _buildTitleCard(
+    String title,
+    String date,
+    int readTime,
+    int words,
+  ) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 6, 14, 14),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: darkModeNotifier.value
+              ? [
+                  const Color(0xff2a0f18),
+                  const Color(0xff141f36),
+                ]
+              : [
+                  const Color(0xfffff1f4),
+                  const Color(0xffffffff),
+                ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: rose.withOpacity(0.25)),
+        boxShadow: [
+          BoxShadow(
+            color: rose.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xfff43f5e),
+                      Color(0xffbe123c),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: rose.withOpacity(0.35),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.bolt_rounded,
+                  color: Colors.white,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 11, vertical: 6),
+                decoration: BoxDecoration(
+                  color: rose.withOpacity(.15),
+                  borderRadius: BorderRadius.circular(9),
+                  border: Border.all(
+                      color: rose.withOpacity(.4), width: 0.8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const ModernLiveDot(),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'خبر فوری',
+                      style: TextStyle(
+                        color: Color(0xfff43f5e),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              Icon(Icons.newspaper_rounded,
+                  color: rose.withOpacity(0.6), size: 22),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Text(
+            title,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              color: txtC,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              height: 1.55,
+              fontFamily: 'Vazirmatn',
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(height: 1, color: rose.withOpacity(0.15)),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              _infoChip(
+                icon: Icons.calendar_today_rounded,
+                label: date,
+              ),
+              const SizedBox(width: 8),
+              _infoChip(
+                icon: Icons.access_time_rounded,
+                label: '$readTime دقیقه',
+              ),
+              const SizedBox(width: 8),
+              _infoChip(
+                icon: Icons.text_fields_rounded,
+                label: '$words کلمه',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
-  @keyframes shimmer {
-    0% { background-position: 0% 0; }
-    100% { background-position: 200% 0; }
+
+  Widget _infoChip({required IconData icon, required String label}) {
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: pnl2,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: mutC, size: 11),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: mutC,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Vazirmatn',
+            ),
+          ),
+        ],
+      ),
+    );
   }
-  
-  .container {
-    padding: 24px 20px 60px 20px;
-    max-width: 800px;
-    margin: 0 auto;
+
+  Widget _buildContentCard(List<String> paragraphs) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: pnl,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: lineC),
+      ),
+      child: paragraphs.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text(
+                  'متنی برای این خبر ثبت نشده است.',
+                  style: TextStyle(
+                    color: mutC,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xfff43f5e),
+                            Color(0xffbe123c),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'متن کامل خبر',
+                      style: TextStyle(
+                        color: txtC,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                ...paragraphs.asMap().entries.map((entry) {
+                  final i = entry.key;
+                  final p = entry.value;
+                  return Padding(
+                    padding: EdgeInsets.only(
+                        bottom: i == paragraphs.length - 1 ? 0 : 16),
+                    child: Text(
+                      p,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: txtC,
+                        fontSize: 15,
+                        height: 2.1,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+    );
   }
-  
-  /* ============ Header chips ============ */
-  .header-chips {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 18px;
+
+  Widget _buildShareSection(String title, String link) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: pnl,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: lineC),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 18,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xff3b82f6),
+                      Color(0xff1d4ed8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'اشتراک‌گذاری خبر',
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              _shareBtn(
+                icon: Icons.send_rounded,
+                label: 'تلگرام',
+                color: const Color(0xff229ED9),
+                onTap: () => openExternalUrl(
+                  'https://t.me/share/url?url=$link&text=$title',
+                ),
+              ),
+              const SizedBox(width: 8),
+              _shareBtn(
+                icon: Icons.chat_rounded,
+                label: 'واتس‌اپ',
+                color: const Color(0xff25D366),
+                onTap: () => openExternalUrl(
+                  'https://wa.me/?text=$title\n$link',
+                ),
+              ),
+              const SizedBox(width: 8),
+              _shareBtn(
+                icon: Icons.ios_share_rounded,
+                label: 'بیشتر',
+                color: purple,
+                onTap: () => sharePost(link, title),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 7px 13px;
-    background: $cardColor;
-    border: 1px solid $borderColor;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 700;
-    color: $softText;
-    box-shadow: 0 2px 8px ${isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.04)'};
+
+  Widget _shareBtn({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withOpacity(0.25)),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(height: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
-  .chip svg { width: 12px; height: 12px; fill: $softText; }
-  
-  .chip-urgent {
-    background: linear-gradient(135deg, $accentHex1, $accentHex2);
-    color: white;
-    border: none;
-    box-shadow: 0 8px 20px -8px $accentHex1;
-    animation: pulseShadow 1.8s ease-in-out infinite;
-    position: relative;
-    padding-right: 24px;
+
+  Widget _buildRelatedSection() {
+    return FutureBuilder<List>(
+      future: getNewNewsList(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        final list = (snapshot.data ?? [])
+            .where((n) => pId(n) != pId(widget.news))
+            .take(3)
+            .toList();
+        if (list.isEmpty) return const SizedBox.shrink();
+
+        return Container(
+          margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: pnl,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: lineC),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xfff43f5e),
+                          Color(0xffbe123c),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'اخبار فوری دیگر',
+                    style: TextStyle(
+                      color: txtC,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ...list.map((n) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              UrgentNewsDetailPage(news: n),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: pnl2,
+                        borderRadius: BorderRadius.circular(12),
+                        border:
+                            Border.all(color: lineC, width: 0.8),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: rose.withOpacity(.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.bolt_rounded,
+                              color: Color(0xfff43f5e),
+                              size: 16,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              pTitle(n),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                color: txtC,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                height: 1.6,
+                                fontFamily: 'Vazirmatn',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Icon(Icons.arrow_back_ios_new_rounded,
+                              color: mutC, size: 12),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        );
+      },
+    );
   }
-  .chip-urgent::before {
-    content: '';
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 7px;
-    height: 7px;
-    background: white;
-    border-radius: 50%;
-    animation: pulse 1.4s ease-in-out infinite;
+}
+
+/* ==================== URGENT NEWS LIST PAGE ==================== */
+
+class UrgentNewsListPage extends StatefulWidget {
+  const UrgentNewsListPage({super.key});
+  @override
+  State<UrgentNewsListPage> createState() => _UrgentNewsListPageState();
+}
+
+class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
+  late Future<List> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = getNewNewsList();
   }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: translateY(-50%) scale(1); }
-    50% { opacity: 0.3; transform: translateY(-50%) scale(1.6); }
+
+  Future<void> _refresh() async {
+    final f = getNewNewsList();
+    setState(() => _future = f);
+    try {
+      await f;
+    } catch (_) {}
   }
-  @keyframes pulseShadow {
-    0%, 100% { box-shadow: 0 8px 20px -8px $accentHex1; }
-    50% { box-shadow: 0 12px 28px -6px $accentHex1; }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Scaffold(
+        backgroundColor: bgC,
+        appBar: AppBar(
+          title: Row(
+            children: [
+              const ModernLiveDot(),
+              const SizedBox(width: 8),
+              Text(
+                'اخبار فوری',
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: bgC,
+          foregroundColor: txtC,
+          elevation: 0,
+        ),
+        body: RefreshIndicator(
+          color: accentGreen,
+          backgroundColor: pnl,
+          onRefresh: _refresh,
+          child: FutureBuilder<List>(
+            future: _future,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      PostSkeleton(),
+                      PostSkeleton(),
+                      PostSkeleton(),
+                    ],
+                  ),
+                );
+              }
+              if (snapshot.hasError) {
+                return ErrorBox(
+                  message: 'خطا در دریافت اخبار.\n${snapshot.error}',
+                  onRetry: _refresh,
+                );
+              }
+              final list = snapshot.data ?? [];
+              if (list.isEmpty) {
+                return const EmptyWidget(text: 'هنوز خبری منتشر نشده است.');
+              }
+              return ListView.builder(
+                physics: const BouncingScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(
+                  0,
+                  14,
+                  0,
+                  bottomInset + 100,
+                ),
+                itemCount: list.length,
+                itemBuilder: (c, i) => ModernUrgentNewsCard(news: list[i]),
+              );
+            },
+          ),
+        ),
+      ),
+    );
   }
-  
-  /* ============ Title ============ */
-  .title-wrap {
-    position: relative;
-    margin-bottom: 20px;
+}
+
+/* ==================== ADMIN LOGIN ==================== */
+
+class AdminLoginPage extends StatefulWidget {
+  const AdminLoginPage({super.key});
+  @override
+  State<AdminLoginPage> createState() => _AdminLoginPageState();
+}
+
+class _AdminLoginPageState extends State<AdminLoginPage> {
+  final _userCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  bool _loading = false;
+  bool _obscure = true;
+  bool _rememberMe = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
   }
-  h1 {
-    font-size: 25px;
-    font-weight: 900;
-    line-height: 1.5;
-    color: $textColor;
-    letter-spacing: -0.7px;
+
+  Future<void> _loadSavedCredentials() async {
+    try {
+      final savedUser = await _storage.read(key: 'admin_username');
+      final savedPass = await _storage.read(key: 'admin_password');
+      if (savedUser != null && savedUser.isNotEmpty) {
+        _userCtrl.text = savedUser;
+        if (savedPass != null && savedPass.isNotEmpty) {
+          _passCtrl.text = savedPass;
+        }
+      }
+    } catch (_) {}
   }
-  .title-underline {
-    width: 70px;
-    height: 4px;
-    background: linear-gradient(90deg, $accentHex1, ${accentHex2}00);
-    border-radius: 4px;
-    margin-top: 16px;
+
+  Future<void> _saveCredentials(String user, String pass) async {
+    try {
+      if (_rememberMe) {
+        await _storage.write(key: 'admin_username', value: user);
+        await _storage.write(key: 'admin_password', value: pass);
+      } else {
+        await _storage.delete(key: 'admin_username');
+        await _storage.delete(key: 'admin_password');
+      }
+    } catch (_) {}
   }
-  
-  /* ============ Author card ============ */
-  .author-card {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 16px 18px;
-    background: $cardColor;
-    border-radius: 18px;
-    border: 1px solid $borderColor;
-    margin-bottom: 28px;
-    box-shadow: 0 6px 18px ${isDark ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.05)'};
-    position: relative;
-    overflow: hidden;
+
+  Future<void> _clearSavedCredentials() async {
+    try {
+      await _storage.delete(key: 'admin_username');
+      await _storage.delete(key: 'admin_password');
+      _userCtrl.clear();
+      _passCtrl.clear();
+      setState(() {});
+      showSnack(context, 'اطلاعات ورود پاک شد.');
+    } catch (_) {}
   }
-  .author-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    right: 0;
-    width: 3px;
-    background: linear-gradient(180deg, $accentHex1, $accentHex2);
+
+  Future<void> _login() async {
+    final user = _userCtrl.text.trim();
+    final pass = _passCtrl.text.trim();
+    if (user.isEmpty || pass.isEmpty) {
+      setState(() => _error = 'نام کاربری و رمز را وارد کنید.');
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      await verifyAdmin(username: user, appPassword: pass);
+      await _saveCredentials(user, pass);
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AdminPanelPage(
+            username: user,
+            password: pass,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
   }
-  .avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, $accentHex1, $accentHex2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: 900;
-    font-size: 19px;
-    box-shadow: 0 8px 18px -8px $accentHex1;
-    flex-shrink: 0;
-  }
-  .author-info { flex: 1; }
-  .author-name {
-    font-weight: 900;
-    font-size: 14px;
-    color: $textColor;
-    margin-bottom: 4px;
-  }
-  .author-role {
-    font-size: 11px;
-    color: $softText;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .verified {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: $accentHex1;
-    color: white;
-    font-size: 9px;
-  }
-  
-  /* ============ Content ============ */
-  .content {
-    font-size: 16px;
-    line-height: 2.1;
-    color: ${isDark ? '#d1dbe8' : '#2a3d56'};
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-  }
-  .content p { margin-bottom: 20px; }
-  .content p:first-of-type::first-letter {
-    font-size: 2.6em;
-    font-weight: 900;
-    color: $accentHex1;
-    float: right;
-    line-height: 0.9;
-    margin-left: 12px;
-    margin-top: 6px;
-    padding: 4px 8px 4px 4px;
-  }
-  .content img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 14px;
-    margin: 14px 0;
-    box-shadow: 0 8px 20px ${isDark ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.1)'};
-  }
-  .content h1, .content h2, .content h3, .content h4 {
-    font-weight: 900;
-    margin: 26px 0 14px;
-    color: $textColor;
-    line-height: 1.5;
-  }
-  .content h2 {
-    font-size: 19px;
-    border-right: 4px solid $accentHex1;
-    padding-right: 14px;
-  }
-  .content h3 { font-size: 17px; color: $blueColor; }
-  .content h4 { font-size: 15.5px; }
-  .content a {
-    color: $blueColor;
-    text-decoration: none;
-    border-bottom: 1px dashed $blueColor;
-    font-weight: 700;
-    transition: all 0.2s;
-  }
-  .content a:hover {
-    background: ${isDark ? '#132f4c' : '#ecfdf5'};
-    border-bottom-style: solid;
-  }
-  .content ul, .content ol {
-    margin: 14px 0 20px;
-    padding-right: 26px;
-  }
-  .content li { margin-bottom: 12px; padding-right: 6px; }
-  .content li::marker { color: $accentHex1; font-weight: 900; font-size: 1.2em; }
-  .content blockquote {
-    border-right: 4px solid $accentHex1;
-    padding: 16px 20px;
-    margin: 22px 0;
-    background: ${isDark ? '#132f4c' : '#ecfdf5'};
-    border-radius: 14px;
-    font-style: italic;
-    color: ${isDark ? '#d1dbe8' : '#1f3d2e'};
-    font-size: 15px;
-    position: relative;
-  }
-  .content blockquote::before {
-    content: '❝';
-    position: absolute;
-    top: -10px;
-    right: 12px;
-    font-size: 28px;
-    color: $accentHex1;
-    opacity: 0.4;
-  }
-  .content table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
-    font-size: 13px;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 6px 16px ${isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.06)'};
-  }
-  .content table th, .content table td {
-    padding: 12px 14px;
-    text-align: right;
-    border: 1px solid $borderColor;
-  }
-  .content table th {
-    background: ${isDark ? '#1c2b48' : '#f0f4f8'};
-    font-weight: 900;
-    color: $textColor;
-  }
-  .content code {
-    background: ${isDark ? '#1c2b48' : '#eef3fa'};
-    padding: 3px 8px;
-    border-radius: 6px;
-    font-family: monospace;
-    font-size: 0.9em;
-    color: $accentHex1;
-    font-weight: 700;
-  }
-  .content strong { color: $textColor; font-weight: 900; }
-  .content hr {
-    border: none;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, $borderColor, transparent);
-    margin: 30px 0;
-  }
-  
-  /* ============ End of news ============ */
-  .end-note {
-    margin-top: 40px;
-    padding: 28px 20px;
-    background: $cardColor;
-    border-radius: 20px;
-    border: 1px solid $borderColor;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 8px 22px ${isDark ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.06)'};
-  }
-  .end-note::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: 0;
-    height: 3px;
-    background: linear-gradient(90deg, $accentHex1, $accentHex2);
-  }
-  .end-note .star {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, $accentHex1, $accentHex2);
-    color: white;
-    font-size: 22px;
-    margin-bottom: 14px;
-    box-shadow: 0 12px 24px -10px $accentHex1;
-  }
-  .end-note .label {
-    font-size: 14px;
-    font-weight: 900;
-    color: $textColor;
-    margin-bottom: 6px;
-  }
-  .end-note .sub {
-    font-size: 12px;
-    color: $softText;
-    line-height: 1.7;
-  }
-  .end-note .divider-line {
-    display: inline-block;
-    width: 60px;
-    height: 2px;
-    background: linear-gradient(90deg, $accentHex1, $accentHex2);
-    border-radius: 2px;
-    margin: 12px 0;
-  }
-  
-  /* ============ Info bar (bottom) ============ */
-  .info-bar {
-    margin-top: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    padding: 14px;
-    background: $cardColor;
-    border-radius: 14px;
-    border: 1px dashed $borderColor;
-    font-size: 11px;
-    color: $softText;
-  }
-  .info-bar .dot {
-    width: 4px;
-    height: 4px;
-    background: $softText;
-    border-radius: 50%;
-    opacity: 0.5;
-  }
-</style>
-</head>
-<body>
-  <div class="top-band"></div>
-  <div class="container">
-    
-    <!-- Header chips -->
-    <div class="header-chips">
-      <span class="chip chip-urgent">فوری</span>
-      <span class="chip">
-        <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-        $readTime دقیقه
-      </span>
-      <span class="chip">
-        <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
-        $date
-      </span>
-      <span class="chip">$timeAgo</span>
-    </div>
-    
-    <!-- Title -->
-    <div class="title-wrap">
-      <h1>$safeTitle</h1>
-      <div class="title-underline"></div>
-    </div>
-    
-    <!-- Author -->
-    ${author.isNotEmpty ? '''
-    <div class="author-card">
-      <div class="avatar">${safeAuthor.isNotEmpty ? safeAuthor[0] : 'ن'}</div>
-      <div class="author-info">
-        <div class="author-name">$safeAuthor</div>
-        <div class="author-role">
-          <span class="verified">✓</span>
-          نویسنده خبر
-        </div>
-      </div>
-    </div>
-    ''' : ''}
-    
-    <!-- Content -->
-    <div class="content">
-      $content
-    </div>
-    
-    <!-- End note -->
-    <div class="end-note">
-      <div class="star">✦</div>
-      <div class="label">پایان خبر</div>
-      <div class="divider-line"></div>
-      <div class="sub">
-        با تشکر از همراهی شما<br>
-        برای دریافت اخبار بیشتر، اپلیکیشن را دنبال کنید
-      </div>
-    </div>
-    
-    <!-- Info bar -->
-    <div class="info-bar">
-      <span>📅 $date</span>
-      <span class="dot"></span>
-      <span>⏱ $readTime دقیقه مطالعه</span>
-      <span class="dot"></span>
-      <span>🔴 خبر فوری</span>
-    </div>
-    
-  </div>
-</body>
-</html>
-''';
+
+  @override
+  void dispose() {
+    _userCtrl.dispose();
+    _passCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -4852,157 +5628,269 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
       builder: (context, _, __) => Scaffold(
         backgroundColor: bgC,
         appBar: AppBar(
-          backgroundColor: bgC,
-          elevation: 0,
-          foregroundColor: txtC,
-          leading: IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: pnl,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: lineC),
-              ),
-              child: Icon(Icons.arrow_forward_rounded,
-                  color: txtC, size: 20),
-            ),
+          title: const Text(
+            'ورود ادمین',
+            style: TextStyle(
+                fontWeight: FontWeight.w900, fontFamily: 'Vazirmatn'),
           ),
-          title: Row(
+          backgroundColor: bgC,
+          foregroundColor: txtC,
+          elevation: 0,
+          actions: [
+            IconButton(
+              onPressed: _clearSavedCredentials,
+              icon: const Icon(Icons.delete_sweep_rounded,
+                  color: Colors.red),
+              tooltip: 'پاک کردن اطلاعات ذخیره‌شده',
+            ),
+          ],
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
             children: [
+              const SizedBox(height: 20),
               Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Color(0xfff43f5e),
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      gold.withOpacity(0.2),
+                      gold.withOpacity(0.05),
+                    ],
+                  ),
                   shape: BoxShape.circle,
+                  border: Border.all(color: gold.withOpacity(0.3)),
                 ),
+                child: Icon(Icons.lock_rounded, color: gold, size: 42),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(height: 22),
               Text(
-                'خبر فوری',
+                'فقط مدیر سایت',
                 style: TextStyle(
                   color: txtC,
-                  fontSize: 15,
+                  fontSize: 18,
                   fontWeight: FontWeight.w900,
                   fontFamily: 'Vazirmatn',
                 ),
               ),
+              const SizedBox(height: 8),
+              Text(
+                'برای مدیریت اخبار فوری وارد شوید',
+                style: TextStyle(
+                  color: mutC,
+                  fontSize: 12.5,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+              const SizedBox(height: 30),
+              _buildField(
+                controller: _userCtrl,
+                icon: Icons.person_rounded,
+                hint: 'نام کاربری وردپرس',
+              ),
+              const SizedBox(height: 12),
+              _buildField(
+                controller: _passCtrl,
+                icon: Icons.key_rounded,
+                hint: 'Application Password',
+                obscure: _obscure,
+                suffix: IconButton(
+                  icon: Icon(
+                    _obscure
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                    color: mutC,
+                    size: 20,
+                  ),
+                  onPressed: () => setState(() => _obscure = !_obscure),
+                ),
+              ),
+              const SizedBox(height: 14),
+              GestureDetector(
+                onTap: () => setState(() => _rememberMe = !_rememberMe),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: pnl,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: lineC),
+                  ),
+                  child: Row(
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          color: _rememberMe
+                              ? accentGreen
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: _rememberMe ? accentGreen : mutC,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: _rememberMe
+                            ? const Icon(Icons.check_rounded,
+                                color: Colors.white, size: 16)
+                            : null,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'مرا به خاطر بسپار',
+                        style: TextStyle(
+                          color: txtC,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                      const Spacer(),
+                      Icon(Icons.lock_outline_rounded,
+                          color: mutC, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        'ذخیره امن',
+                        style: TextStyle(
+                          color: mutC,
+                          fontSize: 10,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 15),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: rose.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: rose.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline_rounded,
+                          color: rose, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: TextStyle(
+                            color: rose,
+                            fontSize: 12,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton(
+                  onPressed: _loading ? null : _login,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentGreen,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: _loading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'ورود',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(height: 15),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: accentBlue.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border:
+                      Border.all(color: accentBlue.withOpacity(0.15)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.shield_rounded,
+                        color: accentBlue, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'اطلاعات ورود شما به‌صورت رمزنگاری‌شده روی دستگاه ذخیره می‌شود.',
+                        style: TextStyle(
+                          color: mutC,
+                          fontSize: 11,
+                          height: 1.6,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-          actions: [
-            // Bookmark
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: GestureDetector(
-                onTap: () async {
-                  HapticFeedback.lightImpact();
-                  await toggleBookmark(_id);
-                  setState(() => _bookmarked = isBookmarked(_id));
-                  if (!mounted) return;
-                  showSnack(
-                    context,
-                    _bookmarked
-                        ? 'به نشان‌شده‌ها اضافه شد'
-                        : 'از نشان‌شده‌ها حذف شد',
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: pnl,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: lineC),
-                  ),
-                  child: Icon(
-                    _bookmarked
-                        ? Icons.bookmark_rounded
-                        : Icons.bookmark_border_rounded,
-                    color: _bookmarked ? gold : txtC,
-                    size: 18,
-                  ),
-                ),
-              ),
-            ),
-            // Share
-            Padding(
-              padding: const EdgeInsets.only(
-                  left: 14, top: 8, bottom: 8, right: 6),
-              child: GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  sharePost(pLink(widget.news), pTitle(widget.news));
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: pnl,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: lineC),
-                  ),
-                  child: Icon(
-                    Icons.ios_share_rounded,
-                    color: txtC,
-                    size: 18,
-                  ),
-                ),
-              ),
-            ),
-          ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(3),
-            child: AnimatedOpacity(
-              opacity: _loading ? 1 : 0,
-              duration: const Duration(milliseconds: 300),
-              child: LinearProgressIndicator(
-                value: _progress > 0 ? _progress : null,
-                backgroundColor: lineC,
-                color: accentGreen,
-                minHeight: 3,
-              ),
-            ),
-          ),
         ),
-        body: InAppWebView(
-          initialData: InAppWebViewInitialData(
-            data: _buildStyledHtml(),
-            mimeType: 'text/html',
-            encoding: 'utf-8',
-            baseUrl: WebUri(site),
+      ),
+    );
+  }
+
+  Widget _buildField({
+    required TextEditingController controller,
+    required IconData icon,
+    required String hint,
+    bool obscure = false,
+    Widget? suffix,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: pnl,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: lineC),
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: obscure,
+        textDirection: TextDirection.ltr,
+        style: TextStyle(color: txtC, fontFamily: 'Vazirmatn'),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: mutC, fontFamily: 'Vazirmatn'),
+          prefixIcon: Icon(icon, color: accentGreen),
+          suffixIcon: suffix,
+          filled: true,
+          fillColor: Colors.transparent,
+          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
           ),
-          initialSettings: InAppWebViewSettings(
-            javaScriptEnabled: true,
-            useShouldOverrideUrlLoading: true,
-            mediaPlaybackRequiresUserGesture: false,
-            transparentBackground: false,
-            supportZoom: false,
-            disableVerticalScroll: false,
-            disableHorizontalScroll: true,
-          ),
-          onWebViewCreated: (c) => _controller = c,
-          onLoadStart: (c, url) => setState(() {
-            _loading = true;
-            _progress = 0;
-          }),
-          onLoadStop: (c, url) => setState(() {
-            _loading = false;
-            _progress = 0;
-          }),
-          onProgressChanged: (c, p) =>
-              setState(() => _progress = p / 100),
-          shouldOverrideUrlLoading: (controller, action) async {
-            final url = action.request.url.toString();
-            if (url.startsWith('data:') ||
-                url == 'about:blank' ||
-                url.isEmpty) {
-              return NavigationActionPolicy.ALLOW;
-            }
-            if (await canLaunchUrl(Uri.parse(url))) {
-              await launchUrl(Uri.parse(url),
-                  mode: LaunchMode.externalApplication);
-            }
-            return NavigationActionPolicy.CANCEL;
-          },
         ),
       ),
     );
@@ -5072,7 +5960,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     }
   }
 
-  // 👇 دیالوگ ویرایش خبر
   Future<void> _showEditDialog(dynamic post) async {
     final titleCtrl = TextEditingController(text: pTitle(post));
     final contentCtrl = TextEditingController(
@@ -5225,8 +6112,8 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                                   : () => Navigator.pop(ctx),
                               style: TextButton.styleFrom(
                                 backgroundColor: bgC,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 14),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   side: BorderSide(color: lineC),
@@ -5274,11 +6161,12 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                                         _reloadList();
                                       } catch (e) {
                                         if (!mounted) return;
-                                        setDialogState(() => saving = false);
+                                        setDialogState(
+                                            () => saving = false);
                                         showSnack(
                                           ctx,
-                                          e.toString()
-                                              .replaceFirst('Exception: ', ''),
+                                          e.toString().replaceFirst(
+                                              'Exception: ', ''),
                                           error: true,
                                         );
                                       }
@@ -5287,8 +6175,8 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                                 backgroundColor: accentBlue,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 14),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -5302,9 +6190,12 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                                         color: Colors.white,
                                       ),
                                     )
-                                  : const Icon(Icons.save_rounded, size: 18),
+                                  : const Icon(Icons.save_rounded,
+                                      size: 18),
                               label: Text(
-                                saving ? 'در حال ذخیره...' : 'ذخیره تغییرات',
+                                saving
+                                    ? 'در حال ذخیره...'
+                                    : 'ذخیره تغییرات',
                                 style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w900,
@@ -5394,7 +6285,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 👇 محاسبه پدینگ پایین بر اساس نوار ناوبری سیستم
     final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return ValueListenableBuilder<bool>(
@@ -5413,7 +6303,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         ),
         body: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          // 👇 پدینگ پایین = ارتفاع نوار ناوبری گوشی + 120
           padding: EdgeInsets.fromLTRB(20, 20, 20, bottomInset + 120),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -5831,7 +6720,6 @@ class FeaturedSkeleton extends StatelessWidget {
     );
   }
 }
-
 /* ==================== EMPTY WIDGET ==================== */
 
 class EmptyWidget extends StatelessWidget {
@@ -5877,7 +6765,6 @@ class EmptyWidget extends StatelessWidget {
     );
   }
 }
-
 /* ==================== ERROR BOX ==================== */
 
 class ErrorBox extends StatelessWidget {
