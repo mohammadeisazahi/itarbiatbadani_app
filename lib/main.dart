@@ -4361,727 +4361,648 @@ class ModernSectionTitle extends StatelessWidget {
     );
   }
 }
-/* ==================== MODERN LIVE DOT ==================== */
+/* ==================== NEWS DETAIL PAGE (طراحی حرفه‌ای) ==================== */
 
-class ModernLiveDot extends StatefulWidget {
-  const ModernLiveDot({super.key});
-  @override
-  State<ModernLiveDot> createState() => _ModernLiveDotState();
-}
-
-class _ModernLiveDotState extends State<ModernLiveDot>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (context, _) {
-        final t = _ctrl.value;
-        final scale = 1.0 + (t < 0.5 ? t * 0.5 : (1 - t) * 0.5);
-        final opacity = 1.0 - t;
-        return SizedBox(
-          width: 16,
-          height: 16,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: 16 * scale,
-                height: 16 * scale,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: rose.withOpacity(opacity * 0.5),
-                ),
-              ),
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xfff43f5e),
-                ),
-                child: SizedBox(width: 8, height: 8),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-/* ==================== MODERN URGENT NEWS CARD ==================== */
-
-class ModernUrgentNewsCard extends StatelessWidget {
+class NewsDetailPage extends StatefulWidget {
   final dynamic news;
-  const ModernUrgentNewsCard({super.key, required this.news});
-
+  const NewsDetailPage({super.key, required this.news});
   @override
-  Widget build(BuildContext context) {
-    final title = pTitle(news);
-    final link = pLink(news);
-    final date = pDate(news);
-    final excerpt = pExcerpt(news, maxChars: 140);
-
-    int readTime = 1;
-    try {
-      final raw = clean(news['content']['rendered'] ?? '');
-      final words =
-          raw.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
-      readTime = (words / 200).ceil();
-      if (readTime < 1) readTime = 1;
-    } catch (_) {}
-
-    return GestureDetector(
-      onTap: () => openUrl(context, link),
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-        decoration: BoxDecoration(
-          color: pnl,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: lineC),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 14,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: 0,
-              bottom: 0,
-              right: -16,
-              child: Container(
-                width: 3,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [accentBlue2, accentBlue],
-                  ),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.schedule_rounded, size: 12, color: mutC),
-                    const SizedBox(width: 5),
-                    Text(
-                      date,
-                      style: TextStyle(
-                        color: mutC,
-                        fontSize: 11,
-                        fontFamily: 'Vazirmatn',
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      width: 3,
-                      height: 3,
-                      decoration: BoxDecoration(
-                        color: mutC.withOpacity(.5),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(Icons.access_time_rounded, size: 12, color: mutC),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$readTime دقیقه',
-                      style: TextStyle(
-                        color: mutC,
-                        fontSize: 11,
-                        fontFamily: 'Vazirmatn',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: txtC,
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w800,
-                    height: 1.6,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-                if (excerpt.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    excerpt,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: inkSoft,
-                      fontSize: 12,
-                      height: 1.8,
-                      fontFamily: 'Vazirmatn',
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                Container(height: 1, color: softLine),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          'خواندن کامل',
-                          style: TextStyle(
-                            color: accentBlue,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            fontFamily: 'Vazirmatn',
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(Icons.arrow_back_ios_new_rounded,
-                            color: accentBlue, size: 11),
-                      ],
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: rose.withOpacity(.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 5,
-                            height: 5,
-                            decoration: const BoxDecoration(
-                              color: Color(0xfff43f5e),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          const Text(
-                            'فوری',
-                            style: TextStyle(
-                              color: Color(0xfff43f5e),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
-                              fontFamily: 'Vazirmatn',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  State<NewsDetailPage> createState() => _NewsDetailPageState();
 }
 
-/* ==================== URGENT NEWS LIST PAGE ==================== */
-
-class UrgentNewsListPage extends StatefulWidget {
-  const UrgentNewsListPage({super.key});
-  @override
-  State<UrgentNewsListPage> createState() => _UrgentNewsListPageState();
-}
-
-class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
-  late Future<List> _future;
+class _NewsDetailPageState extends State<NewsDetailPage> {
+  bool _loading = true;
+  double _progress = 0;
+  InAppWebViewController? _controller;
+  late bool _bookmarked;
+  late String _id;
 
   @override
   void initState() {
     super.initState();
-    _future = getNewNewsList();
+    _id = pId(widget.news);
+    _bookmarked = isBookmarked(_id);
   }
 
-  Future<void> _refresh() async {
-    final f = getNewNewsList();
-    setState(() => _future = f);
-    try {
-      await f;
-    } catch (_) {}
+  String _buildStyledHtml() {
+    final news = widget.news;
+    final title = pTitle(news);
+    final content = news['content']?['rendered'] ?? '';
+    final date = pDate(news);
+    final timeAgo = pTimeAgo(news);
+    final author = pAuthor(news);
+    final readTime = newsReadTime(news);
+    final isDark = darkModeNotifier.value;
+    final accent = newsAccentColors(news);
+
+    final safeTitle = const HtmlEscape().convert(title);
+    final safeAuthor = const HtmlEscape().convert(author);
+
+    // Colors
+    final bgColor = isDark ? '#0b1220' : '#f6f8fb';
+    final cardColor = isDark ? '#141f36' : '#ffffff';
+    final textColor = isDark ? '#f1f5fb' : '#0c1a2b';
+    final softText = isDark ? '#9db0ca' : '#54637a';
+    final borderColor = isDark ? '#223252' : '#e4ebf4';
+    final blueColor = '#3b82f6';
+
+    final accentHex1 =
+        '#${accent[0].value.toRadixString(16).substring(2)}';
+    final accentHex2 =
+        '#${accent[1].value.toRadixString(16).substring(2)}';
+
+    return '''
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: $bgColor;
+    font-family: 'Vazirmatn', -apple-system, Tahoma, sans-serif;
+    direction: rtl;
+    color: $textColor;
+    line-height: 1.9;
+    font-size: 15.5px;
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+  }
+  
+  /* ============ Top gradient band ============ */
+  .top-band {
+    height: 6px;
+    background: linear-gradient(90deg, $accentHex1, $accentHex2, $accentHex1);
+    background-size: 200% 100%;
+    animation: shimmer 3s ease-in-out infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: 0% 0; }
+    100% { background-position: 200% 0; }
+  }
+  
+  .container {
+    padding: 24px 20px 60px 20px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  /* ============ Header chips ============ */
+  .header-chips {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 13px;
+    background: $cardColor;
+    border: 1px solid $borderColor;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    color: $softText;
+    box-shadow: 0 2px 8px ${isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.04)'};
+  }
+  .chip svg { width: 12px; height: 12px; fill: $softText; }
+  
+  .chip-urgent {
+    background: linear-gradient(135deg, $accentHex1, $accentHex2);
+    color: white;
+    border: none;
+    box-shadow: 0 8px 20px -8px $accentHex1;
+    animation: pulseShadow 1.8s ease-in-out infinite;
+    position: relative;
+    padding-right: 24px;
+  }
+  .chip-urgent::before {
+    content: '';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 7px;
+    height: 7px;
+    background: white;
+    border-radius: 50%;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: translateY(-50%) scale(1); }
+    50% { opacity: 0.3; transform: translateY(-50%) scale(1.6); }
+  }
+  @keyframes pulseShadow {
+    0%, 100% { box-shadow: 0 8px 20px -8px $accentHex1; }
+    50% { box-shadow: 0 12px 28px -6px $accentHex1; }
+  }
+  
+  /* ============ Title ============ */
+  .title-wrap {
+    position: relative;
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-size: 25px;
+    font-weight: 900;
+    line-height: 1.5;
+    color: $textColor;
+    letter-spacing: -0.7px;
+  }
+  .title-underline {
+    width: 70px;
+    height: 4px;
+    background: linear-gradient(90deg, $accentHex1, ${accentHex2}00);
+    border-radius: 4px;
+    margin-top: 16px;
+  }
+  
+  /* ============ Author card ============ */
+  .author-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    background: $cardColor;
+    border-radius: 18px;
+    border: 1px solid $borderColor;
+    margin-bottom: 28px;
+    box-shadow: 0 6px 18px ${isDark ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.05)'};
+    position: relative;
+    overflow: hidden;
+  }
+  .author-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 3px;
+    background: linear-gradient(180deg, $accentHex1, $accentHex2);
+  }
+  .avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, $accentHex1, $accentHex2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 900;
+    font-size: 19px;
+    box-shadow: 0 8px 18px -8px $accentHex1;
+    flex-shrink: 0;
+  }
+  .author-info { flex: 1; }
+  .author-name {
+    font-weight: 900;
+    font-size: 14px;
+    color: $textColor;
+    margin-bottom: 4px;
+  }
+  .author-role {
+    font-size: 11px;
+    color: $softText;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .verified {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: $accentHex1;
+    color: white;
+    font-size: 9px;
+  }
+  
+  /* ============ Content ============ */
+  .content {
+    font-size: 16px;
+    line-height: 2.1;
+    color: ${isDark ? '#d1dbe8' : '#2a3d56'};
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  .content p { margin-bottom: 20px; }
+  .content p:first-of-type::first-letter {
+    font-size: 2.6em;
+    font-weight: 900;
+    color: $accentHex1;
+    float: right;
+    line-height: 0.9;
+    margin-left: 12px;
+    margin-top: 6px;
+    padding: 4px 8px 4px 4px;
+  }
+  .content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 14px;
+    margin: 14px 0;
+    box-shadow: 0 8px 20px ${isDark ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.1)'};
+  }
+  .content h1, .content h2, .content h3, .content h4 {
+    font-weight: 900;
+    margin: 26px 0 14px;
+    color: $textColor;
+    line-height: 1.5;
+  }
+  .content h2 {
+    font-size: 19px;
+    border-right: 4px solid $accentHex1;
+    padding-right: 14px;
+  }
+  .content h3 { font-size: 17px; color: $blueColor; }
+  .content h4 { font-size: 15.5px; }
+  .content a {
+    color: $blueColor;
+    text-decoration: none;
+    border-bottom: 1px dashed $blueColor;
+    font-weight: 700;
+    transition: all 0.2s;
+  }
+  .content a:hover {
+    background: ${isDark ? '#132f4c' : '#ecfdf5'};
+    border-bottom-style: solid;
+  }
+  .content ul, .content ol {
+    margin: 14px 0 20px;
+    padding-right: 26px;
+  }
+  .content li { margin-bottom: 12px; padding-right: 6px; }
+  .content li::marker { color: $accentHex1; font-weight: 900; font-size: 1.2em; }
+  .content blockquote {
+    border-right: 4px solid $accentHex1;
+    padding: 16px 20px;
+    margin: 22px 0;
+    background: ${isDark ? '#132f4c' : '#ecfdf5'};
+    border-radius: 14px;
+    font-style: italic;
+    color: ${isDark ? '#d1dbe8' : '#1f3d2e'};
+    font-size: 15px;
+    position: relative;
+  }
+  .content blockquote::before {
+    content: '❝';
+    position: absolute;
+    top: -10px;
+    right: 12px;
+    font-size: 28px;
+    color: $accentHex1;
+    opacity: 0.4;
+  }
+  .content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 13px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 6px 16px ${isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.06)'};
+  }
+  .content table th, .content table td {
+    padding: 12px 14px;
+    text-align: right;
+    border: 1px solid $borderColor;
+  }
+  .content table th {
+    background: ${isDark ? '#1c2b48' : '#f0f4f8'};
+    font-weight: 900;
+    color: $textColor;
+  }
+  .content code {
+    background: ${isDark ? '#1c2b48' : '#eef3fa'};
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.9em;
+    color: $accentHex1;
+    font-weight: 700;
+  }
+  .content strong { color: $textColor; font-weight: 900; }
+  .content hr {
+    border: none;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, $borderColor, transparent);
+    margin: 30px 0;
+  }
+  
+  /* ============ End of news ============ */
+  .end-note {
+    margin-top: 40px;
+    padding: 28px 20px;
+    background: $cardColor;
+    border-radius: 20px;
+    border: 1px solid $borderColor;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 22px ${isDark ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.06)'};
+  }
+  .end-note::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, $accentHex1, $accentHex2);
+  }
+  .end-note .star {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, $accentHex1, $accentHex2);
+    color: white;
+    font-size: 22px;
+    margin-bottom: 14px;
+    box-shadow: 0 12px 24px -10px $accentHex1;
+  }
+  .end-note .label {
+    font-size: 14px;
+    font-weight: 900;
+    color: $textColor;
+    margin-bottom: 6px;
+  }
+  .end-note .sub {
+    font-size: 12px;
+    color: $softText;
+    line-height: 1.7;
+  }
+  .end-note .divider-line {
+    display: inline-block;
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, $accentHex1, $accentHex2);
+    border-radius: 2px;
+    margin: 12px 0;
+  }
+  
+  /* ============ Info bar (bottom) ============ */
+  .info-bar {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 14px;
+    background: $cardColor;
+    border-radius: 14px;
+    border: 1px dashed $borderColor;
+    font-size: 11px;
+    color: $softText;
+  }
+  .info-bar .dot {
+    width: 4px;
+    height: 4px;
+    background: $softText;
+    border-radius: 50%;
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+  <div class="top-band"></div>
+  <div class="container">
+    
+    <!-- Header chips -->
+    <div class="header-chips">
+      <span class="chip chip-urgent">فوری</span>
+      <span class="chip">
+        <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+        $readTime دقیقه
+      </span>
+      <span class="chip">
+        <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+        $date
+      </span>
+      <span class="chip">$timeAgo</span>
+    </div>
+    
+    <!-- Title -->
+    <div class="title-wrap">
+      <h1>$safeTitle</h1>
+      <div class="title-underline"></div>
+    </div>
+    
+    <!-- Author -->
+    ${author.isNotEmpty ? '''
+    <div class="author-card">
+      <div class="avatar">${safeAuthor.isNotEmpty ? safeAuthor[0] : 'ن'}</div>
+      <div class="author-info">
+        <div class="author-name">$safeAuthor</div>
+        <div class="author-role">
+          <span class="verified">✓</span>
+          نویسنده خبر
+        </div>
+      </div>
+    </div>
+    ''' : ''}
+    
+    <!-- Content -->
+    <div class="content">
+      $content
+    </div>
+    
+    <!-- End note -->
+    <div class="end-note">
+      <div class="star">✦</div>
+      <div class="label">پایان خبر</div>
+      <div class="divider-line"></div>
+      <div class="sub">
+        با تشکر از همراهی شما<br>
+        برای دریافت اخبار بیشتر، اپلیکیشن را دنبال کنید
+      </div>
+    </div>
+    
+    <!-- Info bar -->
+    <div class="info-bar">
+      <span>📅 $date</span>
+      <span class="dot"></span>
+      <span>⏱ $readTime دقیقه مطالعه</span>
+      <span class="dot"></span>
+      <span>🔴 خبر فوری</span>
+    </div>
+    
+  </div>
+</body>
+</html>
+''';
   }
 
   @override
   Widget build(BuildContext context) {
-    // 👇 محاسبه پدینگ پایین بر اساس نوار ناوبری سیستم
-    final bottomInset = MediaQuery.of(context).padding.bottom;
-
     return ValueListenableBuilder<bool>(
       valueListenable: darkModeNotifier,
       builder: (context, _, __) => Scaffold(
         backgroundColor: bgC,
         appBar: AppBar(
+          backgroundColor: bgC,
+          elevation: 0,
+          foregroundColor: txtC,
+          leading: IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: pnl,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: lineC),
+              ),
+              child: Icon(Icons.arrow_forward_rounded,
+                  color: txtC, size: 20),
+            ),
+          ),
           title: Row(
             children: [
-              const ModernLiveDot(),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Color(0xfff43f5e),
+                  shape: BoxShape.circle,
+                ),
+              ),
               const SizedBox(width: 8),
               Text(
-                'اخبار فوری',
+                'خبر فوری',
                 style: TextStyle(
                   color: txtC,
-                  fontSize: 16,
+                  fontSize: 15,
                   fontWeight: FontWeight.w900,
                   fontFamily: 'Vazirmatn',
                 ),
               ),
             ],
           ),
-          backgroundColor: bgC,
-          foregroundColor: txtC,
-          elevation: 0,
-        ),
-        body: RefreshIndicator(
-          color: accentGreen,
-          backgroundColor: pnl,
-          onRefresh: _refresh,
-          child: FutureBuilder<List>(
-            future: _future,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      PostSkeleton(),
-                      PostSkeleton(),
-                      PostSkeleton(),
-                    ],
-                  ),
-                );
-              }
-              if (snapshot.hasError) {
-                return ErrorBox(
-                  message: 'خطا در دریافت اخبار.\n${snapshot.error}',
-                  onRetry: _refresh,
-                );
-              }
-              final list = snapshot.data ?? [];
-              if (list.isEmpty) {
-                return const EmptyWidget(text: 'هنوز خبری منتشر نشده است.');
-              }
-              return ListView.builder(
-                physics: const BouncingScrollPhysics(),
-                // 👇 پدینگ پایین = ارتفاع نوار ناوبری گوشی + 100
-                padding: EdgeInsets.fromLTRB(
-                  0,
-                  14,
-                  0,
-                  bottomInset + 100,
-                ),
-                itemCount: list.length,
-                itemBuilder: (c, i) => ModernUrgentNewsCard(news: list[i]),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/* ==================== ADMIN LOGIN ==================== */
-
-class AdminLoginPage extends StatefulWidget {
-  const AdminLoginPage({super.key});
-  @override
-  State<AdminLoginPage> createState() => _AdminLoginPageState();
-}
-
-class _AdminLoginPageState extends State<AdminLoginPage> {
-  final _userCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
-  bool _loading = false;
-  bool _obscure = true;
-  bool _rememberMe = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSavedCredentials();
-  }
-
-  Future<void> _loadSavedCredentials() async {
-    try {
-      final savedUser = await _storage.read(key: 'admin_username');
-      final savedPass = await _storage.read(key: 'admin_password');
-      if (savedUser != null && savedUser.isNotEmpty) {
-        _userCtrl.text = savedUser;
-        if (savedPass != null && savedPass.isNotEmpty) {
-          _passCtrl.text = savedPass;
-        }
-      }
-    } catch (_) {}
-  }
-
-  Future<void> _saveCredentials(String user, String pass) async {
-    try {
-      if (_rememberMe) {
-        await _storage.write(key: 'admin_username', value: user);
-        await _storage.write(key: 'admin_password', value: pass);
-      } else {
-        await _storage.delete(key: 'admin_username');
-        await _storage.delete(key: 'admin_password');
-      }
-    } catch (_) {}
-  }
-
-  Future<void> _clearSavedCredentials() async {
-    try {
-      await _storage.delete(key: 'admin_username');
-      await _storage.delete(key: 'admin_password');
-      _userCtrl.clear();
-      _passCtrl.clear();
-      setState(() {});
-      showSnack(context, 'اطلاعات ورود پاک شد.');
-    } catch (_) {}
-  }
-
-  Future<void> _login() async {
-    final user = _userCtrl.text.trim();
-    final pass = _passCtrl.text.trim();
-    if (user.isEmpty || pass.isEmpty) {
-      setState(() => _error = 'نام کاربری و رمز را وارد کنید.');
-      return;
-    }
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      await verifyAdmin(username: user, appPassword: pass);
-      await _saveCredentials(user, pass);
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AdminPanelPage(
-            username: user,
-            password: pass,
-          ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = e.toString().replaceFirst('Exception: ', '');
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _userCtrl.dispose();
-    _passCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => Scaffold(
-        backgroundColor: bgC,
-        appBar: AppBar(
-          title: const Text(
-            'ورود ادمین',
-            style: TextStyle(
-                fontWeight: FontWeight.w900, fontFamily: 'Vazirmatn'),
-          ),
-          backgroundColor: bgC,
-          foregroundColor: txtC,
-          elevation: 0,
           actions: [
-            IconButton(
-              onPressed: _clearSavedCredentials,
-              icon: const Icon(Icons.delete_sweep_rounded,
-                  color: Colors.red),
-              tooltip: 'پاک کردن اطلاعات ذخیره‌شده',
-            ),
-          ],
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      gold.withOpacity(0.2),
-                      gold.withOpacity(0.05),
-                    ],
-                  ),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: gold.withOpacity(0.3)),
-                ),
-                child: Icon(Icons.lock_rounded, color: gold, size: 42),
-              ),
-              const SizedBox(height: 22),
-              Text(
-                'فقط مدیر سایت',
-                style: TextStyle(
-                  color: txtC,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'Vazirmatn',
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'برای مدیریت اخبار فوری وارد شوید',
-                style: TextStyle(
-                  color: mutC,
-                  fontSize: 12.5,
-                  fontFamily: 'Vazirmatn',
-                ),
-              ),
-              const SizedBox(height: 30),
-              _buildField(
-                controller: _userCtrl,
-                icon: Icons.person_rounded,
-                hint: 'نام کاربری وردپرس',
-              ),
-              const SizedBox(height: 12),
-              _buildField(
-                controller: _passCtrl,
-                icon: Icons.key_rounded,
-                hint: 'Application Password',
-                obscure: _obscure,
-                suffix: IconButton(
-                  icon: Icon(
-                    _obscure
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                    color: mutC,
-                    size: 20,
-                  ),
-                  onPressed: () => setState(() => _obscure = !_obscure),
-                ),
-              ),
-              const SizedBox(height: 14),
-              GestureDetector(
-                onTap: () => setState(() => _rememberMe = !_rememberMe),
+            // Bookmark
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: GestureDetector(
+                onTap: () async {
+                  HapticFeedback.lightImpact();
+                  await toggleBookmark(_id);
+                  setState(() => _bookmarked = isBookmarked(_id));
+                  if (!mounted) return;
+                  showSnack(
+                    context,
+                    _bookmarked
+                        ? 'به نشان‌شده‌ها اضافه شد'
+                        : 'از نشان‌شده‌ها حذف شد',
+                  );
+                },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: pnl,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: lineC),
                   ),
-                  child: Row(
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 22,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          color: _rememberMe
-                              ? accentGreen
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: _rememberMe ? accentGreen : mutC,
-                            width: 1.5,
-                          ),
-                        ),
-                        child: _rememberMe
-                            ? const Icon(Icons.check_rounded,
-                                color: Colors.white, size: 16)
-                            : null,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'مرا به خاطر بسپار',
-                        style: TextStyle(
-                          color: txtC,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-                      const Spacer(),
-                      Icon(Icons.lock_outline_rounded,
-                          color: mutC, size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        'ذخیره امن',
-                        style: TextStyle(
-                          color: mutC,
-                          fontSize: 10,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-                    ],
+                  child: Icon(
+                    _bookmarked
+                        ? Icons.bookmark_rounded
+                        : Icons.bookmark_border_rounded,
+                    color: _bookmarked ? gold : txtC,
+                    size: 18,
                   ),
                 ),
               ),
-              if (_error != null) ...[
-                const SizedBox(height: 15),
-                Container(
-                  padding: const EdgeInsets.all(12),
+            ),
+            // Share
+            Padding(
+              padding: const EdgeInsets.only(
+                  left: 14, top: 8, bottom: 8, right: 6),
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  sharePost(pLink(widget.news), pTitle(widget.news));
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: rose.withOpacity(0.15),
+                    color: pnl,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: rose.withOpacity(0.3)),
+                    border: Border.all(color: lineC),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.error_outline_rounded,
-                          color: rose, size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _error!,
-                          style: TextStyle(
-                            color: rose,
-                            fontSize: 12,
-                            fontFamily: 'Vazirmatn',
-                          ),
-                        ),
-                      ),
-                    ],
+                  child: Icon(
+                    Icons.ios_share_rounded,
+                    color: txtC,
+                    size: 18,
                   ),
-                ),
-              ],
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: _loading ? null : _login,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: accentGreen,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: _loading
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          'ورود',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'Vazirmatn',
-                          ),
-                        ),
                 ),
               ),
-              const SizedBox(height: 15),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: accentBlue.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border:
-                      Border.all(color: accentBlue.withOpacity(0.15)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.shield_rounded,
-                        color: accentBlue, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'اطلاعات ورود شما به‌صورت رمزنگاری‌شده روی دستگاه ذخیره می‌شود.',
-                        style: TextStyle(
-                          color: mutC,
-                          fontSize: 11,
-                          height: 1.6,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+            ),
+          ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(3),
+            child: AnimatedOpacity(
+              opacity: _loading ? 1 : 0,
+              duration: const Duration(milliseconds: 300),
+              child: LinearProgressIndicator(
+                value: _progress > 0 ? _progress : null,
+                backgroundColor: lineC,
+                color: accentGreen,
+                minHeight: 3,
               ),
-            ],
+            ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildField({
-    required TextEditingController controller,
-    required IconData icon,
-    required String hint,
-    bool obscure = false,
-    Widget? suffix,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: pnl,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: lineC),
-      ),
-      child: TextField(
-        controller: controller,
-        obscureText: obscure,
-        textDirection: TextDirection.ltr,
-        style: TextStyle(color: txtC, fontFamily: 'Vazirmatn'),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: mutC, fontFamily: 'Vazirmatn'),
-          prefixIcon: Icon(icon, color: accentGreen),
-          suffixIcon: suffix,
-          filled: true,
-          fillColor: Colors.transparent,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
+        body: InAppWebView(
+          initialData: InAppWebViewInitialData(
+            data: _buildStyledHtml(),
+            mimeType: 'text/html',
+            encoding: 'utf-8',
+            baseUrl: WebUri(site),
           ),
+          initialSettings: InAppWebViewSettings(
+            javaScriptEnabled: true,
+            useShouldOverrideUrlLoading: true,
+            mediaPlaybackRequiresUserGesture: false,
+            transparentBackground: false,
+            supportZoom: false,
+            disableVerticalScroll: false,
+            disableHorizontalScroll: true,
+          ),
+          onWebViewCreated: (c) => _controller = c,
+          onLoadStart: (c, url) => setState(() {
+            _loading = true;
+            _progress = 0;
+          }),
+          onLoadStop: (c, url) => setState(() {
+            _loading = false;
+            _progress = 0;
+          }),
+          onProgressChanged: (c, p) =>
+              setState(() => _progress = p / 100),
+          shouldOverrideUrlLoading: (controller, action) async {
+            final url = action.request.url.toString();
+            if (url.startsWith('data:') ||
+                url == 'about:blank' ||
+                url.isEmpty) {
+              return NavigationActionPolicy.ALLOW;
+            }
+            if (await canLaunchUrl(Uri.parse(url))) {
+              await launchUrl(Uri.parse(url),
+                  mode: LaunchMode.externalApplication);
+            }
+            return NavigationActionPolicy.CANCEL;
+          },
         ),
       ),
     );
