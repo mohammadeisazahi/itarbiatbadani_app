@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,6 +23,38 @@ final _storage = const FlutterSecureStorage();
 final darkModeNotifier = ValueNotifier<bool>(true);
 final bookmarkNotifier = ValueNotifier<Set<String>>({});
 
+/* ==================== ACCENT COLOR ==================== */
+
+final accentNotifier = ValueNotifier<Color>(const Color(0xff10b981));
+
+const List<Color> accentPalette = [
+  Color(0xff10b981),
+  Color(0xff3b82f6),
+  Color(0xff8b5cf6),
+  Color(0xfff43f5e),
+  Color(0xfff59e0b),
+  Color(0xff06b6d4),
+  Color(0xffec4899),
+  Color(0xff6366f1),
+];
+
+Future<void> loadAccentColor() async {
+  try {
+    final saved = await _storage.read(key: 'accent_color');
+    if (saved != null && saved.isNotEmpty) {
+      final v = int.tryParse(saved);
+      if (v != null) accentNotifier.value = Color(v);
+    }
+  } catch (_) {}
+}
+
+Future<void> saveAccentColor(Color c) async {
+  accentNotifier.value = c;
+  try {
+    await _storage.write(key: 'accent_color', value: c.value.toString());
+  } catch (_) {}
+}
+
 /* ==================== THEME COLORS ==================== */
 
 Color get bgC => darkModeNotifier.value ? const Color(0xff0b1220) : const Color(0xfff6f8fb);
@@ -32,7 +65,7 @@ Color get pnl2 => darkModeNotifier.value ? const Color(0xff1c2b48) : const Color
 Color get pnl3 => darkModeNotifier.value ? const Color(0xff243456) : const Color(0xffe3ecf7);
 Color get txtC => darkModeNotifier.value ? const Color(0xfff1f5fb) : const Color(0xff0c1a2b);
 Color get mutC => darkModeNotifier.value ? const Color(0xff8fa3bf) : const Color(0xff5c6b83);
-Color get accentGreen => const Color(0xff10b981);
+Color get accentGreen => accentNotifier.value;
 Color get accentGreen2 => const Color(0xff059669);
 Color get accentBlue => const Color(0xff3b82f6);
 Color get accentBlue2 => const Color(0xff1d4ed8);
@@ -590,8 +623,14 @@ void main() async {
   );
   try {
     final saved = await _storage.read(key: 'dark_mode');
-    darkModeNotifier.value = saved == null ? true : saved == 'true';
+    if (saved != null) {
+      darkModeNotifier.value = saved == 'true';
+    } else {
+      final hour = DateTime.now().hour;
+      darkModeNotifier.value = (hour >= 18 || hour < 6);
+    }
     await loadBookmarks();
+    await loadAccentColor();
   } catch (_) {}
   runApp(const App());
 }
@@ -604,30 +643,325 @@ class App extends StatelessWidget {
     return ValueListenableBuilder<bool>(
       valueListenable: darkModeNotifier,
       builder: (c, isDark, _) {
-        return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          title: 'تربیت بدنی و علوم ورزشی',
-          theme: ThemeData(
-            fontFamily: 'Vazirmatn',
-            useMaterial3: true,
-            brightness: isDark ? Brightness.dark : Brightness.light,
-            scaffoldBackgroundColor: bgC,
-            splashFactory: InkSparkle.splashFactory,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xff10b981),
-              brightness: isDark ? Brightness.dark : Brightness.light,
-            ),
-            pageTransitionsTheme: const PageTransitionsTheme(
-              builders: {
-                TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-              },
+        return ValueListenableBuilder<Color>(
+          valueListenable: accentNotifier,
+          builder: (c, accent, _) {
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              title: 'تربیت بدنی و علوم ورزشی',
+              theme: ThemeData(
+                fontFamily: 'Vazirmatn',
+                useMaterial3: true,
+                brightness: isDark ? Brightness.dark : Brightness.light,
+                scaffoldBackgroundColor: bgC,
+                splashFactory: InkSparkle.splashFactory,
+                colorScheme: ColorScheme.fromSeed(
+                  seedColor: accent,
+                  brightness: isDark ? Brightness.dark : Brightness.light,
+                ),
+                pageTransitionsTheme: const PageTransitionsTheme(
+                  builders: {
+                    TargetPlatform.android:
+                        CupertinoPageTransitionsBuilder(),
+                  },
+                ),
+              ),
+              builder: (c, ch) => Directionality(
+                textDirection: TextDirection.rtl,
+                child: ch ?? const SizedBox(),
+              ),
+              home: const SplashScreen(),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+/* ==================== SPLASH SCREEN ==================== */
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _logoScale;
+  late Animation<double> _logoFade;
+  late Animation<double> _textFade;
+  late Animation<Offset> _textSlide;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    );
+
+    _logoScale = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _ctrl,
+        curve: const Interval(0.0, 0.5, curve: Curves.elasticOut),
+      ),
+    );
+    _logoFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _ctrl,
+        curve: const Interval(0.0, 0.3, curve: Curves.easeOut),
+      ),
+    );
+    _textFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _ctrl,
+        curve: const Interval(0.5, 0.9, curve: Curves.easeOut),
+      ),
+    );
+    _textSlide = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _ctrl,
+        curve: const Interval(0.5, 0.9, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    _ctrl.forward();
+
+    Timer(const Duration(milliseconds: 2600), () {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            transitionDuration: const Duration(milliseconds: 600),
+            pageBuilder: (_, anim, __) => FadeTransition(
+              opacity: anim,
+              child: const Root(),
             ),
           ),
-          builder: (c, ch) => Directionality(
-            textDirection: TextDirection.rtl,
-            child: ch ?? const SizedBox(),
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = darkModeNotifier.value;
+    return Scaffold(
+      backgroundColor: bgC,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? [
+                    const Color(0xff0b1220),
+                    const Color(0xff141f36),
+                    const Color(0xff1a0f2e),
+                  ]
+                : [
+                    const Color(0xfff6f8fb),
+                    const Color(0xffeef3fb),
+                    const Color(0xfffff5f7),
+                  ],
           ),
-          home: const Root(),
+        ),
+        child: Stack(
+          children: [
+            ...List.generate(15, (i) => _buildParticle(i)),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FadeTransition(
+                    opacity: _logoFade,
+                    child: ScaleTransition(
+                      scale: _logoScale,
+                      child: Container(
+                        width: 140,
+                        height: 140,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            begin: Alignment.topRight,
+                            end: Alignment.bottomLeft,
+                            colors: [
+                              accentNotifier.value,
+                              accentBlue,
+                              purple,
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: accentNotifier.value
+                                  .withOpacity(0.45),
+                              blurRadius: 40,
+                              spreadRadius: 4,
+                            ),
+                            BoxShadow(
+                              color: accentBlue.withOpacity(0.25),
+                              blurRadius: 60,
+                              spreadRadius: 8,
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(6),
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: ClipOval(
+                            child: Image.asset(
+                              logo,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Image.network(
+                                logoNet,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Icon(
+                                  Icons.sports_soccer_rounded,
+                                  color: accentNotifier.value,
+                                  size: 60,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  FadeTransition(
+                    opacity: _textFade,
+                    child: SlideTransition(
+                      position: _textSlide,
+                      child: Column(
+                        children: [
+                          Text(
+                            'تربیت بدنی و علوم ورزشی',
+                            style: TextStyle(
+                              color: txtC,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Vazirmatn',
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'مرجع تخصصی ورزش ایران',
+                            style: TextStyle(
+                              color: mutC,
+                              fontSize: 13,
+                              fontFamily: 'Vazirmatn',
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 40),
+                          const _DotsLoader(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildParticle(int i) {
+    final random = math.Random(i);
+    final size = 4.0 + random.nextDouble() * 8;
+    final left = random.nextDouble();
+    final top = random.nextDouble();
+    return Positioned(
+      left: left * MediaQuery.of(context).size.width,
+      top: top * MediaQuery.of(context).size.height,
+      child: AnimatedBuilder(
+        animation: _ctrl,
+        builder: (context, _) {
+          final t = _ctrl.value;
+          return Opacity(
+            opacity: (0.1 + random.nextDouble() * 0.3) *
+                (1 - t) *
+                (0.5 + math.sin(t * 10 + i) * 0.5),
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: accentPalette[i % accentPalette.length],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _DotsLoader extends StatefulWidget {
+  const _DotsLoader();
+  @override
+  State<_DotsLoader> createState() => _DotsLoaderState();
+}
+
+class _DotsLoaderState extends State<_DotsLoader>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (i) {
+            final offset = (i * 0.2);
+            final v = ((_ctrl.value - offset) % 1.0);
+            final scale = v < 0.5 ? (v * 2) : (2 - v * 2);
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: accentNotifier.value
+                    .withOpacity(0.3 + scale * 0.7),
+              ),
+            );
+          }),
         );
       },
     );
@@ -697,7 +1031,7 @@ class _ModernNavBar extends StatelessWidget {
             BoxShadow(
               color: isDark
                   ? Colors.black.withOpacity(0.5)
-                  : const Color(0xff10b981).withOpacity(0.12),
+                  : accentNotifier.value.withOpacity(0.15),
               blurRadius: 28,
               offset: const Offset(0, 10),
             ),
@@ -723,12 +1057,13 @@ class _ModernNavBar extends StatelessWidget {
                           horizontal: 4, vertical: 8),
                       decoration: BoxDecoration(
                         color: selected
-                            ? accentGreen.withOpacity(0.18)
+                            ? accentNotifier.value.withOpacity(0.18)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(18),
                         border: selected
                             ? Border.all(
-                                color: accentGreen.withOpacity(0.5),
+                                color: accentNotifier.value
+                                    .withOpacity(0.5),
                                 width: 1.5,
                               )
                             : null,
@@ -739,7 +1074,7 @@ class _ModernNavBar extends StatelessWidget {
                           Icon(
                             selected ? item.activeIcon : item.icon,
                             color: selected
-                                ? accentGreen
+                                ? accentNotifier.value
                                 : txtC.withOpacity(0.75),
                             size: selected ? 26 : 24,
                           ),
@@ -749,7 +1084,7 @@ class _ModernNavBar extends StatelessWidget {
                             style: TextStyle(
                               fontFamily: 'Vazirmatn',
                               color: selected
-                                  ? accentGreen
+                                  ? accentNotifier.value
                                   : txtC.withOpacity(0.75),
                               fontSize: selected ? 12 : 11,
                               fontWeight: selected
@@ -840,6 +1175,7 @@ class _HomeState extends State<Home> {
   }
 
   Future<void> _refresh() async {
+    HapticFeedback.mediumImpact();
     _postsCache.clear();
     _postsCacheTime.clear();
     setState(() {
@@ -863,38 +1199,786 @@ class _HomeState extends State<Home> {
             colors: [bgGrad1, bgGrad2],
           ),
         ),
-        child: RefreshIndicator(
-          color: accentGreen,
-          backgroundColor: pnl,
-          onRefresh: _refresh,
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
+        child: Stack(
+          children: [
+            // Mesh Gradient متحرک
+            Positioned(
+              top: -100,
+              right: -100,
+              child: _AnimatedBlob(
+                color: accentNotifier.value,
+                size: 300,
+                duration: const Duration(seconds: 8),
+              ),
             ),
-            slivers: [
-              SliverToBoxAdapter(child: ModernHeader(context)),
-              SliverToBoxAdapter(child: HeroCarousel(postsFuture: _f)),
-              SliverToBoxAdapter(
-                child: ModernNewsBanner(key: _bannerKey, future: _newsFuture),
+            Positioned(
+              top: 200,
+              left: -120,
+              child: _AnimatedBlob(
+                color: accentBlue,
+                size: 250,
+                duration: const Duration(seconds: 10),
               ),
-              SliverToBoxAdapter(child: ModernServicesSection()),
-              SliverToBoxAdapter(
-                child: ModernSectionTitle(
-                  title: 'دسته‌ها',
-                  icon: Icons.grid_view_rounded,
+            ),
+            Positioned(
+              bottom: 100,
+              right: -100,
+              child: _AnimatedBlob(
+                color: purple,
+                size: 220,
+                duration: const Duration(seconds: 12),
+              ),
+            ),
+            RefreshIndicator(
+              color: accentNotifier.value,
+              backgroundColor: pnl,
+              strokeWidth: 3,
+              displacement: 60,
+              onRefresh: _refresh,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
                 ),
+                slivers: [
+                  SliverToBoxAdapter(child: ModernHeader(context)),
+                  SliverToBoxAdapter(
+                    child: LiveNewsTicker(future: _newsFuture),
+                  ),
+                  SliverToBoxAdapter(
+                    child: CategoryChipsBar(),
+                  ),
+                  SliverToBoxAdapter(
+                    child: HeroCarousel(postsFuture: _f),
+                  ),
+                  SliverToBoxAdapter(
+                    child: ModernNewsBanner(
+                        key: _bannerKey, future: _newsFuture),
+                  ),
+                  SliverToBoxAdapter(child: ModernServicesSection()),
+                  SliverToBoxAdapter(
+                    child: ModernSectionTitle(
+                      title: 'دسته‌ها',
+                      icon: Icons.grid_view_rounded,
+                    ),
+                  ),
+                  SliverToBoxAdapter(child: ModernCatGrid()),
+                  SliverToBoxAdapter(child: ModernSocial()),
+                  const SliverToBoxAdapter(child: SizedBox(height: 140)),
+                ],
               ),
-              SliverToBoxAdapter(child: ModernCatGrid()),
-              SliverToBoxAdapter(child: ModernSocial()),
-              const SliverToBoxAdapter(child: SizedBox(height: 140)),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
+/* ==================== ANIMATED BLOB ==================== */
+
+class _AnimatedBlob extends StatefulWidget {
+  final Color color;
+  final double size;
+  final Duration duration;
+  const _AnimatedBlob({
+    required this.color,
+    required this.size,
+    required this.duration,
+  });
+
+  @override
+  State<_AnimatedBlob> createState() => _AnimatedBlobState();
+}
+
+class _AnimatedBlobState extends State<_AnimatedBlob>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: widget.duration,
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = darkModeNotifier.value;
+    final opacity = isDark ? 0.10 : 0.06;
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        final v = _ctrl.value;
+        return Transform.translate(
+          offset: Offset(
+            (v - 0.5) * 40,
+            (v - 0.5) * 30,
+          ),
+          child: Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  widget.color.withOpacity(opacity),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+/* ==================== MODERN HEADER (PRO) ==================== */
+
+Widget ModernHeader(BuildContext context, [String? t]) {
+  return SafeArea(
+    bottom: false,
+    child: Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: LinearGradient(
+                colors: [
+                  accentNotifier.value,
+                  accentBlue,
+                  accentNotifier.value.withOpacity(0.5),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: accentNotifier.value.withOpacity(0.35),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(2),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: ClipOval(
+                child: Image.asset(
+                  logo,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Image.network(
+                    logoNet,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Icon(
+                      Icons.sports_soccer_rounded,
+                      color: accentNotifier.value,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ShaderMask(
+                  shaderCallback: (bounds) => LinearGradient(
+                    colors: [txtC, accentNotifier.value],
+                  ).createShader(bounds),
+                  child: Text(
+                    t ?? 'تربیت بدنی و ورزش',
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Vazirmatn',
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: accentNotifier.value,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: accentNotifier.value.withOpacity(0.6),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      'آنلاین • به‌روزرسانی زنده',
+                      style: TextStyle(
+                        color: mutC,
+                        fontSize: 10.5,
+                        fontFamily: 'Vazirmatn',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          _HeaderIconButton(
+            icon: Icons.bookmark_outline_rounded,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const BookmarksPage()),
+            ),
+          ),
+          const SizedBox(width: 4),
+          ValueListenableBuilder<bool>(
+            valueListenable: darkModeNotifier,
+            builder: (c, isDark, _) => _HeaderIconButton(
+              icon: isDark
+                  ? Icons.light_mode_rounded
+                  : Icons.dark_mode_rounded,
+              onTap: () async {
+                HapticFeedback.lightImpact();
+                darkModeNotifier.value = !darkModeNotifier.value;
+                await _storage.write(
+                  key: 'dark_mode',
+                  value: darkModeNotifier.value.toString(),
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 4),
+          _HeaderIconButton(
+            icon: Icons.search_rounded,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SearchPage()),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget ModernHeaderWithAdmin(BuildContext context, [String? t]) {
+  return SafeArea(
+    bottom: false,
+    child: Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: LinearGradient(
+                colors: [
+                  accentNotifier.value,
+                  accentBlue,
+                  accentNotifier.value.withOpacity(0.5),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: accentNotifier.value.withOpacity(0.35),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(2),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: ClipOval(
+                child: Image.asset(
+                  logo,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Image.network(
+                    logoNet,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Icon(
+                      Icons.sports_soccer_rounded,
+                      color: accentNotifier.value,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              t ?? 'حساب من',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: txtC,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+          ),
+          _HeaderIconButton(
+            icon: Icons.admin_panel_settings_rounded,
+            color: accentBlue,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AdminLoginPage()),
+            ),
+          ),
+          const SizedBox(width: 4),
+          ValueListenableBuilder<bool>(
+            valueListenable: darkModeNotifier,
+            builder: (c, isDark, _) => _HeaderIconButton(
+              icon: isDark
+                  ? Icons.light_mode_rounded
+                  : Icons.dark_mode_rounded,
+              onTap: () async {
+                HapticFeedback.lightImpact();
+                darkModeNotifier.value = !darkModeNotifier.value;
+                await _storage.write(
+                  key: 'dark_mode',
+                  value: darkModeNotifier.value.toString(),
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 4),
+          _HeaderIconButton(
+            icon: Icons.search_rounded,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SearchPage()),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _HeaderIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color? color;
+  const _HeaderIconButton({
+    required this.icon,
+    required this.onTap,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = darkModeNotifier.value;
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withOpacity(0.06)
+              : Colors.white.withOpacity(0.85),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withOpacity(0.10)
+                : Colors.black.withOpacity(0.05),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Icon(icon, color: color ?? txtC, size: 20),
+      ),
+    );
+  }
+}
+
+/* ==================== LIVE NEWS TICKER ==================== */
+
+class LiveNewsTicker extends StatefulWidget {
+  final Future<List>? future;
+  const LiveNewsTicker({super.key, this.future});
+
+  @override
+  State<LiveNewsTicker> createState() => _LiveNewsTickerState();
+}
+
+class _LiveNewsTickerState extends State<LiveNewsTicker> {
+  List<String> _titles = [];
+  int _currentIndex = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTitles();
+  }
+
+  Future<void> _loadTitles() async {
+    if (widget.future == null) return;
+    try {
+      final list = await widget.future!;
+      if (!mounted) return;
+      _titles = list.take(10).map((e) => pTitle(e)).toList();
+      if (_titles.isNotEmpty) _startTicker();
+    } catch (_) {}
+  }
+
+  void _startTicker() {
+    _timer = Timer.periodic(const Duration(seconds: 4), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      setState(() {
+        _currentIndex = (_currentIndex + 1) % _titles.length;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_titles.isEmpty) return const SizedBox.shrink();
+    final isDark = darkModeNotifier.value;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 4, 14, 10),
+      height: 44,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [
+                  const Color(0xff1a0f2e).withOpacity(0.9),
+                  const Color(0xff2a0d1a).withOpacity(0.9),
+                ]
+              : [
+                  const Color(0xfffff5f7),
+                  const Color(0xfffff8f0),
+                ],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xfff43f5e).withOpacity(0.3),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xfff43f5e).withOpacity(0.10),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xfff43f5e), Color(0xffbe123c)],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xfff43f5e).withOpacity(0.4),
+                  blurRadius: 10,
+                ),
+              ],
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _WhiteLiveDot(),
+                SizedBox(width: 5),
+                Text(
+                  'LIVE',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              transitionBuilder: (child, anim) {
+                return FadeTransition(
+                  opacity: anim,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.5),
+                      end: Offset.zero,
+                    ).animate(anim),
+                    child: child,
+                  ),
+                );
+              },
+              child: Text(
+                _titles[_currentIndex],
+                key: ValueKey(_currentIndex),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+        ],
+      ),
+    );
+  }
+}
+
+/* ==================== CATEGORY CHIPS BAR ==================== */
+
+class CategoryChipsBar extends StatefulWidget {
+  const CategoryChipsBar({super.key});
+
+  @override
+  State<CategoryChipsBar> createState() => _CategoryChipsBarState();
+}
+
+class _CategoryChipsBarState extends State<CategoryChipsBar> {
+  int _selected = -1;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 4, bottom: 6),
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        itemCount: cats.length + 1,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (c, i) {
+          if (i == 0) {
+            final sel = _selected == -1;
+            return _chip(
+              label: 'همه',
+              icon: Icons.apps_rounded,
+              color: accentNotifier.value,
+              selected: sel,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _selected = -1);
+              },
+            );
+          }
+          final cat = cats[i - 1];
+          final sel = _selected == i - 1;
+          return _chip(
+            label: cat.n.length > 20
+                ? '${cat.n.substring(0, 18)}...'
+                : cat.n,
+            icon: cat.i,
+            color: cat.c,
+            selected: sel,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() => _selected = i - 1);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CategoryPostsPage(c: cat),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _chip({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final isDark = darkModeNotifier.value;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          gradient: selected
+              ? LinearGradient(
+                  colors: [color, color.withOpacity(0.7)],
+                )
+              : null,
+          color: selected
+              ? null
+              : (isDark
+                  ? Colors.white.withOpacity(0.05)
+                  : Colors.white),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected
+                ? color
+                : (isDark
+                    ? Colors.white.withOpacity(0.10)
+                    : Colors.black.withOpacity(0.06)),
+            width: 1.2,
+          ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.4),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: selected ? Colors.white : color,
+              size: 16,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected ? Colors.white : txtC,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/* ==================== WHITE LIVE DOT ==================== */
+
+class _WhiteLiveDot extends StatefulWidget {
+  const _WhiteLiveDot();
+
+  @override
+  State<_WhiteLiveDot> createState() => _WhiteLiveDotState();
+}
+
+class _WhiteLiveDotState extends State<_WhiteLiveDot>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        final t = _ctrl.value;
+        final scale = 1.0 + (t < 0.5 ? t * 0.6 : (1 - t) * 0.6);
+        final opacity = 1.0 - t;
+        return SizedBox(
+          width: 12,
+          height: 12,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 12 * scale,
+                height: 12 * scale,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(opacity * 0.6),
+                ),
+              ),
+              Container(
+                width: 7,
+                height: 7,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
 /* ==================== HERO CAROUSEL ==================== */
 
 class HeroCarousel extends StatefulWidget {
@@ -1000,9 +2084,17 @@ class _HeroCarouselState extends State<HeroCarousel> {
           height: 8,
           decoration: BoxDecoration(
             color: active
-                ? const Color(0xff10b981)
+                ? accentNotifier.value
                 : mutC.withOpacity(0.3),
             borderRadius: BorderRadius.circular(999),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: accentNotifier.value.withOpacity(0.5),
+                      blurRadius: 8,
+                    ),
+                  ]
+                : null,
           ),
         );
       }),
@@ -1010,27 +2102,58 @@ class _HeroCarouselState extends State<HeroCarousel> {
   }
 }
 
-class _CarouselCard extends StatelessWidget {
+class _CarouselCard extends StatefulWidget {
   final dynamic post;
   const _CarouselCard({required this.post});
 
   @override
+  State<_CarouselCard> createState() => _CarouselCardState();
+}
+
+class _CarouselCardState extends State<_CarouselCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _ken;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat(reverse: true);
+    _ken = Tween<double>(begin: 1.0, end: 1.12).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final title = pTitle(post);
-    final img = pImgFull(post);
-    final cat = pCategory(post);
-    final link = pLink(post);
+    final title = pTitle(widget.post);
+    final img = pImgFull(widget.post);
+    final cat = pCategory(widget.post);
+    final link = pLink(widget.post);
+    final date = pTimeAgo(widget.post);
 
     return GestureDetector(
-      onTap: () => openUrl(context, link),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        openUrl(context, link);
+      },
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+              color: Colors.black.withOpacity(0.25),
+              blurRadius: 30,
+              offset: const Offset(0, 12),
             ),
           ],
         ),
@@ -1040,20 +2163,25 @@ class _CarouselCard extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               if (img.isNotEmpty)
-                CachedNetworkImage(
-                  imageUrl: img,
-                  fit: BoxFit.cover,
-                  memCacheWidth: 1080,
-                  fadeInDuration: const Duration(milliseconds: 300),
-                  placeholder: (_, __) => Container(color: pnl2),
-                  errorWidget: (_, __, ___) => Container(
-                    color: pnl2,
-                    child: const Icon(
-                      Icons.article_rounded,
-                      color: Color(0xff10b981),
-                      size: 60,
-                    ),
-                  ),
+                AnimatedBuilder(
+                  animation: _ken,
+                  builder: (context, _) {
+                    return Transform.scale(
+                      scale: _ken.value,
+                      child: CachedNetworkImage(
+                        imageUrl: img,
+                        fit: BoxFit.cover,
+                        memCacheWidth: 1080,
+                        fadeInDuration: const Duration(milliseconds: 400),
+                        placeholder: (_, __) => Container(color: pnl2),
+                        errorWidget: (_, __, ___) => Container(
+                          color: pnl2,
+                          child: Icon(Icons.article_rounded,
+                              color: accentNotifier.value, size: 60),
+                        ),
+                      ),
+                    );
+                  },
                 )
               else
                 Container(color: pnl2),
@@ -1064,9 +2192,10 @@ class _CarouselCard extends StatelessWidget {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withOpacity(0.85),
+                      Colors.black.withOpacity(0.3),
+                      Colors.black.withOpacity(0.9),
                     ],
-                    stops: const [0.35, 1.0],
+                    stops: const [0.2, 0.6, 1.0],
                   ),
                 ),
               ),
@@ -1078,27 +2207,68 @@ class _CarouselCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (cat.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xff10b981),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          cat,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'Vazirmatn',
+                    Row(
+                      children: [
+                        if (cat.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  accentNotifier.value,
+                                  accentNotifier.value.withOpacity(0.7),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: accentNotifier.value
+                                      .withOpacity(0.5),
+                                  blurRadius: 12,
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              cat,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                fontFamily: 'Vazirmatn',
+                              ),
+                            ),
+                          ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.schedule_rounded,
+                                  color: Colors.white70, size: 11),
+                              const SizedBox(width: 4),
+                              Text(
+                                date,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 10,
+                                  fontFamily: 'Vazirmatn',
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    const SizedBox(height: 10),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
                     Text(
                       title,
                       maxLines: 2,
@@ -1106,36 +2276,30 @@ class _CarouselCard extends StatelessWidget {
                       textAlign: TextAlign.right,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: 17,
                         fontWeight: FontWeight.w900,
                         height: 1.5,
                         fontFamily: 'Vazirmatn',
+                        shadows: [
+                          Shadow(
+                            color: Colors.black54,
+                            blurRadius: 8,
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.schedule_rounded,
-                          color: Colors.white70,
-                          size: 13,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          pTimeAgo(post),
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 11,
-                            fontFamily: 'Vazirmatn',
-                          ),
-                        ),
-                        const Spacer(),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
+                              horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.18),
-                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.white.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.2),
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -1144,12 +2308,12 @@ class _CarouselCard extends StatelessWidget {
                                 'مطالعه',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 10,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w800,
                                   fontFamily: 'Vazirmatn',
                                 ),
                               ),
-                              SizedBox(width: 3),
+                              SizedBox(width: 4),
                               Icon(
                                 Icons.arrow_back_rounded,
                                 color: Colors.white,
@@ -1193,9 +2357,9 @@ class ModernHeroBanner extends StatelessWidget {
             return Container(
               height: 180,
               color: pnl2,
-              child: const Center(
+              child: Center(
                 child: CircularProgressIndicator(
-                  color: Color(0xff10b981),
+                  color: accentNotifier.value,
                 ),
               ),
             );
@@ -1203,1757 +2367,10 @@ class ModernHeroBanner extends StatelessWidget {
           errorBuilder: (_, __, ___) => Container(
             height: 180,
             color: pnl2,
-            child: const Icon(Icons.sports_soccer_rounded,
-                color: Color(0xff10b981), size: 60),
+            child: Icon(Icons.sports_soccer_rounded,
+                color: accentNotifier.value, size: 60),
           ),
         ),
-      ),
-    );
-  }
-}
-/* ==================== ARTICLES PAGE ==================== */
-
-class ArticlesPage extends StatefulWidget {
-  const ArticlesPage({super.key});
-  @override
-  State<ArticlesPage> createState() => _ArticlesPageState();
-}
-
-class _ArticlesPageState extends State<ArticlesPage> {
-  final _posts = <dynamic>[];
-  int _page = 1;
-  bool _loading = false;
-  bool _hasMore = true;
-  String? _error;
-  final _scroll = ScrollController(keepScrollOffset: false);
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-    _scroll.addListener(() {
-      if (_scroll.position.pixels >=
-              _scroll.position.maxScrollExtent - 400 &&
-          !_loading &&
-          _hasMore) {
-        _load();
-      }
-    });
-  }
-
-  Future<void> _load() async {
-    if (_loading || !_hasMore) return;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final list = await getPostsPaged(perPage: perPageSize, page: _page);
-      setState(() {
-        if (list.isEmpty) {
-          _hasMore = false;
-        } else {
-          _posts.addAll(list);
-          _page++;
-          if (list.length < perPageSize) _hasMore = false;
-        }
-        _loading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
-    }
-  }
-
-  Future<void> _refresh() async {
-    _postsCache.clear();
-    _postsCacheTime.clear();
-    setState(() {
-      _posts.clear();
-      _page = 1;
-      _hasMore = true;
-      _error = null;
-    });
-    await _load();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => Scaffold(
-        backgroundColor: bgC,
-        body: Column(
-          children: [
-            ModernHeader(context, 'مقالات'),
-            Expanded(
-              child: _posts.isEmpty && _loading
-                  ? const Padding(
-                      padding: EdgeInsets.all(14),
-                      child: Column(
-                        children: [
-                          PostSkeleton(),
-                          PostSkeleton(),
-                          PostSkeleton(),
-                          PostSkeleton(),
-                        ],
-                      ),
-                    )
-                  : _posts.isEmpty && _error != null
-                      ? ErrorBox(
-                          message: 'خطا در دریافت مقالات.\n$_error',
-                          onRetry: _refresh,
-                        )
-                      : _posts.isEmpty
-                          ? const EmptyWidget(text: 'مقاله‌ای پیدا نشد.')
-                          : RefreshIndicator(
-                              color: accentGreen,
-                              backgroundColor: pnl,
-                              onRefresh: _refresh,
-                              child: ListView.builder(
-                                controller: _scroll,
-                                cacheExtent: 800,
-                                physics: const BouncingScrollPhysics(),
-                                padding:
-                                    const EdgeInsets.fromLTRB(14, 14, 14, 120),
-                                itemCount:
-                                    _posts.length + (_hasMore ? 1 : 0),
-                                itemBuilder: (c, i) {
-                                  if (i >= _posts.length) {
-                                    return Padding(
-                                      padding: const EdgeInsets.all(20),
-                                      child: Center(
-                                        child: CircularProgressIndicator(
-                                          color: accentGreen,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  return ModernPostCard(
-                                    post: _posts[i],
-                                    showBookmark: true,
-                                  );
-                                },
-                              ),
-                            ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/* ==================== CATEGORY POSTS ==================== */
-
-class CategoryPostsPage extends StatefulWidget {
-  final Cat c;
-  const CategoryPostsPage({super.key, required this.c});
-  @override
-  State<CategoryPostsPage> createState() => _CategoryPostsPageState();
-}
-
-class _CategoryPostsPageState extends State<CategoryPostsPage> {
-  final _posts = <dynamic>[];
-  int _page = 1;
-  bool _loading = false;
-  bool _loadingMore = false;
-  bool _hasMore = true;
-  String? _error;
-  int? _catId;
-  final _scroll = ScrollController(keepScrollOffset: false);
-
-  @override
-  void initState() {
-    super.initState();
-    _init();
-  }
-
-  Future<void> _init() async {
-    setState(() => _loading = true);
-    try {
-      _catId = await getCatIdBySlug(widget.c.s);
-      if (_catId == null) throw Exception('دسته‌بندی یافت نشد');
-      await _loadFirst();
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
-    }
-  }
-
-  Future<void> _loadFirst() async {
-    try {
-      final list = await getPostsPaged(perPage: 5, page: 1, catId: _catId);
-      if (!mounted) return;
-      setState(() {
-        _posts.clear();
-        _posts.addAll(list);
-        _page = 1;
-        _hasMore = list.length >= 5;
-        _loading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
-    }
-  }
-
-  Future<void> _loadMore() async {
-    if (_loadingMore || !_hasMore) return;
-    setState(() => _loadingMore = true);
-    try {
-      final nextPage = _page + 1;
-      final list = await getPostsPaged(
-          perPage: 5, page: nextPage, catId: _catId);
-      if (!mounted) return;
-      setState(() {
-        if (list.isEmpty) {
-          _hasMore = false;
-        } else {
-          _posts.addAll(list);
-          _page = nextPage;
-          if (list.length < 5) _hasMore = false;
-        }
-        _loadingMore = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _loadingMore = false);
-    }
-  }
-
-  Future<void> _refresh() async {
-    setState(() {
-      _posts.clear();
-      _page = 1;
-      _hasMore = true;
-      _error = null;
-    });
-    await _loadFirst();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => Scaffold(
-        backgroundColor: bgC,
-        body: CustomScrollView(
-          controller: _scroll,
-          physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics()),
-          slivers: [
-            SliverAppBar(
-              pinned: true,
-              floating: false,
-              backgroundColor: bgC,
-              foregroundColor: txtC,
-              elevation: 0,
-              expandedHeight: 130,
-              leading: IconButton(
-                icon: Icon(Icons.arrow_forward_rounded, color: txtC),
-                onPressed: () => Navigator.pop(context),
-              ),
-              flexibleSpace: FlexibleSpaceBar(
-                title: Text(
-                  widget.c.n,
-                  style: TextStyle(
-                    color: txtC,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-                titlePadding: const EdgeInsets.fromLTRB(56, 0, 16, 16),
-                background: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        widget.c.c.withOpacity(0.25),
-                        bgC,
-                      ],
-                    ),
-                  ),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 60, top: 20),
-                      child: Icon(
-                        widget.c.i,
-                        color: widget.c.c.withOpacity(0.35),
-                        size: 100,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            if (_posts.isEmpty && _loading)
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.all(14),
-                  child: Column(
-                    children: [
-                      FeaturedSkeleton(),
-                      SizedBox(height: 12),
-                      PostSkeleton(),
-                      SizedBox(height: 12),
-                      PostSkeleton(),
-                    ],
-                  ),
-                ),
-              )
-            else if (_posts.isEmpty && _error != null)
-              SliverToBoxAdapter(
-                child: ErrorBox(
-                  message: 'خطا در دریافت مطالب.\n$_error',
-                  onRetry: _refresh,
-                ),
-              )
-            else if (_posts.isEmpty)
-              const SliverToBoxAdapter(
-                child: EmptyWidget(text: 'مطلبی در این دسته پیدا نشد.'),
-              )
-            else ...[
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
-                  child: FeaturedPostCard(
-                      post: _posts.first, showBookmark: true),
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (c, i) {
-                      final post = _posts[i + 1];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child:
-                            SidePostCard(post: post, showBookmark: true),
-                      );
-                    },
-                    childCount: _posts.length - 1,
-                  ),
-                ),
-              ),
-              if (_hasMore)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 40),
-                    child: Center(child: _buildLoadMore()),
-                  ),
-                ),
-              if (!_hasMore && _posts.length > 5)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 16, 14, 60),
-                    child: Center(
-                      child: Text(
-                        'همه مطالب نمایش داده شد.',
-                        style: TextStyle(color: mutC, fontSize: 12),
-                      ),
-                    ),
-                  ),
-                ),
-              const SliverToBoxAdapter(child: SizedBox(height: 120)),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadMore() {
-    return GestureDetector(
-      onTap: _loadingMore ? null : _loadMore,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 12),
-        decoration: BoxDecoration(
-          color: pnl,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: lineC),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_loadingMore)
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: accentGreen,
-                ),
-              )
-            else
-              Icon(Icons.arrow_back_ios_new_rounded,
-                  size: 12, color: txtC),
-            const SizedBox(width: 8),
-            Text(
-              _loadingMore ? 'در حال بارگذاری...' : 'مشاهده بیشتر',
-              style: TextStyle(
-                color: txtC,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/* ==================== SUB CATEGORY POSTS ==================== */
-
-class SubCategoryPostsPage extends StatefulWidget {
-  final int categoryId;
-  final String categoryName;
-  final String categorySlug;
-  const SubCategoryPostsPage({
-    super.key,
-    required this.categoryId,
-    required this.categoryName,
-    required this.categorySlug,
-  });
-  @override
-  State<SubCategoryPostsPage> createState() => _SubCategoryPostsPageState();
-}
-
-class _SubCategoryPostsPageState extends State<SubCategoryPostsPage> {
-  final _posts = <dynamic>[];
-  int _page = 1;
-  bool _loading = false;
-  bool _loadingMore = false;
-  bool _hasMore = true;
-  String? _error;
-  final _scroll = ScrollController(keepScrollOffset: false);
-
-  @override
-  void initState() {
-    super.initState();
-    _loadFirst();
-  }
-
-  Future<void> _loadFirst() async {
-    setState(() => _loading = true);
-    try {
-      final list = await getPostsPaged(
-          perPage: 5, page: 1, catId: widget.categoryId);
-      if (!mounted) return;
-      setState(() {
-        _posts.clear();
-        _posts.addAll(list);
-        _page = 1;
-        _hasMore = list.length >= 5;
-        _loading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
-    }
-  }
-
-  Future<void> _loadMore() async {
-    if (_loadingMore || !_hasMore) return;
-    setState(() => _loadingMore = true);
-    try {
-      final nextPage = _page + 1;
-      final list = await getPostsPaged(
-          perPage: 5, page: nextPage, catId: widget.categoryId);
-      if (!mounted) return;
-      setState(() {
-        if (list.isEmpty) {
-          _hasMore = false;
-        } else {
-          _posts.addAll(list);
-          _page = nextPage;
-          if (list.length < 5) _hasMore = false;
-        }
-        _loadingMore = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _loadingMore = false);
-    }
-  }
-
-  Future<void> _refresh() async => _loadFirst();
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => Scaffold(
-        backgroundColor: bgC,
-        appBar: AppBar(
-          title: Text(
-            widget.categoryName,
-            style: const TextStyle(
-                fontWeight: FontWeight.w900, fontFamily: 'Vazirmatn'),
-          ),
-          backgroundColor: bgC,
-          foregroundColor: txtC,
-          elevation: 0,
-        ),
-        body: SafeArea(
-          bottom: true,
-          child: RefreshIndicator(
-            color: accentGreen,
-            backgroundColor: pnl,
-            onRefresh: _refresh,
-            child: _posts.isEmpty && _loading
-                ? const Padding(
-                    padding: EdgeInsets.all(14),
-                    child: Column(
-                      children: [
-                        FeaturedSkeleton(),
-                        SizedBox(height: 12),
-                        PostSkeleton(),
-                        SizedBox(height: 12),
-                        PostSkeleton(),
-                      ],
-                    ),
-                  )
-                : _posts.isEmpty && _error != null
-                    ? ErrorBox(
-                        message: 'خطا در دریافت مطالب.\n$_error',
-                        onRetry: _refresh)
-                    : _posts.isEmpty
-                        ? const EmptyWidget(text: 'مطلبی پیدا نشد.')
-                        : SingleChildScrollView(
-                            controller: _scroll,
-                            physics: const BouncingScrollPhysics(),
-                            padding:
-                                const EdgeInsets.fromLTRB(14, 14, 14, 100),
-                            child: Column(
-                              children: [
-                                FeaturedPostCard(
-                                    post: _posts.first,
-                                    showBookmark: true),
-                                const SizedBox(height: 14),
-                                ..._posts.skip(1).map((post) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(
-                                        bottom: 10),
-                                    child: SidePostCard(
-                                        post: post,
-                                        showBookmark: true),
-                                  );
-                                }).toList(),
-                                if (_hasMore)
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        top: 10, bottom: 10),
-                                    child: _buildLoadMore(),
-                                  ),
-                                if (!_hasMore && _posts.length > 5)
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        top: 16, bottom: 40),
-                                    child: Text(
-                                      'همه مطالب نمایش داده شد.',
-                                      style: TextStyle(
-                                          color: mutC, fontSize: 12),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadMore() {
-    return GestureDetector(
-      onTap: _loadingMore ? null : _loadMore,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 12),
-        decoration: BoxDecoration(
-          color: pnl,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: lineC),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_loadingMore)
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: accentGreen),
-              )
-            else
-              Icon(Icons.arrow_back_ios_new_rounded,
-                  size: 12, color: txtC),
-            const SizedBox(width: 8),
-            Text(
-              _loadingMore ? 'در حال بارگذاری...' : 'مشاهده بیشتر',
-              style: TextStyle(
-                color: txtC,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/* ==================== BOOKMARKS PAGE ==================== */
-
-class BookmarksPage extends StatefulWidget {
-  const BookmarksPage({super.key});
-  @override
-  State<BookmarksPage> createState() => _BookmarksPageState();
-}
-
-class _BookmarksPageState extends State<BookmarksPage> {
-  final _allPosts = <dynamic>[];
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadAll();
-  }
-
-  Future<void> _loadAll() async {
-    setState(() => _loading = true);
-    try {
-      final list = await getPostsPaged(perPage: 50, page: 1);
-      _allPosts.clear();
-      _allPosts.addAll(list);
-    } catch (_) {}
-    if (mounted) setState(() => _loading = false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => ValueListenableBuilder<Set<String>>(
-        valueListenable: bookmarkNotifier,
-        builder: (context, bookmarks, __) {
-          final saved =
-              _allPosts.where((p) => bookmarks.contains(pId(p))).toList();
-
-          return Scaffold(
-            backgroundColor: bgC,
-            appBar: AppBar(
-              title: const Text(
-                'نشان‌شده‌ها',
-                style: TextStyle(
-                    fontWeight: FontWeight.w900, fontFamily: 'Vazirmatn'),
-              ),
-              backgroundColor: bgC,
-              foregroundColor: txtC,
-              elevation: 0,
-            ),
-            body: _loading
-                ? const Padding(
-                    padding: EdgeInsets.all(14),
-                    child: Column(
-                      children: [
-                        PostSkeleton(),
-                        PostSkeleton(),
-                        PostSkeleton(),
-                      ],
-                    ),
-                  )
-                : saved.isEmpty
-                    ? const EmptyWidget(
-                        text:
-                            'هنوز مقاله‌ای را نشان نکرده‌اید.\nبا زدن آیکون نشان روی کارت‌ها، اینجا ذخیره می‌شوند.')
-                    : RefreshIndicator(
-                        color: accentGreen,
-                        backgroundColor: pnl,
-                        onRefresh: _loadAll,
-                        child: ListView.builder(
-                          physics: const BouncingScrollPhysics(),
-                          padding:
-                              const EdgeInsets.fromLTRB(14, 14, 14, 100),
-                          itemCount: saved.length,
-                          itemBuilder: (c, i) => ModernPostCard(
-                              post: saved[i], showBookmark: true),
-                        ),
-                      ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/* ==================== NEWS ==================== */
-
-class NewsPage extends StatefulWidget {
-  const NewsPage({super.key});
-  @override
-  State<NewsPage> createState() => _NewsPageState();
-}
-
-class _NewsPageState extends State<NewsPage> {
-  final _posts = <dynamic>[];
-  int _page = 1;
-  bool _loading = false;
-  bool _hasMore = true;
-  String? _error;
-  int? _catId;
-  final _scroll = ScrollController(keepScrollOffset: false);
-
-  @override
-  void initState() {
-    super.initState();
-    _init();
-    _scroll.addListener(() {
-      if (_scroll.position.pixels >=
-              _scroll.position.maxScrollExtent - 400 &&
-          !_loading &&
-          _hasMore) {
-        _load();
-      }
-    });
-  }
-
-  Future<void> _init() async {
-    setState(() => _loading = true);
-    try {
-      _catId = await getCatIdBySlug('sports-news-and-events');
-      if (_catId == null) throw Exception('دسته‌بندی اخبار یافت نشد');
-      await _load();
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
-    }
-  }
-
-  Future<void> _load() async {
-    if (_loading && _posts.isNotEmpty) return;
-    if (!_hasMore) return;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final list = await getPostsPaged(
-          perPage: perPageSize, page: _page, catId: _catId);
-      setState(() {
-        if (list.isEmpty) {
-          _hasMore = false;
-        } else {
-          _posts.addAll(list);
-          _page++;
-          if (list.length < perPageSize) _hasMore = false;
-        }
-        _loading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
-    }
-  }
-
-  Future<void> _refresh() async {
-    _postsCache.clear();
-    _postsCacheTime.clear();
-    setState(() {
-      _posts.clear();
-      _page = 1;
-      _hasMore = true;
-      _error = null;
-    });
-    await _load();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => Scaffold(
-        backgroundColor: bgC,
-        body: Column(
-          children: [
-            ModernHeader(context, 'اخبار و رویدادها'),
-            Expanded(
-              child: _posts.isEmpty && _loading
-                  ? const Padding(
-                      padding: EdgeInsets.all(14),
-                      child: Column(
-                        children: [
-                          PostSkeleton(),
-                          PostSkeleton(),
-                          PostSkeleton(),
-                          PostSkeleton(),
-                        ],
-                      ),
-                    )
-                  : _posts.isEmpty && _error != null
-                      ? ErrorBox(
-                          message: 'خطا در دریافت اخبار.\n$_error',
-                          onRetry: _refresh)
-                      : _posts.isEmpty
-                          ? const EmptyWidget(text: 'خبری پیدا نشد.')
-                          : RefreshIndicator(
-                              color: accentGreen,
-                              backgroundColor: pnl,
-                              onRefresh: _refresh,
-                              child: ListView.builder(
-                                controller: _scroll,
-                                cacheExtent: 800,
-                                physics: const BouncingScrollPhysics(),
-                                padding:
-                                    const EdgeInsets.fromLTRB(14, 14, 14, 120),
-                                itemCount:
-                                    _posts.length + (_hasMore ? 1 : 0),
-                                itemBuilder: (c, i) {
-                                  if (i >= _posts.length) {
-                                    return Padding(
-                                      padding: const EdgeInsets.all(20),
-                                      child: Center(
-                                        child: CircularProgressIndicator(
-                                            color: accentGreen),
-                                      ),
-                                    );
-                                  }
-                                  return ModernPostCard(
-                                      post: _posts[i], showBookmark: true);
-                                },
-                              ),
-                            ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-/* ==================== SHOP ==================== */
-
-class ShopPage extends StatefulWidget {
-  const ShopPage({super.key});
-  @override
-  State<ShopPage> createState() => _ShopPageState();
-}
-
-class _ShopPageState extends State<ShopPage> {
-  final _products = <dynamic>[];
-  int _page = 1;
-  bool _loading = false;
-  bool _hasMore = true;
-  String? _error;
-  final _scroll = ScrollController(keepScrollOffset: false);
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-    _scroll.addListener(() {
-      if (_scroll.position.pixels >=
-              _scroll.position.maxScrollExtent - 400 &&
-          !_loading &&
-          _hasMore) {
-        _load();
-      }
-    });
-  }
-
-  Future<void> _load() async {
-    if (_loading || !_hasMore) return;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final list =
-          await getProductsPaged(perPage: perPageSize, page: _page);
-      setState(() {
-        if (list.isEmpty) {
-          _hasMore = false;
-        } else {
-          _products.addAll(list);
-          _page++;
-          if (list.length < perPageSize) _hasMore = false;
-        }
-        _loading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
-    }
-  }
-
-  Future<void> _refresh() async {
-    setState(() {
-      _products.clear();
-      _page = 1;
-      _hasMore = true;
-      _error = null;
-    });
-    await _load();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => Scaffold(
-        backgroundColor: bgC,
-        body: Column(
-          children: [
-            ModernHeader(context, 'فروشگاه'),
-            Expanded(
-              child: _products.isEmpty && _loading
-                  ? const Padding(
-                      padding: EdgeInsets.all(14),
-                      child: Column(
-                        children: [
-                          PostSkeleton(),
-                          PostSkeleton(),
-                          PostSkeleton(),
-                          PostSkeleton(),
-                        ],
-                      ),
-                    )
-                  : _products.isEmpty && _error != null
-                      ? ErrorBox(
-                          message: 'خطا در دریافت محصولات.\n$_error',
-                          onRetry: _refresh)
-                      : _products.isEmpty
-                          ? const EmptyWidget(text: 'محصولی پیدا نشد.')
-                          : RefreshIndicator(
-                              color: accentGreen,
-                              backgroundColor: pnl,
-                              onRefresh: _refresh,
-                              child: ListView.builder(
-                                controller: _scroll,
-                                cacheExtent: 800,
-                                physics: const BouncingScrollPhysics(),
-                                padding:
-                                    const EdgeInsets.fromLTRB(14, 14, 14, 120),
-                                itemCount: _products.length +
-                                    (_hasMore ? 1 : 0),
-                                itemBuilder: (c, i) {
-                                  if (i >= _products.length) {
-                                    return Padding(
-                                      padding: const EdgeInsets.all(20),
-                                      child: Center(
-                                        child: CircularProgressIndicator(
-                                            color: accentGreen),
-                                      ),
-                                    );
-                                  }
-                                  return ModernProductCard(
-                                      product: _products[i]);
-                                },
-                              ),
-                            ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/* ==================== SEARCH ==================== */
-
-class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
-  @override
-  State<SearchPage> createState() => _SearchPageState();
-}
-
-class _SearchPageState extends State<SearchPage> {
-  final _ctrl = TextEditingController();
-  final _focus = FocusNode();
-  Future<List>? _f;
-  String _q = '';
-  Timer? _debounce;
-  List<String> _history = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadHistory();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _focus.requestFocus();
-    });
-  }
-
-  Future<void> _loadHistory() async {
-    try {
-      final saved = await _storage.read(key: 'search_history');
-      if (saved != null && saved.isNotEmpty) {
-        _history = (json.decode(saved) as List).cast<String>();
-        if (mounted) setState(() {});
-      }
-    } catch (_) {}
-  }
-
-  Future<void> _saveHistory(String q) async {
-    if (q.isEmpty) return;
-    _history.remove(q);
-    _history.insert(0, q);
-    if (_history.length > 10) _history = _history.sublist(0, 10);
-    try {
-      await _storage.write(
-          key: 'search_history', value: json.encode(_history));
-    } catch (_) {}
-    if (mounted) setState(() {});
-  }
-
-  Future<void> _clearHistory() async {
-    _history.clear();
-    try {
-      await _storage.delete(key: 'search_history');
-    } catch (_) {}
-    if (mounted) setState(() {});
-  }
-
-  void _onChanged(String value) {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 400), () {
-      final q = value.trim();
-      if (q.isEmpty) {
-        setState(() {
-          _q = '';
-          _f = null;
-        });
-        return;
-      }
-      setState(() {
-        _q = q;
-        _f = searchExact(q);
-      });
-      _saveHistory(q);
-    });
-  }
-
-  void _searchFromHistory(String q) {
-    _ctrl.text = q;
-    _onChanged(q);
-  }
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    _ctrl.dispose();
-    _focus.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => Scaffold(
-        backgroundColor: bgC,
-        appBar: AppBar(
-          title: const Text(
-            'جستجو',
-            style: TextStyle(
-                fontWeight: FontWeight.w900, fontFamily: 'Vazirmatn'),
-          ),
-          backgroundColor: bgC,
-          foregroundColor: txtC,
-          elevation: 0,
-        ),
-        body: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 6, 14, 14),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: pnl,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: lineC),
-                ),
-                child: TextField(
-                  controller: _ctrl,
-                  focusNode: _focus,
-                  textInputAction: TextInputAction.search,
-                  onChanged: _onChanged,
-                  style: TextStyle(
-                      color: txtC, fontFamily: 'Vazirmatn', fontSize: 14),
-                  decoration: InputDecoration(
-                    hintText: 'عبارت مورد نظر...',
-                    hintStyle:
-                        TextStyle(color: mutC, fontFamily: 'Vazirmatn'),
-                    prefixIcon:
-                        Icon(Icons.search_rounded, color: accentGreen),
-                    suffixIcon: _ctrl.text.isNotEmpty
-                        ? IconButton(
-                            icon: Icon(Icons.close_rounded,
-                                color: mutC, size: 20),
-                            onPressed: () {
-                              _ctrl.clear();
-                              _onChanged('');
-                            },
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: Colors.transparent,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              child: _f == null
-                  ? _buildHistory()
-                  : FutureBuilder<List>(
-                      future: _f,
-                      builder: (c, s) {
-                        if (s.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Padding(
-                            padding: EdgeInsets.all(14),
-                            child: Column(
-                              children: [
-                                PostSkeleton(),
-                                PostSkeleton(),
-                                PostSkeleton(),
-                              ],
-                            ),
-                          );
-                        }
-                        if (s.hasError) {
-                          return ErrorBox(
-                              message: 'خطا در جستجو.\n${s.error}',
-                              onRetry: null);
-                        }
-                        final posts = s.data ?? [];
-                        if (posts.isEmpty) {
-                          return EmptyWidget(
-                              text: 'نتیجه‌ای برای «$_q» پیدا نشد.');
-                        }
-                        return ListView.builder(
-                          cacheExtent: 800,
-                          physics: const BouncingScrollPhysics(),
-                          padding:
-                              const EdgeInsets.fromLTRB(14, 0, 14, 100),
-                          itemCount: posts.length,
-                          itemBuilder: (c, i) => ModernPostCard(
-                              post: posts[i], showBookmark: true),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHistory() {
-    if (_history.isEmpty) {
-      return const EmptyWidget(text: 'عبارتی برای جستجو وارد کنید');
-    }
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.history_rounded, color: mutC, size: 18),
-              const SizedBox(width: 6),
-              Text(
-                'جستجوهای اخیر',
-                style: TextStyle(
-                  color: txtC,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  fontFamily: 'Vazirmatn',
-                ),
-              ),
-              const Spacer(),
-              GestureDetector(
-                onTap: _clearHistory,
-                child: Text(
-                  'پاک کردن',
-                  style: TextStyle(
-                    color: rose,
-                    fontSize: 12,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _history
-                .map((q) => GestureDetector(
-                      onTap: () => _searchFromHistory(q),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 9),
-                        decoration: BoxDecoration(
-                          color: pnl,
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: lineC),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.search_rounded,
-                                color: mutC, size: 14),
-                            const SizedBox(width: 6),
-                            Text(
-                              q,
-                              style: TextStyle(
-                                color: txtC,
-                                fontSize: 12,
-                                fontFamily: 'Vazirmatn',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ))
-                .toList(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/* ==================== ACCOUNT ==================== */
-
-class AccountPage extends StatefulWidget {
-  const AccountPage({super.key});
-  @override
-  State<AccountPage> createState() => _AccountPageState();
-}
-
-class _AccountPageState extends State<AccountPage> {
-  InAppWebViewController? _controller;
-  bool _l = true;
-  double _progress = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _restore();
-  }
-
-  Future<void> _restore() async {
-    try {
-      final saved = await _storage.read(key: 'wc_cookies');
-      if (saved != null && saved.isNotEmpty) {
-        final list = json.decode(saved) as List;
-        for (var item in list) {
-          await CookieManager.instance().setCookie(
-            url: WebUri(site),
-            name: item['name'],
-            value: item['value'],
-            domain: item['domain'],
-            path: item['path'],
-            isHttpOnly: item['httponly'] ?? false,
-            isSecure: item['secure'] ?? false,
-            expiresDate: item['expiry'] != null
-                ? (item['expiry'] as int) * 1000
-                : null,
-          );
-        }
-      }
-    } catch (_) {}
-  }
-
-  Future<void> _save() async {
-    try {
-      if (_controller == null) return;
-      final cookies =
-          await CookieManager.instance().getCookies(url: WebUri(site));
-      final loginCookies = cookies
-          .where((c) =>
-              c.name.startsWith('wordpress_logged_in') ||
-              c.name.startsWith('wordpress_sec'))
-          .toList();
-      if (loginCookies.isNotEmpty) {
-        final list = loginCookies
-            .map((c) => {
-                  'name': c.name,
-                  'value': c.value,
-                  'domain': c.domain,
-                  'path': c.path,
-                  'httponly': c.isHttpOnly,
-                  'secure': c.isSecure,
-                  'expiry': c.expiresDate,
-                })
-            .toList();
-        await _storage.write(key: 'wc_cookies', value: json.encode(list));
-      } else {
-        await _storage.delete(key: 'wc_cookies');
-        await CookieManager.instance().deleteAllCookies();
-      }
-    } catch (_) {}
-  }
-
-  bool _isTrustedUrl(String url) {
-    return url.contains('itarbiatbadani.ir') ||
-        url.contains('zarinpal.com') ||
-        url.contains('shaparak.ir') ||
-        url.contains('sep.shaparak.ir') ||
-        url.contains('behpardakht.com') ||
-        url.contains('mellatbank.ir') ||
-        url.contains('asanpardakht.ir') ||
-        url.contains('idpay.ir') ||
-        url.contains('pay.ir') ||
-        url.contains('sadad.ir') ||
-        url.contains('pep.co.ir') ||
-        url.contains('parsianbank.ir') ||
-        url.contains('sb24.ir') ||
-        url.contains('my-account') ||
-        url.contains('checkout') ||
-        url.contains('cart');
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => Scaffold(
-        backgroundColor: bgC,
-        body: Column(
-          children: [
-            ModernHeaderWithAdmin(context, 'حساب من'),
-            if (_l && _progress > 0)
-              LinearProgressIndicator(
-                value: _progress,
-                backgroundColor: lineC,
-                color: accentGreen,
-                minHeight: 3,
-              ),
-            Expanded(
-              child: Stack(
-                children: [
-                  InAppWebView(
-                    initialUrlRequest:
-                        URLRequest(url: WebUri('$site/my-account/')),
-                    initialSettings: InAppWebViewSettings(
-                      javaScriptEnabled: true,
-                      useOnDownloadStart: true,
-                      useShouldOverrideUrlLoading: true,
-                      userAgent:
-                          'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
-                    ),
-                    onWebViewCreated: (c) => _controller = c,
-                    onLoadStart: (c, url) => setState(() => _l = true),
-                    onLoadStop: (c, url) async {
-                      setState(() {
-                        _l = false;
-                        _progress = 0;
-                      });
-                      await _save();
-                    },
-                    onProgressChanged: (c, p) =>
-                        setState(() => _progress = p / 100),
-                    onDownloadStartRequest: (controller, request) async {
-                      await openExternalUrl(request.url.toString());
-                    },
-                    shouldOverrideUrlLoading: (controller, action) async {
-                      final url = action.request.url.toString();
-                      if (_isTrustedUrl(url)) {
-                        return NavigationActionPolicy.ALLOW;
-                      }
-                      if (await canLaunchUrl(Uri.parse(url))) {
-                        await launchUrl(Uri.parse(url),
-                            mode: LaunchMode.externalApplication);
-                      }
-                      return NavigationActionPolicy.CANCEL;
-                    },
-                  ),
-                  if (_l && _progress == 0)
-                    Center(
-                      child: CircularProgressIndicator(color: accentGreen),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/* ==================== MODERN WEB PAGE ==================== */
-
-class ModernWebPage extends StatefulWidget {
-  final String url;
-  final String title;
-  const ModernWebPage({
-    super.key,
-    required this.url,
-    required this.title,
-  });
-  @override
-  State<ModernWebPage> createState() => _ModernWebPageState();
-}
-
-class _ModernWebPageState extends State<ModernWebPage> {
-  bool _l = true;
-  double _progress = 0;
-  InAppWebViewController? _controller;
-
-  bool _isTrustedUrl(String url) {
-    return url.contains('itarbiatbadani.ir') ||
-        url.contains('zarinpal.com') ||
-        url.contains('shaparak.ir') ||
-        url.contains('sep.shaparak.ir') ||
-        url.contains('behpardakht.com') ||
-        url.contains('mellatbank.ir') ||
-        url.contains('asanpardakht.ir') ||
-        url.contains('idpay.ir') ||
-        url.contains('pay.ir') ||
-        url.contains('sadad.ir') ||
-        url.contains('pep.co.ir') ||
-        url.contains('parsianbank.ir') ||
-        url.contains('sb24.ir') ||
-        url.contains('my-account') ||
-        url.contains('checkout') ||
-        url.contains('cart');
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: bgC,
-      appBar: AppBar(
-        title: Text(
-          widget.title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w900,
-            fontSize: 14,
-            fontFamily: 'Vazirmatn',
-          ),
-        ),
-        backgroundColor: bgC,
-        foregroundColor: txtC,
-        elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: () => sharePost(widget.url, widget.title),
-            icon: Icon(Icons.ios_share_rounded, color: txtC),
-            tooltip: 'اشتراک',
-          ),
-          IconButton(
-            onPressed: () {
-              _controller?.reload();
-            },
-            icon: Icon(Icons.refresh_rounded, color: txtC),
-            tooltip: 'رفرش',
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(2),
-          child: AnimatedOpacity(
-            opacity: _l ? 1 : 0,
-            duration: const Duration(milliseconds: 300),
-            child: LinearProgressIndicator(
-              value: _progress > 0 ? _progress : null,
-              backgroundColor: lineC,
-              color: accentGreen,
-              minHeight: 2,
-            ),
-          ),
-        ),
-      ),
-      body: Stack(
-        children: [
-          InAppWebView(
-            initialUrlRequest: URLRequest(url: WebUri(widget.url)),
-            initialSettings: InAppWebViewSettings(
-              javaScriptEnabled: true,
-              useShouldOverrideUrlLoading: true,
-              mediaPlaybackRequiresUserGesture: false,
-              useOnDownloadStart: true,
-              supportZoom: true,
-            ),
-            onWebViewCreated: (c) => _controller = c,
-            onLoadStart: (c, url) => setState(() => _l = true),
-            onLoadStop: (c, url) => setState(() {
-              _l = false;
-              _progress = 0;
-            }),
-            onProgressChanged: (c, p) =>
-                setState(() => _progress = p / 100),
-            onDownloadStartRequest: (controller, request) async {
-              await openExternalUrl(request.url.toString());
-            },
-            shouldOverrideUrlLoading: (controller, action) async {
-              final url = action.request.url.toString();
-              if (_isTrustedUrl(url)) {
-                return NavigationActionPolicy.ALLOW;
-              }
-              if (await canLaunchUrl(Uri.parse(url))) {
-                await launchUrl(Uri.parse(url),
-                    mode: LaunchMode.externalApplication);
-              }
-              return NavigationActionPolicy.CANCEL;
-            },
-          ),
-          if (_l && _progress == 0)
-            Center(child: CircularProgressIndicator(color: accentGreen)),
-        ],
-      ),
-    );
-  }
-}
-/* ==================== MODERN HEADER ==================== */
-
-Widget ModernHeader(BuildContext context, [String? t]) {
-  return SafeArea(
-    bottom: false,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(23),
-              border: Border.all(color: lineC),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                logo,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Image.network(
-                  logoNet,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.sports_rounded,
-                    color: Color(0xff10b981),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  t ?? 'تربیت بدنی و علوم ورزشی',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: txtC,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'به اپلیکیشن خوش آمدید',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: mutC,
-                    fontSize: 11,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          _HeaderIconButton(
-            icon: Icons.bookmark_outline_rounded,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const BookmarksPage()),
-            ),
-          ),
-          const SizedBox(width: 4),
-          ValueListenableBuilder<bool>(
-            valueListenable: darkModeNotifier,
-            builder: (c, isDark, _) => _HeaderIconButton(
-              icon: isDark
-                  ? Icons.light_mode_rounded
-                  : Icons.dark_mode_rounded,
-              onTap: () async {
-                HapticFeedback.lightImpact();
-                darkModeNotifier.value = !darkModeNotifier.value;
-                await _storage.write(
-                  key: 'dark_mode',
-                  value: darkModeNotifier.value.toString(),
-                );
-              },
-            ),
-          ),
-          const SizedBox(width: 4),
-          _HeaderIconButton(
-            icon: Icons.search_rounded,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SearchPage()),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-Widget ModernHeaderWithAdmin(BuildContext context, [String? t]) {
-  return SafeArea(
-    bottom: false,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(23),
-              border: Border.all(color: lineC),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                logo,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Image.network(
-                  logoNet,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.sports_rounded,
-                    color: Color(0xff10b981),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              t ?? 'حساب من',
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                color: txtC,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-          ),
-          _HeaderIconButton(
-            icon: Icons.admin_panel_settings_rounded,
-            color: accentBlue,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AdminLoginPage()),
-            ),
-          ),
-          const SizedBox(width: 4),
-          ValueListenableBuilder<bool>(
-            valueListenable: darkModeNotifier,
-            builder: (c, isDark, _) => _HeaderIconButton(
-              icon: isDark
-                  ? Icons.light_mode_rounded
-                  : Icons.dark_mode_rounded,
-              onTap: () async {
-                HapticFeedback.lightImpact();
-                darkModeNotifier.value = !darkModeNotifier.value;
-                await _storage.write(
-                  key: 'dark_mode',
-                  value: darkModeNotifier.value.toString(),
-                );
-              },
-            ),
-          ),
-          const SizedBox(width: 4),
-          _HeaderIconButton(
-            icon: Icons.search_rounded,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SearchPage()),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-class _HeaderIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final Color? color;
-  const _HeaderIconButton({
-    required this.icon,
-    required this.onTap,
-    this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      child: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          color: pnl,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: lineC),
-        ),
-        child: Icon(icon, color: color ?? txtC, size: 20),
       ),
     );
   }
@@ -3005,7 +2422,7 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    const ModernLiveDot(),
+                    const _WhiteLiveDotRed(),
                     const SizedBox(width: 8),
                     Text(
                       'اخبار فوری',
@@ -3069,6 +2486,69 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
                   ),
                 ),
               const SizedBox(height: 6),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _WhiteLiveDotRed extends StatefulWidget {
+  const _WhiteLiveDotRed();
+  @override
+  State<_WhiteLiveDotRed> createState() => _WhiteLiveDotRedState();
+}
+
+class _WhiteLiveDotRedState extends State<_WhiteLiveDotRed>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        final t = _ctrl.value;
+        final scale = 1.0 + (t < 0.5 ? t * 0.6 : (1 - t) * 0.6);
+        final opacity = 1.0 - t;
+        return SizedBox(
+          width: 14,
+          height: 14,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 14 * scale,
+                height: 14 * scale,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xfff43f5e).withOpacity(opacity * 0.5),
+                ),
+              ),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xfff43f5e),
+                ),
+              ),
             ],
           ),
         );
@@ -3280,7 +2760,6 @@ class _ModernServicesSectionState extends State<ModernServicesSection> {
     );
   }
 }
-
 /* ==================== MODERN POST CARD ==================== */
 
 class ModernPostCard extends StatefulWidget {
@@ -3339,14 +2818,14 @@ class _ModernPostCardState extends State<ModernPostCard> {
                         placeholder: (_, __) => Container(color: pnl2),
                         errorWidget: (_, __, ___) => Container(
                           color: pnl2,
-                          child: const Icon(Icons.article_rounded,
-                              color: Color(0xff10b981), size: 32),
+                          child: Icon(Icons.article_rounded,
+                              color: accentNotifier.value, size: 32),
                         ),
                       )
                     : Container(
                         color: pnl2,
-                        child: const Icon(Icons.article_rounded,
-                            color: Color(0xff10b981), size: 32),
+                        child: Icon(Icons.article_rounded,
+                            color: accentNotifier.value, size: 32),
                       ),
               ),
             ),
@@ -3464,6 +2943,7 @@ class _ModernPostCardState extends State<ModernPostCard> {
     );
   }
 }
+
 /* ==================== FEATURED POST CARD ==================== */
 
 class FeaturedPostCard extends StatelessWidget {
@@ -3522,15 +3002,15 @@ class FeaturedPostCard extends StatelessWidget {
                         placeholder: (_, __) => Container(color: pnl2),
                         errorWidget: (_, __, ___) => Container(
                           color: pnl2,
-                          child: const Icon(Icons.article_rounded,
-                              color: Color(0xff10b981), size: 60),
+                          child: Icon(Icons.article_rounded,
+                              color: accentNotifier.value, size: 60),
                         ),
                       )
                     else
                       Container(
                         color: pnl2,
-                        child: const Icon(Icons.article_rounded,
-                            color: Color(0xff10b981), size: 60),
+                        child: Icon(Icons.article_rounded,
+                            color: accentNotifier.value, size: 60),
                       ),
                     if (showBookmark)
                       Positioned(
@@ -3712,7 +3192,7 @@ class FeaturedPostCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 7),
                         decoration: BoxDecoration(
-                          color: accentGreen.withOpacity(0.12),
+                          color: accentNotifier.value.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Row(
@@ -3721,7 +3201,7 @@ class FeaturedPostCard extends StatelessWidget {
                             Text(
                               'مطالعه',
                               style: TextStyle(
-                                color: accentGreen2,
+                                color: accentNotifier.value,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w900,
                                 fontFamily: 'Vazirmatn',
@@ -3729,7 +3209,7 @@ class FeaturedPostCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Icon(Icons.arrow_back_rounded,
-                                color: accentGreen2, size: 12),
+                                color: accentNotifier.value, size: 12),
                           ],
                         ),
                       ),
@@ -3897,14 +3377,14 @@ class SidePostCard extends StatelessWidget {
                         placeholder: (_, __) => Container(color: pnl2),
                         errorWidget: (_, __, ___) => Container(
                           color: pnl2,
-                          child: const Icon(Icons.article_rounded,
-                              color: Color(0xff10b981), size: 26),
+                          child: Icon(Icons.article_rounded,
+                              color: accentNotifier.value, size: 26),
                         ),
                       )
                     : Container(
                         color: pnl2,
-                        child: const Icon(Icons.article_rounded,
-                            color: Color(0xff10b981), size: 26),
+                        child: Icon(Icons.article_rounded,
+                            color: accentNotifier.value, size: 26),
                       ),
               ),
             ),
@@ -3972,17 +3452,17 @@ class ModernProductCard extends StatelessWidget {
                                 Container(color: pnl2),
                             errorWidget: (_, __, ___) => Container(
                               color: pnl2,
-                              child: const Icon(
+                              child: Icon(
                                   Icons.shopping_bag_rounded,
-                                  color: Color(0xff10b981),
+                                  color: accentNotifier.value,
                                   size: 32),
                             ),
                           )
                         : Container(
                             color: pnl2,
-                            child: const Icon(
+                            child: Icon(
                                 Icons.shopping_bag_rounded,
-                                color: Color(0xff10b981),
+                                color: accentNotifier.value,
                                 size: 32),
                           ),
                     if (isOnSale)
@@ -4078,14 +3558,14 @@ class ModernProductCard extends StatelessWidget {
                           inStock
                               ? Icons.check_circle_rounded
                               : Icons.cancel_rounded,
-                          color: inStock ? accentGreen : rose,
+                          color: inStock ? accentGreen2 : rose,
                           size: 13,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           inStock ? 'موجود' : 'ناموجود',
                           style: TextStyle(
-                            color: inStock ? accentGreen : rose,
+                            color: inStock ? accentGreen2 : rose,
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                             fontFamily: 'Vazirmatn',
@@ -4103,7 +3583,6 @@ class ModernProductCard extends StatelessWidget {
     );
   }
 }
-
 /* ==================== MODERN CAT GRID ==================== */
 
 class ModernCatGrid extends StatelessWidget {
@@ -4235,14 +3714,14 @@ class ModernSocial extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [accentGreen, accentGreen2],
+                    colors: [accentNotifier.value, accentGreen2],
                   ),
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
               const SizedBox(width: 10),
               Icon(Icons.connect_without_contact_rounded,
-                  color: accentGreen, size: 20),
+                  color: accentNotifier.value, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -4336,13 +3815,13 @@ class ModernSectionTitle extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [accentGreen, accentGreen2],
+                  colors: [accentNotifier.value, accentGreen2],
                 ),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
             const SizedBox(width: 10),
-            Icon(icon, color: accentGreen, size: 20),
+            Icon(icon, color: accentNotifier.value, size: 20),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -4409,7 +3888,7 @@ class _ModernLiveDotState extends State<ModernLiveDot>
                 height: 16 * scale,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: rose.withOpacity(opacity * 0.5),
+                  color: const Color(0xfff43f5e).withOpacity(opacity * 0.5),
                 ),
               ),
               const DecoratedBox(
@@ -4427,7 +3906,7 @@ class _ModernLiveDotState extends State<ModernLiveDot>
   }
 }
 
-/* ==================== MODERN URGENT NEWS CARD (NO INDEX) ==================== */
+/* ==================== MODERN URGENT NEWS CARD ==================== */
 
 class ModernUrgentNewsCard extends StatefulWidget {
   final dynamic news;
@@ -4494,6 +3973,7 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
     final excerpt = pExcerpt(news, maxChars: 120);
     final readTime = _readTimeMinutes(news);
     final freshness = _freshnessValue(news);
+    final isDark = darkModeNotifier.value;
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
@@ -4512,17 +3992,40 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
         decoration: BoxDecoration(
-          color: pnl,
+          gradient: LinearGradient(
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+            colors: isDark
+                ? [
+                    const Color(0xff2a0d1a),
+                    const Color(0xff1a0f2e),
+                    const Color(0xff141f36),
+                  ]
+                : [
+                    const Color(0xfffff5f7),
+                    const Color(0xfffff8f0),
+                    const Color(0xffffffff),
+                  ],
+          ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: _pressed ? rose.withOpacity(0.6) : lineC,
-            width: _pressed ? 1.5 : 1,
+            color: _pressed
+                ? const Color(0xfff43f5e)
+                : const Color(0xfff43f5e).withOpacity(isDark ? 0.35 : 0.25),
+            width: _pressed ? 2 : 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: rose.withOpacity(_pressed ? 0.15 : 0.06),
+              color: const Color(0xfff43f5e)
+                  .withOpacity(_pressed ? 0.35 : 0.15),
+              blurRadius: _pressed ? 28 : 18,
+              offset: const Offset(0, 6),
+            ),
+            BoxShadow(
+              color: const Color(0xfffb923c)
+                  .withOpacity(_pressed ? 0.25 : 0.10),
               blurRadius: _pressed ? 20 : 12,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -4531,6 +4034,42 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
           child: Stack(
             children: [
               Positioned(
+                top: -40,
+                right: -40,
+                child: Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xfff43f5e)
+                            .withOpacity(isDark ? 0.35 : 0.18),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -50,
+                left: -50,
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xfffb923c)
+                            .withOpacity(isDark ? 0.22 : 0.12),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
                 top: 0,
                 bottom: 0,
                 right: 0,
@@ -4538,7 +4077,7 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                   animation: _pulseCtrl,
                   builder: (context, _) {
                     final t = _pulseCtrl.value;
-                    final opacity = 0.6 + (t < 0.5 ? t : 1 - t) * 0.4;
+                    final glow = 0.7 + (t < 0.5 ? t : 1 - t) * 0.3;
                     return Container(
                       width: 5,
                       decoration: BoxDecoration(
@@ -4546,10 +4085,21 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            rose.withOpacity(opacity),
-                            const Color(0xffbe123c),
+                            const Color(0xfff43f5e).withOpacity(glow),
+                            const Color(0xfffb923c),
+                            const Color(0xfffbbf24),
+                            const Color(0xfffb923c),
+                            const Color(0xfff43f5e).withOpacity(glow),
                           ],
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xfff43f5e)
+                                .withOpacity(glow * 0.6),
+                            blurRadius: 12,
+                            spreadRadius: 1,
+                          ),
+                        ],
                       ),
                     );
                   },
@@ -4563,8 +4113,44 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                     Row(
                       children: [
                         Container(
-                          width: 30,
-                          height: 30,
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topRight,
+                              end: Alignment.bottomLeft,
+                              colors: [
+                                Color(0xfff43f5e),
+                                Color(0xfffb923c),
+                                Color(0xfffbbf24),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xfff43f5e)
+                                    .withOpacity(0.5),
+                                blurRadius: 14,
+                                offset: const Offset(0, 3),
+                              ),
+                              BoxShadow(
+                                color: const Color(0xfffbbf24)
+                                    .withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.bolt_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
                               colors: [
@@ -4572,43 +4158,29 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                                 Color(0xffbe123c),
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(9),
+                            borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
-                                color: rose.withOpacity(0.35),
-                                blurRadius: 8,
+                                color: const Color(0xfff43f5e)
+                                    .withOpacity(0.4),
+                                blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.bolt_rounded,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: rose.withOpacity(.12),
-                            borderRadius: BorderRadius.circular(7),
-                            border: Border.all(
-                                color: rose.withOpacity(.3), width: 0.8),
-                          ),
-                          child: Row(
+                          child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const ModernLiveDot(),
-                              const SizedBox(width: 5),
-                              const Text(
+                              _WhiteLiveDotSmall(),
+                              SizedBox(width: 6),
+                              Text(
                                 'فوری',
                                 style: TextStyle(
-                                  color: Color(0xfff43f5e),
-                                  fontSize: 10,
+                                  color: Colors.white,
+                                  fontSize: 10.5,
                                   fontWeight: FontWeight.w900,
                                   fontFamily: 'Vazirmatn',
+                                  letterSpacing: 0.3,
                                 ),
                               ),
                             ],
@@ -4628,7 +4200,7 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
                     Text(
                       title,
                       maxLines: 2,
@@ -4640,6 +4212,15 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                         fontWeight: FontWeight.w900,
                         height: 1.6,
                         fontFamily: 'Vazirmatn',
+                        shadows: isDark
+                            ? [
+                                Shadow(
+                                  color: const Color(0xfff43f5e)
+                                      .withOpacity(0.15),
+                                  blurRadius: 8,
+                                ),
+                              ]
+                            : null,
                       ),
                     ),
                     if (excerpt.isNotEmpty) ...[
@@ -4661,31 +4242,45 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                     ClipRRect(
                       borderRadius: BorderRadius.circular(999),
                       child: Container(
-                        height: 3,
-                        color: lineC,
+                        height: 4,
+                        color: isDark
+                            ? const Color(0xff2a1a2e)
+                            : const Color(0xffffe4e6),
                         child: FractionallySizedBox(
                           alignment: Alignment.centerRight,
                           widthFactor: freshness,
                           child: Container(
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
                                 colors: [
                                   Color(0xfff43f5e),
                                   Color(0xfffb923c),
+                                  Color(0xfffbbf24),
                                 ],
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xfffbbf24)
+                                      .withOpacity(0.5),
+                                  blurRadius: 6,
+                                ),
+                              ],
                             ),
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Container(height: 1, color: softLine),
+                    Container(
+                      height: 1,
+                      color: const Color(0xfff43f5e)
+                          .withOpacity(isDark ? 0.15 : 0.12),
+                    ),
                     const SizedBox(height: 10),
                     Row(
                       children: [
-                        Icon(Icons.access_time_rounded,
-                            size: 12, color: mutC),
+                        const Icon(Icons.access_time_rounded,
+                            size: 12, color: Color(0xfffb923c)),
                         const SizedBox(width: 4),
                         Text(
                           '$readTime دقیقه مطالعه',
@@ -4696,18 +4291,47 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                           ),
                         ),
                         const Spacer(),
-                        Text(
-                          'خواندن کامل',
-                          style: TextStyle(
-                            color: rose,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w800,
-                            fontFamily: 'Vazirmatn',
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xfff43f5e),
+                                Color(0xfffb923c),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(999),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xfff43f5e)
+                                    .withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'خواندن کامل',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w900,
+                                  fontFamily: 'Vazirmatn',
+                                ),
+                              ),
+                              SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_back_ios_new_rounded,
+                                color: Colors.white,
+                                size: 10,
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        Icon(Icons.arrow_back_ios_new_rounded,
-                            color: rose, size: 11),
                       ],
                     ),
                   ],
@@ -4717,6 +4341,72 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
           ),
         ),
       ),
+    );
+  }
+}
+
+/* ==================== WHITE LIVE DOT SMALL ==================== */
+
+class _WhiteLiveDotSmall extends StatefulWidget {
+  const _WhiteLiveDotSmall();
+
+  @override
+  State<_WhiteLiveDotSmall> createState() => _WhiteLiveDotSmallState();
+}
+
+class _WhiteLiveDotSmallState extends State<_WhiteLiveDotSmall>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        final t = _ctrl.value;
+        final scale = 1.0 + (t < 0.5 ? t * 0.6 : (1 - t) * 0.6);
+        final opacity = 1.0 - t;
+        return SizedBox(
+          width: 12,
+          height: 12,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 12 * scale,
+                height: 12 * scale,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(opacity * 0.6),
+                ),
+              ),
+              Container(
+                width: 7,
+                height: 7,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -4740,6 +4430,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
   late Animation<Offset> _slideAnim;
   final _scroll = ScrollController();
   bool _showAppBar = false;
+  double _readingProgress = 0;
 
   @override
   void initState() {
@@ -4765,6 +4456,15 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
       final show = _scroll.offset > 120;
       if (show != _showAppBar) {
         setState(() => _showAppBar = show);
+      }
+      if (_scroll.hasClients) {
+        final max = _scroll.position.maxScrollExtent;
+        if (max > 0) {
+          final p = (_scroll.offset / max).clamp(0.0, 1.0);
+          if ((p - _readingProgress).abs() > 0.01) {
+            setState(() => _readingProgress = p);
+          }
+        }
       }
     });
   }
@@ -4862,6 +4562,35 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                     ),
                   ],
                 ),
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: SafeArea(
+                    bottom: false,
+                    child: Container(
+                      height: 3,
+                      color: Colors.transparent,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: FractionallySizedBox(
+                          widthFactor: _readingProgress,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Color(0xfff43f5e),
+                                  Color(0xfffb923c),
+                                  Color(0xfffbbf24),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
                 _buildGlassAppBar(title),
               ],
             ),
@@ -4882,8 +4611,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                 : Colors.white.withOpacity(0.85))
             : Colors.transparent,
         border: _showAppBar
-            ? Border(
-                bottom: BorderSide(color: lineC, width: 0.5))
+            ? Border(bottom: BorderSide(color: lineC, width: 0.5))
             : null,
       ),
       child: SafeArea(
@@ -4960,152 +4688,272 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
     int readTime,
     int words,
   ) {
+    final isDark = darkModeNotifier.value;
     return Container(
       margin: const EdgeInsets.fromLTRB(14, 6, 14, 14),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
-          colors: darkModeNotifier.value
+          colors: isDark
               ? [
-                  const Color(0xff2a0f18),
-                  const Color(0xff141f36),
+                  const Color(0xff3a0f22),
+                  const Color(0xff2a1030),
+                  const Color(0xff1a1236),
                 ]
               : [
-                  const Color(0xfffff1f4),
-                  const Color(0xffffffff),
+                  const Color(0xffffebee),
+                  const Color(0xfffff3e0),
+                  const Color(0xfffffff8),
                 ],
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: rose.withOpacity(0.25)),
+        border: Border.all(
+          color: const Color(0xfff43f5e).withOpacity(0.4),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: rose.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
+            color: const Color(0xfff43f5e).withOpacity(0.25),
+            blurRadius: 28,
+            offset: const Offset(0, 10),
+          ),
+          BoxShadow(
+            color: const Color(0xfffbbf24).withOpacity(0.15),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -50,
+              right: -50,
+              child: Container(
+                width: 160,
+                height: 160,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
                     colors: [
-                      Color(0xfff43f5e),
-                      Color(0xffbe123c),
+                      const Color(0xfff43f5e)
+                          .withOpacity(isDark ? 0.4 : 0.2),
+                      Colors.transparent,
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: rose.withOpacity(0.35),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.bolt_rounded,
-                  color: Colors.white,
-                  size: 26,
                 ),
               ),
-              const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 11, vertical: 6),
+            ),
+            Positioned(
+              bottom: -60,
+              left: -60,
+              child: Container(
+                width: 140,
+                height: 140,
                 decoration: BoxDecoration(
-                  color: rose.withOpacity(.15),
-                  borderRadius: BorderRadius.circular(9),
-                  border: Border.all(
-                      color: rose.withOpacity(.4), width: 0.8),
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xfffbbf24)
+                          .withOpacity(isDark ? 0.3 : 0.18),
+                      Colors.transparent,
+                    ],
+                  ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
                   children: [
-                    const ModernLiveDot(),
-                    const SizedBox(width: 6),
-                    const Text(
-                      'خبر فوری',
-                      style: TextStyle(
-                        color: Color(0xfff43f5e),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w900,
-                        fontFamily: 'Vazirmatn',
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topRight,
+                          end: Alignment.bottomLeft,
+                          colors: [
+                            Color(0xfff43f5e),
+                            Color(0xfffb923c),
+                            Color(0xfffbbf24),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xfff43f5e)
+                                .withOpacity(0.55),
+                            blurRadius: 20,
+                            offset: const Offset(0, 5),
+                          ),
+                          BoxShadow(
+                            color: const Color(0xfffbbf24)
+                                .withOpacity(0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.bolt_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xfff43f5e),
+                            Color(0xffbe123c),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xfff43f5e)
+                                .withOpacity(0.5),
+                            blurRadius: 14,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _WhiteLiveDotSmall(),
+                          SizedBox(width: 6),
+                          Text(
+                            'خبر فوری',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Vazirmatn',
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: const Color(0xfffbbf24).withOpacity(0.2),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xfffbbf24).withOpacity(0.4),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.newspaper_rounded,
+                        color: const Color(0xfffbbf24).withOpacity(0.9),
+                        size: 20,
                       ),
                     ),
                   ],
                 ),
-              ),
-              const Spacer(),
-              Icon(Icons.newspaper_rounded,
-                  color: rose.withOpacity(0.6), size: 22),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Text(
-            title,
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              color: txtC,
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-              height: 1.55,
-              fontFamily: 'Vazirmatn',
+                const SizedBox(height: 20),
+                Text(
+                  title,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: txtC,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
+                    height: 1.6,
+                    fontFamily: 'Vazirmatn',
+                    shadows: isDark
+                        ? [
+                            Shadow(
+                              color: const Color(0xfff43f5e)
+                                  .withOpacity(0.2),
+                              blurRadius: 12,
+                            ),
+                          ]
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  height: 1.5,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xfff43f5e).withOpacity(0.6),
+                        const Color(0xfffb923c).withOpacity(0.4),
+                        const Color(0xfffbbf24).withOpacity(0.2),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    _infoChip(
+                      icon: Icons.calendar_today_rounded,
+                      label: date,
+                      color: const Color(0xfff43f5e),
+                    ),
+                    const SizedBox(width: 8),
+                    _infoChip(
+                      icon: Icons.access_time_rounded,
+                      label: '$readTime دقیقه',
+                      color: const Color(0xfffb923c),
+                    ),
+                    const SizedBox(width: 8),
+                    _infoChip(
+                      icon: Icons.text_fields_rounded,
+                      label: '$words کلمه',
+                      color: const Color(0xfffbbf24),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 16),
-          Container(height: 1, color: rose.withOpacity(0.15)),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              _infoChip(
-                icon: Icons.calendar_today_rounded,
-                label: date,
-              ),
-              const SizedBox(width: 8),
-              _infoChip(
-                icon: Icons.access_time_rounded,
-                label: '$readTime دقیقه',
-              ),
-              const SizedBox(width: 8),
-              _infoChip(
-                icon: Icons.text_fields_rounded,
-                label: '$words کلمه',
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _infoChip({required IconData icon, required String label}) {
+  Widget _infoChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    final isDark = darkModeNotifier.value;
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: pnl2,
-        borderRadius: BorderRadius.circular(8),
+        color: isDark
+            ? color.withOpacity(0.18)
+            : color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(color: color.withOpacity(0.35), width: 0.8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: mutC, size: 11),
+          Icon(icon, color: color, size: 12),
           const SizedBox(width: 5),
           Text(
             label,
             style: TextStyle(
-              color: mutC,
+              color: isDark ? color.withOpacity(0.95) : color,
               fontSize: 10.5,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
               fontFamily: 'Vazirmatn',
             ),
           ),
@@ -5255,11 +5103,205 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                 icon: Icons.ios_share_rounded,
                 label: 'بیشتر',
                 color: purple,
-                onTap: () => sharePost(link, title),
+                onTap: () => _showShareSheet(title, link),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  void _showShareSheet(String title, String link) {
+    HapticFeedback.selectionClick();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Container(
+          decoration: BoxDecoration(
+            color: pnl,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(28),
+            ),
+            border: Border.all(color: lineC),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: mutC.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xfff43f5e), Color(0xfffb923c)],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.ios_share_rounded,
+                        color: Colors.white, size: 18),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'اشتراک‌گذاری خبر',
+                    style: TextStyle(
+                      color: txtC,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  _sheetOption(
+                    icon: Icons.send_rounded,
+                    label: 'تلگرام',
+                    color: const Color(0xff229ED9),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      openExternalUrl(
+                        'https://t.me/share/url?url=$link&text=$title',
+                      );
+                    },
+                  ),
+                  _sheetOption(
+                    icon: Icons.chat_rounded,
+                    label: 'واتس‌اپ',
+                    color: const Color(0xff25D366),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      openExternalUrl(
+                        'https://wa.me/?text=$title\n$link',
+                      );
+                    },
+                  ),
+                  _sheetOption(
+                    icon: Icons.email_rounded,
+                    label: 'ایمیل',
+                    color: const Color(0xffea4335),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      openExternalUrl(
+                        'mailto:?subject=$title&body=$link',
+                      );
+                    },
+                  ),
+                  _sheetOption(
+                    icon: Icons.copy_rounded,
+                    label: 'کپی لینک',
+                    color: accentNotifier.value,
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(text: link));
+                      Navigator.pop(ctx);
+                      showSnack(context, 'لینک کپی شد ✅');
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: pnl2,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: lineC),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.link_rounded, color: mutC, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        link,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textDirection: TextDirection.ltr,
+                        style: TextStyle(
+                          color: mutC,
+                          fontSize: 11,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _sheetOption({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withOpacity(0.25)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [color, color.withOpacity(0.7)],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(icon, color: Colors.white, size: 22),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -5371,8 +5413,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                       decoration: BoxDecoration(
                         color: pnl2,
                         borderRadius: BorderRadius.circular(12),
-                        border:
-                            Border.all(color: lineC, width: 0.8),
+                        border: Border.all(color: lineC, width: 0.8),
                       ),
                       child: Row(
                         children: [
@@ -5380,7 +5421,8 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                             width: 30,
                             height: 30,
                             decoration: BoxDecoration(
-                              color: rose.withOpacity(.12),
+                              color: const Color(0xfff43f5e)
+                                  .withOpacity(.12),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(
@@ -5421,7 +5463,6 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
     );
   }
 }
-
 /* ==================== URGENT NEWS LIST PAGE ==================== */
 
 class UrgentNewsListPage extends StatefulWidget {
@@ -5476,7 +5517,7 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
           elevation: 0,
         ),
         body: RefreshIndicator(
-          color: accentGreen,
+          color: accentNotifier.value,
           backgroundColor: pnl,
           onRefresh: _refresh,
           child: FutureBuilder<List>(
@@ -5726,11 +5767,13 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                         height: 22,
                         decoration: BoxDecoration(
                           color: _rememberMe
-                              ? accentGreen
+                              ? accentNotifier.value
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: _rememberMe ? accentGreen : mutC,
+                            color: _rememberMe
+                                ? accentNotifier.value
+                                : mutC,
                             width: 1.5,
                           ),
                         ),
@@ -5800,7 +5843,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                 child: ElevatedButton(
                   onPressed: _loading ? null : _login,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: accentGreen,
+                    backgroundColor: accentNotifier.value,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -5882,7 +5925,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(color: mutC, fontFamily: 'Vazirmatn'),
-          prefixIcon: Icon(icon, color: accentGreen),
+          prefixIcon: Icon(icon, color: accentNotifier.value),
           suffixIcon: suffix,
           filled: true,
           fillColor: Colors.transparent,
@@ -5896,6 +5939,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     );
   }
 }
+
 /* ==================== ADMIN PANEL ==================== */
 
 class AdminPanelPage extends StatefulWidget {
@@ -6024,7 +6068,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                       Text(
                         'عنوان خبر',
                         style: TextStyle(
-                          color: accentGreen,
+                          color: accentNotifier.value,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w900,
                           fontFamily: 'Vazirmatn',
@@ -6064,7 +6108,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                       Text(
                         'متن کامل خبر',
                         style: TextStyle(
-                          color: accentGreen,
+                          color: accentNotifier.value,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w900,
                           fontFamily: 'Vazirmatn',
@@ -6338,7 +6382,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               Text(
                 'عنوان خبر',
                 style: TextStyle(
-                  color: accentGreen,
+                  color: accentNotifier.value,
                   fontSize: 13.5,
                   fontWeight: FontWeight.w900,
                   fontFamily: 'Vazirmatn',
@@ -6375,7 +6419,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               Text(
                 'متن کامل خبر',
                 style: TextStyle(
-                  color: accentGreen,
+                  color: accentNotifier.value,
                   fontSize: 13.5,
                   fontWeight: FontWeight.w900,
                   fontFamily: 'Vazirmatn',
@@ -6468,7 +6512,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                       padding: const EdgeInsets.all(20),
                       child: Center(
                         child: CircularProgressIndicator(
-                            color: accentGreen),
+                            color: accentNotifier.value),
                       ),
                     );
                   }
@@ -6814,7 +6858,7 @@ class ErrorBox extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onRetry,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff10b981),
+                  backgroundColor: accentNotifier.value,
                   foregroundColor: Colors.white,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(
