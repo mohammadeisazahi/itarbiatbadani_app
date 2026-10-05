@@ -41,19 +41,16 @@ final accentNotifier = ValueNotifier<Color>(const Color(0xff1a2b47));
 
 /* ==================== REFINED COLOR SYSTEM V2 ==================== */
 
-/// 🎨 رنگ‌های اصلی برند
 const Color kPrimaryNavy = Color(0xff1a2b47);
 const Color kPrimaryNavyLight = Color(0xff2c4470);
 const Color kPrimaryNavyDark = Color(0xff0f1a2e);
 const Color kPrimaryNavySoft = Color(0xff4a6fa5);
 
-/// 🎨 طلایی
 const Color kAccentGold = Color(0xffc9a961);
 const Color kAccentGoldLight = Color(0xffe0c987);
 const Color kAccentGoldDark = Color(0xffa88840);
 const Color kAccentGoldSoft = Color(0xfff0e4c0);
 
-/// 🎨 رنگ‌های معنایی
 const Color kUrgent = Color(0xffc1121f);
 const Color kUrgentDark = Color(0xff9a0e17);
 const Color kSuccess = Color(0xff059669);
@@ -62,14 +59,12 @@ const Color kWarning = Color(0xffd97706);
 const Color kInfo = Color(0xff2563eb);
 const Color kInfoLight = Color(0xff60a5fa);
 
-/// 🎨 رنگ تب‌ها
 const Color kTabHome = Color(0xff1a2b47);
 const Color kTabArticles = Color(0xff1e40af);
 const Color kTabNews = Color(0xffc1121f);
 const Color kTabShop = Color(0xffd97706);
 const Color kTabAccount = Color(0xff0d9488);
 
-/// 🌙 سطوح تیره
 const Color kDarkBg = Color(0xff0a121e);
 const Color kDarkCard = Color(0xff1a2538);
 const Color kDarkCard2 = Color(0xff25334a);
@@ -78,7 +73,6 @@ const Color kDarkBorder = Color(0xff344864);
 const Color kDarkText = Color(0xfff0f4f8);
 const Color kDarkTextMuted = Color(0xff94a3b8);
 
-/// ☀️ سطوح روشن
 const Color kLightBg = Color(0xfff5f7fa);
 const Color kLightCard = Color(0xffffffff);
 const Color kLightCard2 = Color(0xffeef2f7);
@@ -2405,7 +2399,6 @@ Widget ModernHeader(BuildContext context, [String? t]) {
               ],
             ),
           ),
-          // 🔔 اعلان‌ها
           ValueListenableBuilder<List<Map<String, dynamic>>>(
             valueListenable: inAppNotificationsNotifier,
             builder: (c, list, __) {
@@ -2463,13 +2456,11 @@ Widget ModernHeader(BuildContext context, [String? t]) {
             },
           ),
           const SizedBox(width: 4),
-          // 🌗 تغییر تم
           _HeaderIconButton(
             icon: Icons.brightness_6_rounded,
             onTap: () => _showThemeModePicker(context),
           ),
           const SizedBox(width: 4),
-          // 🔍 جستجو
           _HeaderIconButton(
             icon: Icons.search_rounded,
             onTap: () => Navigator.push(
@@ -2528,171 +2519,159 @@ class _HeaderIconButton extends StatelessWidget {
     );
   }
 }
-/* ==================== LIVE NEWS TICKER ==================== */
+/* ==================== HOME ==================== */
 
-class LiveNewsTicker extends StatefulWidget {
-  final Future<List>? future;
-  const LiveNewsTicker({super.key, this.future});
-
+class Home extends StatefulWidget {
+  const Home({super.key});
   @override
-  State<LiveNewsTicker> createState() => _LiveNewsTickerState();
+  State<Home> createState() => _HomeState();
 }
 
-class _LiveNewsTickerState extends State<LiveNewsTicker> {
-  List<String> _titles = [];
-  int _currentIndex = 0;
-  Timer? _timer;
+class _HomeState extends State<Home> {
+  Future<List>? _f;
+  Future<List>? _newsFuture;
+  Key _bannerKey = UniqueKey();
 
   @override
   void initState() {
     super.initState();
-    _loadTitles();
-  }
-
-  Future<void> _loadTitles() async {
-    if (widget.future == null) return;
-    try {
-      final list = await widget.future!;
-      if (!mounted) return;
-      _titles = list.take(5).map((e) => pTitle(e)).toList();
-      if (_titles.isNotEmpty) _startTicker();
-    } catch (_) {}
-  }
-
-  void _startTicker() {
-    _timer = Timer.periodic(const Duration(seconds: 4), (t) {
-      if (!mounted) {
-        t.cancel();
-        return;
-      }
-      setState(() {
-        _currentIndex = (_currentIndex + 1) % _titles.length;
-      });
+    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        precacheImage(NetworkImage(heroImg), context);
+        checkForNewNotifications();
+      } catch (_) {}
     });
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
+  void _load() {
+    _f = getPostsPaged(perPage: 5, page: 1);
+    _newsFuture = getNewNewsList();
+  }
+
+  Future<void> _refresh() async {
+    HapticFeedback.mediumImpact();
+    _postsCache.clear();
+    _postsCacheTime.clear();
+    setState(() {
+      _load();
+      _bannerKey = UniqueKey();
+    });
+    try {
+      await _f;
+      await checkForNewNotifications();
+    } catch (_) {}
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_titles.isEmpty) return const SizedBox.shrink();
-    final isDark = darkModeNotifier.value;
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(14, 4, 14, 10),
-      height: 44,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [
-                  kUrgent.withOpacity(0.15),
-                  kPrimaryNavyDark.withOpacity(0.3),
-                ]
-              : [
-                  const Color(0xfffff5f5),
-                  const Color(0xfff5f0e6),
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [bgGrad1, bgGrad2],
+          ),
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -100,
+              right: -100,
+              child: _AnimatedBlob(
+                color: accentNotifier.value,
+                size: 300,
+                duration: const Duration(seconds: 8),
+              ),
+            ),
+            Positioned(
+              top: 200,
+              left: -120,
+              child: _AnimatedBlob(
+                color: kAccentGold,
+                size: 250,
+                duration: const Duration(seconds: 10),
+              ),
+            ),
+            Positioned(
+              bottom: 100,
+              right: -100,
+              child: _AnimatedBlob(
+                color: kPrimaryNavySoft,
+                size: 220,
+                duration: const Duration(seconds: 12),
+              ),
+            ),
+            RefreshIndicator(
+              color: accentNotifier.value,
+              backgroundColor: pnl,
+              strokeWidth: 3,
+              displacement: 80,
+              edgeOffset: 10,
+              onRefresh: _refresh,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                slivers: [
+                  SliverToBoxAdapter(child: ModernHeader(context)),
+                  SliverToBoxAdapter(
+                    child: LiveNewsTicker(future: _newsFuture),
+                  ),
+                  SliverToBoxAdapter(
+                    child: CategoryChipsBar(),
+                  ),
+                  SliverToBoxAdapter(
+                    child: FollowedCategoriesSection(
+                      allPostsFuture: _f,
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: HeroCarousel(postsFuture: _f),
+                  ),
+                  SliverToBoxAdapter(
+                    child: ModernNewsBanner(
+                        key: _bannerKey, future: _newsFuture),
+                  ),
+                  SliverToBoxAdapter(child: ModernServicesSection()),
+                  SliverToBoxAdapter(
+                    child: ModernSectionTitle(
+                      title: 'دسته‌بندی‌ها',
+                      icon: Icons.grid_view_rounded,
+                    ),
+                  ),
+                  SliverToBoxAdapter(child: ModernCatGrid()),
+                  SliverToBoxAdapter(child: ModernSocial()),
+                  const SliverToBoxAdapter(child: SizedBox(height: 140)),
                 ],
-        ),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: kUrgent.withOpacity(0.4),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: kUrgent.withOpacity(0.12),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [kUrgent, kUrgentDark],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: kUrgent.withOpacity(0.4),
-                  blurRadius: 10,
-                ),
-              ],
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _WhiteLiveDotSmall(),
-                SizedBox(width: 5),
-                Text(
-                  'خبر فوری',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 400),
-              transitionBuilder: (child, anim) {
-                return FadeTransition(
-                  opacity: anim,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, 0.5),
-                      end: Offset.zero,
-                    ).animate(anim),
-                    child: child,
-                  ),
-                );
-              },
-              child: Text(
-                _titles[_currentIndex],
-                key: ValueKey(_currentIndex),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.right,
-                style: TextStyle(
-                  color: txtC,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  fontFamily: 'Vazirmatn',
-                ),
               ),
             ),
-          ),
-          const SizedBox(width: 10),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-/* ==================== WHITE LIVE DOT SMALL ==================== */
+/* ==================== ANIMATED BLOB ==================== */
 
-class _WhiteLiveDotSmall extends StatefulWidget {
-  final Color? color;
-  const _WhiteLiveDotSmall({this.color});
+class _AnimatedBlob extends StatefulWidget {
+  final Color color;
+  final double size;
+  final Duration duration;
+  const _AnimatedBlob({
+    required this.color,
+    required this.size,
+    required this.duration,
+  });
 
   @override
-  State<_WhiteLiveDotSmall> createState() => _WhiteLiveDotSmallState();
+  State<_AnimatedBlob> createState() => _AnimatedBlobState();
 }
 
-class _WhiteLiveDotSmallState extends State<_WhiteLiveDotSmall>
+class _AnimatedBlobState extends State<_AnimatedBlob>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
 
@@ -2701,8 +2680,8 @@ class _WhiteLiveDotSmallState extends State<_WhiteLiveDotSmall>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat();
+      duration: widget.duration,
+    )..repeat(reverse: true);
   }
 
   @override
@@ -2713,36 +2692,29 @@ class _WhiteLiveDotSmallState extends State<_WhiteLiveDotSmall>
 
   @override
   Widget build(BuildContext context) {
-    final dotColor = widget.color ?? Colors.white;
+    final isDark = darkModeNotifier.value;
+    final opacity = isDark ? 0.10 : 0.06;
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (context, _) {
-        final t = _ctrl.value;
-        final scale = 1.0 + (t < 0.5 ? t * 0.6 : (1 - t) * 0.6);
-        final opacity = 1.0 - t;
-        return SizedBox(
-          width: 12,
-          height: 12,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: 12 * scale,
-                height: 12 * scale,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: dotColor.withOpacity(opacity * 0.6),
-                ),
+        final v = _ctrl.value;
+        return Transform.translate(
+          offset: Offset(
+            (v - 0.5) * 40,
+            (v - 0.5) * 30,
+          ),
+          child: Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  widget.color.withOpacity(opacity),
+                  Colors.transparent,
+                ],
               ),
-              Container(
-                width: 7,
-                height: 7,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: dotColor,
-                ),
-              ),
-            ],
+            ),
           ),
         );
       },
@@ -2750,550 +2722,233 @@ class _WhiteLiveDotSmallState extends State<_WhiteLiveDotSmall>
   }
 }
 
-/* ==================== THEME MODE PICKER ==================== */
+/* ==================== MODERN HEADER ==================== */
 
-void _showThemeModePicker(BuildContext context) {
-  HapticFeedback.selectionClick();
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.transparent,
-    isScrollControlled: true,
-    builder: (ctx) => Directionality(
-      textDirection: TextDirection.rtl,
-      child: Container(
-        decoration: BoxDecoration(
-          color: pnl,
-          borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border.all(color: lineC),
-        ),
-        child: SafeArea(
-          bottom: true,
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(
-              20,
-              12,
-              20,
-              24 + MediaQuery.of(ctx).padding.bottom,
+Widget ModernHeader(BuildContext context, [String? t]) {
+  return SafeArea(
+    bottom: false,
+    child: Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: LinearGradient(
+                colors: [
+                  accentNotifier.value,
+                  kAccentGold,
+                  accentNotifier.value.withOpacity(0.5),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: accentNotifier.value.withOpacity(0.35),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: mutC.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(999),
+            padding: const EdgeInsets.all(2),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: ClipOval(
+                child: Image.asset(
+                  logo,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Image.network(
+                    logoNet,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Icon(
+                      Icons.school_rounded,
+                      color: accentNotifier.value,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 20),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ShaderMask(
+                  shaderCallback: (bounds) => LinearGradient(
+                    colors: [txtC, kAccentGold],
+                  ).createShader(bounds),
+                  child: Text(
+                    t ?? 'تربیت بدنی و علوم ورزشی',
+                    textAlign: TextAlign.right,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Vazirmatn',
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 2),
                 Row(
                   children: [
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 6,
+                      height: 6,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [kPrimaryNavy, kAccentGold],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
+                        color: kAccentGold,
+                        shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: kPrimaryNavy.withOpacity(0.4),
-                            blurRadius: 12,
-                            offset: const Offset(0, 3),
+                            color: kAccentGold.withOpacity(0.6),
+                            blurRadius: 6,
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.brightness_6_rounded,
-                          color: Colors.white, size: 20),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 5),
                     Text(
-                      'حالت نمایش',
+                      'مرجع تخصصی علوم ورزشی',
                       style: TextStyle(
-                        color: txtC,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
+                        color: mutC,
+                        fontSize: 10,
                         fontFamily: 'Vazirmatn',
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                _themeOption(
-                  icon: Icons.light_mode_rounded,
-                  label: 'روشن',
-                  subtitle: 'همیشه در حالت روشن',
-                  color: kAccentGold,
-                  value: 'light',
-                  ctx: ctx,
-                ),
-                const SizedBox(height: 10),
-                _themeOption(
-                  icon: Icons.dark_mode_rounded,
-                  label: 'تاریک',
-                  subtitle: 'همیشه در حالت تاریک',
-                  color: kPrimaryNavy,
-                  value: 'dark',
-                  ctx: ctx,
-                ),
-                const SizedBox(height: 10),
-                _themeOption(
-                  icon: Icons.brightness_auto_rounded,
-                  label: 'خودکار',
-                  subtitle: 'بر اساس ساعت روز',
-                  color: accentNotifier.value,
-                  value: 'auto',
-                  ctx: ctx,
-                ),
               ],
             ),
           ),
-        ),
+          ValueListenableBuilder<List<Map<String, dynamic>>>(
+            valueListenable: inAppNotificationsNotifier,
+            builder: (c, list, __) {
+              final unread =
+                  list.where((e) => e['read'] != true).length;
+              return Stack(
+                children: [
+                  _HeaderIconButton(
+                    icon: Icons.notifications_outlined,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const NotificationsPage()),
+                    ),
+                  ),
+                  if (unread > 0)
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [kUrgent, kUrgentDark],
+                          ),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: pnl, width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: kUrgent.withOpacity(0.5),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          unread > 9 ? '۹+' : '$unread',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'Vazirmatn',
+                            height: 1.1,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(width: 4),
+          _HeaderIconButton(
+            icon: Icons.brightness_6_rounded,
+            onTap: () => _showThemeModePicker(context),
+          ),
+          const SizedBox(width: 4),
+          _HeaderIconButton(
+            icon: Icons.search_rounded,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SearchPage()),
+            ),
+          ),
+        ],
       ),
     ),
   );
 }
 
-Widget _themeOption({
-  required IconData icon,
-  required String label,
-  required String subtitle,
-  required Color color,
-  required String value,
-  required BuildContext ctx,
-}) {
-  return ValueListenableBuilder<String>(
-    valueListenable: themeModeNotifier,
-    builder: (context, current, _) {
-      final selected = current == value;
-      return GestureDetector(
-        onTap: () async {
-          HapticFeedback.selectionClick();
-          await setThemeMode(value);
-          if (ctx.mounted) Navigator.pop(ctx);
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            gradient: selected
-                ? LinearGradient(
-                    colors: [
-                      color.withOpacity(0.15),
-                      color.withOpacity(0.05),
-                    ],
-                  )
-                : null,
-            color: selected ? null : pnl2,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: selected ? color : lineC,
-              width: selected ? 1.5 : 1,
-            ),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: color.withOpacity(0.2),
-                      blurRadius: 12,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: selected
-                      ? LinearGradient(
-                          colors: [color, color.withOpacity(0.7)],
-                        )
-                      : null,
-                  color: selected ? null : color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  color: selected ? Colors.white : color,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        color: selected ? color : txtC,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
-                        fontFamily: 'Vazirmatn',
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: mutC,
-                        fontSize: 11.5,
-                        height: 1.5,
-                        fontFamily: 'Vazirmatn',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: selected
-                      ? LinearGradient(
-                          colors: [color, color.withOpacity(0.7)],
-                        )
-                      : null,
-                  border: Border.all(
-                    color: selected
-                        ? color
-                        : mutC.withOpacity(0.3),
-                    width: 1.5,
-                  ),
-                  boxShadow: selected
-                      ? [
-                          BoxShadow(
-                            color: color.withOpacity(0.4),
-                            blurRadius: 8,
-                          ),
-                        ]
-                      : null,
-                ),
-                child: selected
-                    ? const Icon(
-                        Icons.check_rounded,
-                        color: Colors.white,
-                        size: 16,
-                      )
-                    : null,
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
+class _HeaderIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color? color;
+  const _HeaderIconButton({
+    required this.icon,
+    required this.onTap,
+    this.color,
+  });
 
-/* ==================== CATEGORY CHIPS BAR ==================== */
-
-class CategoryChipsBar extends StatefulWidget {
-  const CategoryChipsBar({super.key});
-
-  @override
-  State<CategoryChipsBar> createState() => _CategoryChipsBarState();
-}
-
-class _CategoryChipsBarState extends State<CategoryChipsBar> {
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Set<String>>(
-      valueListenable: followedCategoriesNotifier,
-      builder: (context, followed, _) {
-        final followedCats = cats
-            .where((cat) => followed.contains(cat.s))
-            .toList();
-
-        return Container(
-          margin: const EdgeInsets.only(top: 4, bottom: 6),
-          height: 44,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            itemCount: followedCats.length + 6,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
-            itemBuilder: (c, i) {
-              // 🏋️ ماشین‌حساب BMI (اول از همه)
-              if (i == 0) {
-                return _actionChip(
-                  icon: Icons.calculate_rounded,
-                  label: 'تناسب اندام',
-                  color: kTabShop,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const BMICalculatorPage()),
-                    );
-                  },
-                );
-              }
-
-              // 📊 آمار مطالعه
-              if (i == 1) {
-                return ValueListenableBuilder<Map<String, dynamic>>(
-                  valueListenable: readingStatsNotifier,
-                  builder: (c, stats, __) {
-                    final count = stats['totalRead'] ?? 0;
-                    return _actionChip(
-                      icon: Icons.insights_rounded,
-                      label: 'آمار مطالعه',
-                      color: kSuccess,
-                      badge: count > 0 ? '$count' : null,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const ReadingStatsPage()),
-                        );
-                      },
-                    );
-                  },
-                );
-              }
-
-              // 🔖 نشان‌شده‌ها
-              if (i == 2) {
-                return _actionChip(
-                  icon: Icons.bookmark_rounded,
-                  label: 'نشان‌شده‌ها',
-                  color: kAccentGold,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const BookmarksPage()),
-                    );
-                  },
-                );
-              }
-
-              // ❤️ دسته‌های من
-              if (i == 3) {
-                final count = followed.length;
-                final hasItems = count > 0;
-                final isDark = darkModeNotifier.value;
-                return GestureDetector(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const FollowedCategoriesPage(),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    decoration: BoxDecoration(
-                      gradient: hasItems
-                          ? const LinearGradient(
-                              colors: [kPrimaryNavy, kAccentGold])
-                          : null,
-                      color: hasItems
-                          ? null
-                          : (isDark ? kDarkCard2 : kLightCard),
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(
-                        color: hasItems
-                            ? kAccentGold.withOpacity(0.6)
-                            : (isDark ? kDarkBorder : kLightBorder),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          hasItems
-                              ? Icons.favorite_rounded
-                              : Icons.favorite_border_rounded,
-                          color: hasItems
-                              ? Colors.white
-                              : (isDark ? txtC : kPrimaryNavy),
-                          size: 15,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'دسته‌های من',
-                          style: TextStyle(
-                            color: hasItems ? Colors.white : txtC,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'Vazirmatn',
-                          ),
-                        ),
-                        if (hasItems) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 5, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              '$count',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w900,
-                                fontFamily: 'Vazirmatn',
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                );
-              }
-
-              // 🎯 همه دسته‌ها (آخر)
-              if (i == followedCats.length + 5) {
-                return _actionChip(
-                  icon: Icons.grid_view_rounded,
-                  label: 'همه دسته‌ها',
-                  color: kPrimaryNavy,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const AllCategoriesPage()),
-                    );
-                  },
-                );
-              }
-
-              // 📂 دسته‌های دنبال‌شده
-              final cat = followedCats[i - 4];
-              return GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CategoryPostsPage(c: cat),
-                    ),
-                  );
-                },
-                onLongPress: () {
-                  HapticFeedback.mediumImpact();
-                  toggleFollowCategory(cat.s);
-                  showSnack(context, 'لغو دنبال کردن «${cat.n}»');
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [cat.c, cat.c.withOpacity(0.7)],
-                    ),
-                    borderRadius: BorderRadius.circular(999),
-                    boxShadow: [
-                      BoxShadow(
-                        color: cat.c.withOpacity(0.35),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(cat.i, color: Colors.white, size: 15),
-                      const SizedBox(width: 6),
-                      Text(
-                        cat.n.length > 18
-                            ? '${cat.n.substring(0, 16)}...'
-                            : cat.n,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _actionChip({
-    required IconData icon,
-    required String label,
-    required Color color,
-    String? badge,
-    required VoidCallback onTap,
-  }) {
+    final isDark = darkModeNotifier.value;
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
-          color: pnl,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: color.withOpacity(0.35), width: 1.2),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 15),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 12,
-                fontWeight: FontWeight.w900,
-                fontFamily: 'Vazirmatn',
-              ),
+          color: isDark
+              ? Colors.white.withOpacity(0.06)
+              : Colors.white.withOpacity(0.85),
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withOpacity(0.10)
+                : Colors.black.withOpacity(0.05),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
             ),
-            if (badge != null) ...[
-              const SizedBox(width: 5),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 5, vertical: 1),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  badge,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
+        child: Icon(icon, color: color ?? txtC, size: 19),
       ),
     );
   }
 }
-/* ==================== HERO CAROUSEL (UPGRADED) ==================== */
+/* ==================== HERO CAROUSEL ==================== */
 
 class HeroCarousel extends StatefulWidget {
   final Future<List>? postsFuture;
@@ -3475,7 +3130,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
   }
 }
 
-/* ==================== CAROUSEL CARD (UPGRADED) ==================== */
+/* ==================== CAROUSEL CARD ==================== */
 
 class _CarouselCard extends StatefulWidget {
   final dynamic post;
@@ -3601,7 +3256,6 @@ class _CarouselCardState extends State<_CarouselCard>
                           size: 60),
                     ),
 
-                  // گرادیان سینمایی
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -3618,7 +3272,6 @@ class _CarouselCardState extends State<_CarouselCard>
                     ),
                   ),
 
-                  // گرادیان تزئینی طلایی پایین
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -3637,7 +3290,6 @@ class _CarouselCardState extends State<_CarouselCard>
                     ),
                   ),
 
-                  // محتوای بالا
                   Positioned(
                     left: 18,
                     right: 18,
@@ -3735,7 +3387,6 @@ class _CarouselCardState extends State<_CarouselCard>
                     ),
                   ),
 
-                  // محتوای پایین
                   Positioned(
                     left: 18,
                     right: 18,
@@ -3906,6 +3557,7 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
         if (list.isEmpty) return const SizedBox.shrink();
 
         final items = list.take(3).toList();
+        final isDark = darkModeNotifier.value;
 
         return Container(
           margin: const EdgeInsets.only(top: 22),
@@ -3962,22 +3614,40 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 22, vertical: 12),
                         decoration: BoxDecoration(
-                          color: kPrimaryNavy.withOpacity(.1),
+                          color: kPrimaryNavy.withOpacity(
+                              isDark ? 0.35 : 0.1),
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(
-                            color: kPrimaryNavy.withOpacity(.3),
+                            color: kPrimaryNavy.withOpacity(
+                                isDark ? 0.7 : 0.3),
+                            width: 1.2,
                           ),
+                          boxShadow: isDark
+                              ? [
+                                  BoxShadow(
+                                    color: kAccentGold
+                                        .withOpacity(0.15),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ]
+                              : null,
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.list_alt_rounded,
-                                color: kPrimaryNavy, size: 18),
+                                color: isDark
+                                    ? kAccentGold
+                                    : kPrimaryNavy,
+                                size: 18),
                             const SizedBox(width: 6),
                             Text(
                               'مشاهده همه اخبار فوری',
                               style: TextStyle(
-                                color: kPrimaryNavy,
+                                color: isDark
+                                    ? kAccentGold
+                                    : kPrimaryNavy,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
                                 fontFamily: 'Vazirmatn',
@@ -3985,7 +3655,10 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
                             ),
                             const SizedBox(width: 4),
                             Icon(Icons.arrow_back_ios_new_rounded,
-                                color: kPrimaryNavy, size: 12),
+                                color: isDark
+                                    ? kAccentGold
+                                    : kPrimaryNavy,
+                                size: 12),
                           ],
                         ),
                       ),
@@ -4206,7 +3879,7 @@ class _ModernServicesSectionState extends State<ModernServicesSection> {
   }
 }
 
-/* ==================== PREMIUM POST CARD ==================== */
+/* ==================== PREMIUM POST CARD (اصلاح‌شده) ==================== */
 
 class ModernPostCard extends StatefulWidget {
   final dynamic post;
@@ -4419,7 +4092,7 @@ class _ModernPostCardState extends State<ModernPostCard>
                             Row(
                               children: [
                                 if (cat.isNotEmpty)
-                                  Expanded(
+                                  Flexible(
                                     child: Container(
                                       padding:
                                           const EdgeInsets.symmetric(
@@ -4447,13 +4120,12 @@ class _ModernPostCardState extends State<ModernPostCard>
                                             ),
                                           ),
                                           const SizedBox(width: 4),
-                                          Expanded(
+                                          Flexible(
                                             child: Text(
                                               cat,
                                               maxLines: 1,
-                                              softWrap: false,
                                               overflow:
-                                                  TextOverflow.visible,
+                                                  TextOverflow.ellipsis,
                                               style: TextStyle(
                                                 color: chipFg,
                                                 fontSize: 9.5,
@@ -4916,7 +4588,7 @@ class SidePostCard extends StatelessWidget {
                   Row(
                     children: [
                       if (cat.isNotEmpty)
-                        Expanded(
+                        Flexible(
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 7, vertical: 4),
@@ -4936,12 +4608,11 @@ class SidePostCard extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(width: 4),
-                                Expanded(
+                                Flexible(
                                   child: Text(
                                     cat,
                                     maxLines: 1,
-                                    softWrap: false,
-                                    overflow: TextOverflow.visible,
+                                    overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                       color: chipFg,
                                       fontSize: 9.5,
@@ -5394,7 +5065,7 @@ class ModernProductCard extends StatelessWidget {
     );
   }
 }
-/* ==================== MODERN CAT GRID ==================== */
+/* ==================== MODERN CAT GRID (اصلاح‌شده) ==================== */
 
 class ModernCatGrid extends StatelessWidget {
   const ModernCatGrid({super.key});
@@ -5416,6 +5087,7 @@ class ModernCatGrid extends StatelessWidget {
         ),
         itemBuilder: (c, i) {
           final cat = cats[i];
+          final isDark = darkModeNotifier.value;
           return GestureDetector(
             onTap: () {
               HapticFeedback.selectionClick();
@@ -5468,10 +5140,24 @@ class ModernCatGrid extends StatelessWidget {
                             width: 42,
                             height: 42,
                             decoration: BoxDecoration(
-                              color: cat.c.withOpacity(0.15),
+                              color: isDark
+                                  ? cat.c.withOpacity(0.28)
+                                  : cat.c.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(12),
+                              border: isDark
+                                  ? Border.all(
+                                      color: cat.c.withOpacity(0.45),
+                                      width: 1,
+                                    )
+                                  : null,
                             ),
-                            child: Icon(cat.i, color: cat.c, size: 22),
+                            child: Icon(
+                              cat.i,
+                              color: isDark
+                                  ? Color.lerp(cat.c, Colors.white, 0.4)!
+                                  : cat.c,
+                              size: 22,
+                            ),
                           ),
                           if (isFollowed)
                             Positioned(
@@ -6576,20 +6262,15 @@ class _ArticlesPageState extends State<ArticlesPage> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [kPrimaryNavy, kAccentGold],
-                ).createShader(bounds),
-                child: Text(
-                  'مقالات تخصصی',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: txtC,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
-                    letterSpacing: 0.2,
-                  ),
+              child: Text(
+                'مقالات تخصصی',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                  letterSpacing: 0.2,
                 ),
               ),
             ),
@@ -7195,23 +6876,15 @@ class _NewsPageState extends State<NewsPage> {
             Expanded(
               child: Row(
                 children: [
-                  ShaderMask(
-                    shaderCallback: (bounds) => LinearGradient(
-                      colors: [
-                        kUrgent,
-                        kAccentGold,
-                      ],
-                    ).createShader(bounds),
-                    child: Text(
-                      'اخبار و رویدادها',
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        color: txtC,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                        fontFamily: 'Vazirmatn',
-                        letterSpacing: 0.2,
-                      ),
+                  Text(
+                    'اخبار و رویدادها',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: txtC,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Vazirmatn',
+                      letterSpacing: 0.2,
                     ),
                   ),
                   const SizedBox(width: 6),
@@ -7740,8 +7413,16 @@ class _PremiumNewsCardState extends State<_PremiumNewsCard> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: kUrgent.withOpacity(0.08),
+                      color: isDark
+                          ? kUrgent.withOpacity(0.18)
+                          : kUrgent.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(8),
+                      border: isDark
+                          ? Border.all(
+                              color: kUrgent.withOpacity(0.35),
+                              width: 0.8,
+                            )
+                          : null,
                     ),
                     child: Row(
                       children: [
@@ -7930,23 +7611,15 @@ class _ShopPageState extends State<ShopPage> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [
-                    kAccentGold,
-                    kPrimaryNavy,
-                  ],
-                ).createShader(bounds),
-                child: Text(
-                  'فروشگاه تخصصی',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: txtC,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
-                    letterSpacing: 0.2,
-                  ),
+              child: Text(
+                'فروشگاه تخصصی',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                  letterSpacing: 0.2,
                 ),
               ),
             ),
@@ -7978,6 +7651,1017 @@ class _ShopPageState extends State<ShopPage> {
     );
   }
 }
+/* ==================== PREMIUM NEWS PAGE ==================== */
+
+class NewsPage extends StatefulWidget {
+  const NewsPage({super.key});
+  @override
+  State<NewsPage> createState() => _NewsPageState();
+}
+
+class _NewsPageState extends State<NewsPage> {
+  final _posts = <dynamic>[];
+  final _allPosts = <dynamic>[];
+  int _page = 1;
+  bool _loading = false;
+  bool _hasMore = true;
+  String? _error;
+  int? _catId;
+  final _scroll = ScrollController(keepScrollOffset: false);
+  String _timeFilter = 'all';
+
+  final List<Map<String, dynamic>> _timeFilters = [
+    {
+      'key': 'all',
+      'label': 'همه',
+      'icon': Icons.apps_rounded,
+      'color': Color(0xff6b7280),
+    },
+    {
+      'key': 'today',
+      'label': 'امروز',
+      'icon': Icons.today_rounded,
+      'color': kSuccess,
+    },
+    {
+      'key': 'week',
+      'label': 'این هفته',
+      'icon': Icons.date_range_rounded,
+      'color': kPrimaryNavyLight,
+    },
+    {
+      'key': 'month',
+      'label': 'این ماه',
+      'icon': Icons.calendar_month_rounded,
+      'color': Color(0xff6d28d9),
+    },
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+    _scroll.addListener(() {
+      if (_scroll.position.pixels >=
+              _scroll.position.maxScrollExtent - 400 &&
+          !_loading &&
+          _hasMore) {
+        _load();
+      }
+    });
+  }
+
+  Future<void> _init() async {
+    setState(() => _loading = true);
+    try {
+      _catId = await getCatIdBySlug('sports-news-and-events');
+      if (_catId == null) throw Exception('دسته‌بندی اخبار یافت نشد');
+      await _load();
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  List<dynamic> _applyTimeFilter() {
+    if (_timeFilter == 'all') return _allPosts;
+    final now = DateTime.now();
+    DateTime cutoff;
+    if (_timeFilter == 'today') {
+      cutoff = DateTime(now.year, now.month, now.day);
+    } else if (_timeFilter == 'week') {
+      cutoff = now.subtract(const Duration(days: 7));
+    } else if (_timeFilter == 'month') {
+      cutoff = now.subtract(const Duration(days: 30));
+    } else {
+      return _allPosts;
+    }
+    return _allPosts.where((post) {
+      try {
+        final date = DateTime.parse(post['date']).toLocal();
+        return date.isAfter(cutoff);
+      } catch (_) {
+        return false;
+      }
+    }).toList();
+  }
+
+  Future<void> _load() async {
+    if (_loading && _posts.isNotEmpty) return;
+    if (!_hasMore) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final list = await getPostsPaged(
+          perPage: perPageSize, page: _page, catId: _catId);
+      setState(() {
+        if (list.isEmpty) {
+          _hasMore = false;
+        } else {
+          _allPosts.addAll(list);
+          if (_allPosts.length > 150) _allPosts.removeRange(0, 50);
+          _posts.clear();
+          _posts.addAll(_applyTimeFilter());
+          _page++;
+          if (list.length < perPageSize) _hasMore = false;
+        }
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _refresh() async {
+    _postsCache.clear();
+    _postsCacheTime.clear();
+    setState(() {
+      _posts.clear();
+      _allPosts.clear();
+      _page = 1;
+      _hasMore = true;
+      _error = null;
+    });
+    await _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Scaffold(
+        backgroundColor: bgC,
+        body: Column(
+          children: [
+            _buildPremiumNewsHeader(context),
+            _buildTimeFilterBar(),
+            Expanded(
+              child: _posts.isEmpty && _loading
+                  ? const NewsSkeleton()
+                  : _posts.isEmpty && _error != null
+                      ? ErrorBox(
+                          message: 'خطا در دریافت اخبار.\n$_error',
+                          onRetry: _refresh)
+                      : _posts.isEmpty
+                          ? _timeFilter != 'all' && _allPosts.isNotEmpty
+                              ? _buildEmptyFilter()
+                              : const EmptyWidget(
+                                  text: 'خبری پیدا نشد.')
+                          : RefreshIndicator(
+                              color: kUrgent,
+                              backgroundColor: pnl,
+                              strokeWidth: 3,
+                              onRefresh: _refresh,
+                              child: ListView.builder(
+                                controller: _scroll,
+                                cacheExtent: 800,
+                                physics: const BouncingScrollPhysics(),
+                                padding: const EdgeInsets.fromLTRB(
+                                    14, 8, 14, 120),
+                                itemCount:
+                                    _posts.length + (_hasMore ? 1 : 0),
+                                itemBuilder: (c, i) {
+                                  if (i >= _posts.length) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(20),
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                            color: kUrgent),
+                                      ),
+                                    );
+                                  }
+                                  return _PremiumNewsCard(
+                                      post: _posts[i]);
+                                },
+                              ),
+                            ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPremiumNewsHeader(BuildContext context) {
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    kUrgent,
+                    kUrgent.withOpacity(0.7),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: kUrgent.withOpacity(0.4),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.newspaper_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Row(
+                children: [
+                  Text(
+                    'اخبار و رویدادها',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: txtC,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Vazirmatn',
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: kUrgent,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: kUrgent.withOpacity(0.7),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SearchPage()),
+              ),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: pnl,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: lineC),
+                ),
+                child: Icon(Icons.search_rounded,
+                    color: txtC, size: 20),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeFilterBar() {
+    final isDark = darkModeNotifier.value;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 0, 0, 10),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          children: _timeFilters.map((filter) {
+            final selected = _timeFilter == filter['key'];
+            final color = filter['color'] as Color;
+            return Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() {
+                    _timeFilter = filter['key'] as String;
+                    _posts.clear();
+                    _posts.addAll(_applyTimeFilter());
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 9),
+                  decoration: BoxDecoration(
+                    gradient: selected
+                        ? LinearGradient(
+                            colors: [
+                              color,
+                              color.withOpacity(0.7),
+                            ],
+                          )
+                        : null,
+                    color: selected ? null : pnl,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: selected
+                          ? color
+                          : (isDark
+                              ? Colors.white.withOpacity(0.08)
+                              : lineC),
+                      width: selected ? 1.5 : 1,
+                    ),
+                    boxShadow: selected
+                        ? [
+                            BoxShadow(
+                              color: color.withOpacity(0.35),
+                              blurRadius: 12,
+                              offset: const Offset(0, 3),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        filter['icon'] as IconData,
+                        color: selected ? Colors.white : color,
+                        size: 15,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        filter['label'] as String,
+                        style: TextStyle(
+                          color: selected ? Colors.white : txtC,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                      if (selected && _posts.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '${_posts.length}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Vazirmatn',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyFilter() {
+    final filter = _timeFilters.firstWhere(
+      (f) => f['key'] == _timeFilter,
+      orElse: () => _timeFilters.first,
+    );
+    final color = filter['color'] as Color;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    color.withOpacity(0.15),
+                    color.withOpacity(0.05),
+                  ],
+                ),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: color.withOpacity(0.3),
+                  width: 1.5,
+                ),
+              ),
+              child: Icon(
+                filter['icon'] as IconData,
+                color: color,
+                size: 48,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'خبری در «${filter['label']}» پیدا نشد',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: txtC,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  _timeFilter = 'all';
+                  _posts.clear();
+                  _posts.addAll(_applyTimeFilter());
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      kPrimaryNavy,
+                      kPrimaryNavy.withOpacity(0.7),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(999),
+                  boxShadow: [
+                    BoxShadow(
+                      color: kPrimaryNavy.withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.apps_rounded,
+                        color: Colors.white, size: 16),
+                    SizedBox(width: 6),
+                    Text(
+                      'نمایش همه اخبار',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/* ==================== PREMIUM NEWS CARD ==================== */
+
+class _PremiumNewsCard extends StatefulWidget {
+  final dynamic post;
+  const _PremiumNewsCard({required this.post});
+
+  @override
+  State<_PremiumNewsCard> createState() => _PremiumNewsCardState();
+}
+
+class _PremiumNewsCardState extends State<_PremiumNewsCard> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final post = widget.post;
+    final title = pTitle(post);
+    final link = pLink(post);
+    final img = pImg(post);
+    final cat = pCategory(post);
+    final date = pTimeAgo(post);
+    final excerpt = pExcerpt(post, maxChars: 110);
+    final isDark = darkModeNotifier.value;
+
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: () => openUrl(context, link, post: post),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+            colors: isDark
+                ? [
+                    kUrgent.withOpacity(0.15),
+                    kDarkCard,
+                  ]
+                : [
+                    const Color(0xfffff5f5),
+                    Colors.white,
+                  ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: _pressed
+                ? kUrgent.withOpacity(0.6)
+                : lineC,
+            width: _pressed ? 1.5 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: _pressed
+                  ? kUrgent.withOpacity(0.2)
+                  : Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+              blurRadius: _pressed ? 20 : 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (img.isNotEmpty)
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(19),
+                ),
+                child: AspectRatio(
+                  aspectRatio: 16 / 8,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      CachedNetworkImage(
+                        imageUrl: img,
+                        fit: BoxFit.cover,
+                        memCacheWidth: 1080,
+                        memCacheHeight: 540,
+                        maxWidthDiskCache: 1080,
+                        maxHeightDiskCache: 540,
+                        fadeInDuration:
+                            const Duration(milliseconds: 300),
+                        fadeOutDuration:
+                            const Duration(milliseconds: 200),
+                        placeholder: (_, __) => Container(
+                          color: pnl2,
+                          child: Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: kUrgent.withOpacity(0.5),
+                              ),
+                            ),
+                          ),
+                        ),
+                        errorWidget: (_, __, ___) => Container(
+                          color: pnl2,
+                          child: Icon(Icons.newspaper_rounded,
+                              color: kUrgent,
+                              size: 48),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 60,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.75),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (cat.isNotEmpty)
+                        Positioned(
+                          top: 12,
+                          right: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  kUrgent,
+                                  kUrgent.withOpacity(0.8),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: kUrgent.withOpacity(0.5),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 5,
+                                  height: 5,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  cat,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w900,
+                                    fontFamily: 'Vazirmatn',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      Positioned(
+                        bottom: 12,
+                        right: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.schedule_rounded,
+                                  color: Colors.white70, size: 11),
+                              const SizedBox(width: 4),
+                              Text(
+                                date,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  fontFamily: 'Vazirmatn',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      if (img.isEmpty && cat.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                kUrgent,
+                                kUrgent.withOpacity(0.8),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            cat,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Vazirmatn',
+                            ),
+                          ),
+                        ),
+                      if (img.isEmpty) const Spacer(),
+                      Icon(Icons.newspaper_rounded,
+                          color: kUrgent.withOpacity(0.6),
+                          size: 16),
+                    ],
+                  ),
+                  if (img.isEmpty && cat.isNotEmpty)
+                    const SizedBox(height: 10),
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: txtC,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w900,
+                      height: 1.55,
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                  if (excerpt.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      excerpt,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: inkSoft,
+                        fontSize: 12,
+                        height: 1.8,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: darkModeNotifier.value
+                          ? kUrgent.withOpacity(0.18)
+                          : kUrgent.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: darkModeNotifier.value
+                          ? Border.all(
+                              color: kUrgent.withOpacity(0.35),
+                              width: 0.8,
+                            )
+                          : null,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.circle,
+                            size: 6, color: kUrgent),
+                        const SizedBox(width: 6),
+                        Text(
+                          'مشاهده خبر',
+                          style: TextStyle(
+                            color: kUrgent,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                        const Spacer(),
+                        const Icon(Icons.arrow_back_ios_new_rounded,
+                            color: kUrgent, size: 10),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+/* ==================== PREMIUM SHOP PAGE ==================== */
+
+class ShopPage extends StatefulWidget {
+  const ShopPage({super.key});
+  @override
+  State<ShopPage> createState() => _ShopPageState();
+}
+
+class _ShopPageState extends State<ShopPage> {
+  final _products = <dynamic>[];
+  int _page = 1;
+  bool _loading = false;
+  bool _hasMore = true;
+  String? _error;
+  final _scroll = ScrollController(keepScrollOffset: false);
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    _scroll.addListener(() {
+      if (_scroll.position.pixels >=
+              _scroll.position.maxScrollExtent - 400 &&
+          !_loading &&
+          _hasMore) {
+        _load();
+      }
+    });
+  }
+
+  Future<void> _load() async {
+    if (_loading || !_hasMore) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final list =
+          await getProductsPaged(perPage: perPageSize, page: _page);
+      setState(() {
+        if (list.isEmpty) {
+          _hasMore = false;
+        } else {
+          _products.addAll(list);
+          _page++;
+          if (list.length < perPageSize) _hasMore = false;
+          if (_products.length > 150) _products.removeRange(0, 50);
+        }
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _products.clear();
+      _page = 1;
+      _hasMore = true;
+      _error = null;
+    });
+    await _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Scaffold(
+        backgroundColor: bgC,
+        body: Column(
+          children: [
+            _buildPremiumShopHeader(context),
+            Expanded(
+              child: _products.isEmpty && _loading
+                  ? const ShopSkeleton()
+                  : _products.isEmpty && _error != null
+                      ? ErrorBox(
+                          message: 'خطا در دریافت محصولات.\n$_error',
+                          onRetry: _refresh)
+                      : _products.isEmpty
+                          ? const EmptyWidget(text: 'محصولی پیدا نشد.')
+                          : RefreshIndicator(
+                              color: kAccentGold,
+                              backgroundColor: pnl,
+                              strokeWidth: 3,
+                              onRefresh: _refresh,
+                              child: ListView.builder(
+                                controller: _scroll,
+                                cacheExtent: 800,
+                                physics: const BouncingScrollPhysics(),
+                                padding: const EdgeInsets.fromLTRB(
+                                    14, 8, 14, 120),
+                                itemCount: _products.length +
+                                    (_hasMore ? 1 : 0),
+                                itemBuilder: (c, i) {
+                                  if (i >= _products.length) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(20),
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                            color: kAccentGold),
+                                      ),
+                                    );
+                                  }
+                                  return ModernProductCard(
+                                      product: _products[i]);
+                                },
+                              ),
+                            ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPremiumShopHeader(BuildContext context) {
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    kAccentGold,
+                    kAccentGoldDark,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: kAccentGold.withOpacity(0.4),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.shopping_bag_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'فروشگاه تخصصی',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: () => openUrl(context, '$site/cart/',
+                  title: 'سبد خرید'),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      kAccentGold.withOpacity(0.15),
+                      kAccentGold.withOpacity(0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: kAccentGold.withOpacity(0.3),
+                  ),
+                ),
+                child: const Icon(Icons.shopping_cart_rounded,
+                    color: kAccentGold, size: 20),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /* ==================== PREMIUM BOOKMARKS PAGE (3 TABS) ==================== */
 
 class BookmarksPage extends StatefulWidget {
@@ -9337,7 +10021,6 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 }
-
 /* ==================== PREMIUM ACCOUNT PAGE ==================== */
 
 class AccountPage extends StatefulWidget {
@@ -9657,23 +10340,15 @@ class _AccountPageState extends State<AccountPage>
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: ShaderMask(
-                shaderCallback: (bounds) => LinearGradient(
-                  colors: [
-                    kTabAccount,
-                    kPrimaryNavy,
-                  ],
-                ).createShader(bounds),
-                child: Text(
-                  'حساب کاربری',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: txtC,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
-                    letterSpacing: 0.2,
-                  ),
+              child: Text(
+                'حساب کاربری',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                  letterSpacing: 0.2,
                 ),
               ),
             ),
@@ -9898,6 +10573,7 @@ class _ModernWebPageState extends State<ModernWebPage> {
     );
   }
 }
+
 /* ==================== URGENT NEWS DETAIL PAGE ==================== */
 
 class UrgentNewsDetailPage extends StatefulWidget {
@@ -12739,6 +13415,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     );
   }
 }
+
 /* ==================== NOTIFICATIONS PAGE ==================== */
 
 class NotificationsPage extends StatefulWidget {
@@ -13591,9 +14268,9 @@ class BMICalculatorPage extends StatefulWidget {
 }
 
 class _BMICalculatorPageState extends State<BMICalculatorPage> {
-  final _heightCtrl = TextEditingController(text: '170');
-  final _weightCtrl = TextEditingController(text: '70');
-  final _ageCtrl = TextEditingController(text: '25');
+  final _heightCtrl = TextEditingController();
+  final _weightCtrl = TextEditingController();
+  final _ageCtrl = TextEditingController();
 
   String _gender = 'male';
   String _activityLevel = 'moderate';
@@ -13605,6 +14282,7 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
   int? _tdee;
   int? _idealWeightMin;
   int? _idealWeightMax;
+  bool _hasCalculated = false;
 
   final List<Map<String, dynamic>> _activityLevels = [
     {'key': 'sedentary', 'label': 'کم‌تحرک', 'mult': 1.2, 'desc': 'بدون ورزش'},
@@ -13618,15 +14296,15 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
   void initState() {
     super.initState();
     _loadSaved();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _calculate());
+    // ❌ حذف auto calculate
   }
 
   Future<void> _loadSaved() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _heightCtrl.text = prefs.getString('bmi_height') ?? '170';
-      _weightCtrl.text = prefs.getString('bmi_weight') ?? '70';
-      _ageCtrl.text = prefs.getString('bmi_age') ?? '25';
+      _heightCtrl.text = prefs.getString('bmi_height') ?? '';
+      _weightCtrl.text = prefs.getString('bmi_weight') ?? '';
+      _ageCtrl.text = prefs.getString('bmi_age') ?? '';
       _gender = prefs.getString('bmi_gender') ?? 'male';
       _activityLevel = prefs.getString('bmi_activity') ?? 'moderate';
       if (mounted) setState(() {});
@@ -13644,7 +14322,7 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
     } catch (_) {}
   }
 
-  void _calculate() {
+  void _calculate({bool fromButton = false}) {
     final height = double.tryParse(_heightCtrl.text) ?? 0;
     final weight = double.tryParse(_weightCtrl.text) ?? 0;
     final age = int.tryParse(_ageCtrl.text) ?? 0;
@@ -13654,7 +14332,14 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
         _bmi = null;
         _bmr = null;
         _tdee = null;
+        _hasCalculated = false;
       });
+      return;
+    }
+
+    if (fromButton) {
+      setState(() => _hasCalculated = true);
+    } else if (!_hasCalculated) {
       return;
     }
 
@@ -13772,7 +14457,7 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
             children: [
               _buildInputSection(),
               const SizedBox(height: 16),
-              if (_bmi != null) ...[
+              if (_hasCalculated && _bmi != null) ...[
                 _buildBMIResult(),
                 const SizedBox(height: 14),
                 _buildCalorieResult(),
@@ -13867,7 +14552,7 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
             child: ElevatedButton.icon(
               onPressed: () {
                 HapticFeedback.mediumImpact();
-                _calculate();
+                _calculate(fromButton: true);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: kTabShop,
@@ -14514,7 +15199,6 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
     );
   }
 }
-
 /* ==================== READING STATS PAGE ==================== */
 
 class ReadingStatsPage extends StatelessWidget {
