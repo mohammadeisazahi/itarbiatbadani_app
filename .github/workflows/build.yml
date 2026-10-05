@@ -30,10 +30,14 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Create android folder
+      - name: Create android folder (if missing)
         run: |
-          flutter create --platforms=android --project-name itarbiatbadani --org ir --no-pub .
-          echo "✅ android folder created"
+          if [ ! -d "android" ]; then
+            flutter create --platforms=android --project-name itarbiatbadani --org ir --no-pub .
+            echo "✅ android folder created"
+          else
+            echo "✅ android folder already exists (skipped)"
+          fi
 
       - name: Clean Flutter cache
         run: |
@@ -41,15 +45,39 @@ jobs:
           rm -f pubspec.lock
           echo "✅ Cleaned cache"
 
-      - name: Download Vazirmatn Fonts
+      # ✅ دانلود همه ۶ وزن فونت
+      - name: Download Vazirmatn Fonts (all weights)
         run: |
           mkdir -p assets/fonts
-          curl -L -o assets/fonts/Vazirmatn-Regular.ttf \
-            https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/ttf/Vazirmatn-Regular.ttf
-          curl -L -o assets/fonts/Vazirmatn-Bold.ttf \
-            https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/ttf/Vazirmatn-Bold.ttf
+          BASE="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/ttf"
+          echo "📥 Downloading Regular..."
+          curl -L -o assets/fonts/Vazirmatn-Regular.ttf   "$BASE/Vazirmatn-Regular.ttf"
+          echo "📥 Downloading Medium..."
+          curl -L -o assets/fonts/Vazirmatn-Medium.ttf    "$BASE/Vazirmatn-Medium.ttf"
+          echo "📥 Downloading SemiBold..."
+          curl -L -o assets/fonts/Vazirmatn-SemiBold.ttf  "$BASE/Vazirmatn-SemiBold.ttf"
+          echo "📥 Downloading Bold..."
+          curl -L -o assets/fonts/Vazirmatn-Bold.ttf      "$BASE/Vazirmatn-Bold.ttf"
+          echo "📥 Downloading ExtraBold..."
+          curl -L -o assets/fonts/Vazirmatn-ExtraBold.ttf "$BASE/Vazirmatn-ExtraBold.ttf"
+          echo "📥 Downloading Black..."
+          curl -L -o assets/fonts/Vazirmatn-Black.ttf     "$BASE/Vazirmatn-Black.ttf"
+          echo "📁 Fonts directory:"
           ls -la assets/fonts/
-          echo "✅ Fonts downloaded"
+          echo "✅ All 6 font weights downloaded"
+
+      # ✅ بررسی وجود لوگو
+      - name: Verify logo exists
+        run: |
+          mkdir -p assets/images
+          if [ ! -f "assets/images/logo.png" ]; then
+            echo "⚠️ logo.png not found in repo, downloading from site..."
+            curl -L -o assets/images/logo.png \
+              "https://itarbiatbadani.ir/wp-content/uploads/2025/07/1000073463.png"
+          fi
+          echo "📁 Images directory:"
+          ls -la assets/images/
+          echo "✅ Logo ready"
 
       - name: Upgrade AGP and Gradle
         run: |
@@ -95,27 +123,54 @@ jobs:
           sed -i "s|YOUR_WC_SECRET|${{ secrets.WC_SECRET }}|g" lib/main.dart || true
           echo "✅ WooCommerce keys injected"
 
-      - name: Add INTERNET permission
+      - name: Add Android permissions
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
+          
+          # تغییر نام اپ
           sed -i 's/android:label="[^"]*"/android:label="تربیت بدنی و علوم ورزشی"/' $MANIFEST
-          python3 -c "
-          path = '$MANIFEST'
+          
+          python3 << 'PYTHON_SCRIPT'
+          path = 'android/app/src/main/AndroidManifest.xml'
           with open(path, 'r', encoding='utf-8') as f:
               content = f.read()
-          if 'android.permission.INTERNET' not in content:
+          
+          # لیست مجوزهای مورد نیاز
+          permissions = [
+              'android.permission.INTERNET',
+              'android.permission.ACCESS_NETWORK_STATE',
+              'android.permission.WRITE_EXTERNAL_STORAGE',
+              'android.permission.READ_EXTERNAL_STORAGE',
+          ]
+          
+          # اضافه کردن هر مجوز اگر وجود ندارد
+          for perm in permissions:
+              if perm not in content:
+                  content = content.replace(
+                      '<application',
+                      f'<uses-permission android:name="{perm}" />\n    <application',
+                      1
+                  )
+                  print(f'✅ Added: {perm}')
+              else:
+                  print(f'✔️ Already exists: {perm}')
+          
+          # اضافه کردن usesCleartextTraffic (برای HTTP)
+          if 'usesCleartextTraffic' not in content:
               content = content.replace(
-                  '<application',
-                  '<uses-permission android:name=\"android.permission.INTERNET\" />\n    <application',
+                  'android:label=',
+                  'android:usesCleartextTraffic="true"\n        android:label=',
                   1
               )
-              with open(path, 'w', encoding='utf-8') as f:
-                  f.write(content)
-              print('✅ INTERNET permission added')
-          else:
-              print('✅ INTERNET permission already exists')
-          "
-          cat $MANIFEST
+              print('✅ Added usesCleartextTraffic')
+          
+          with open(path, 'w', encoding='utf-8') as f:
+              f.write(content)
+          
+          print('\n📄 Final AndroidManifest.xml:')
+          print('=' * 50)
+          print(content)
+          PYTHON_SCRIPT
 
       - name: Get Flutter dependencies
         run: flutter pub get
