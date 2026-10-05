@@ -19,6 +19,7 @@ dependencies:
   shared_preferences: ^2.3.3
   path_provider: ^2.1.5
   file_picker: ^8.1.2
+  app_links: ^6.3.2
 
 dev_dependencies:
   flutter_test:
@@ -56,17 +57,17 @@ flutter_launcher_icons:
   min_sdk_android: 21
 
 flutter_native_splash:
-  color: "#0a0e14"
+  color: "#0a121e"
   image: assets/images/logo.png
-  color_dark: "#0a0e14"
+  color_dark: "#0a121e"
   image_dark: assets/images/logo.png
   android_12:
-    color: "#0a0e14"
+    color: "#0a121e"
     image: assets/images/logo.png
-    icon_background_color: "#0a0e14"
-    color_dark: "#0a0e14"
+    icon_background_color: "#0a121e"
+    color_dark: "#0a121e"
     image_dark: assets/images/logo.png
-    icon_background_color_dark: "#0a0e14"
+    icon_background_color_dark: "#0a121e"
   android: true
   ios: false
   fullscreen: true
