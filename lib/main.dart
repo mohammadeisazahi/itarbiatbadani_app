@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'package:app_links/app_links.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -30,41 +31,59 @@ final bookmarkNotifier = ValueNotifier<Set<String>>({});
 final newsBookmarkNotifier = ValueNotifier<Set<String>>({});
 final productBookmarkNotifier = ValueNotifier<Set<String>>({});
 final followedCategoriesNotifier = ValueNotifier<Set<String>>({});
+final inAppNotificationsNotifier =
+    ValueNotifier<List<Map<String, dynamic>>>([]);
+final lastNewsCheckNotifier = ValueNotifier<String>('');
+final readArticlesNotifier =
+    ValueNotifier<List<Map<String, dynamic>>>([]);
+final readingStatsNotifier = ValueNotifier<Map<String, dynamic>>({});
 final accentNotifier = ValueNotifier<Color>(const Color(0xff1a2b47));
 
-/* ==================== REFINED COLOR SYSTEM ==================== */
+/* ==================== REFINED COLOR SYSTEM V2 ==================== */
 
+/// 🎨 رنگ‌های اصلی برند
 const Color kPrimaryNavy = Color(0xff1a2b47);
 const Color kPrimaryNavyLight = Color(0xff2c4470);
 const Color kPrimaryNavyDark = Color(0xff0f1a2e);
 const Color kPrimaryNavySoft = Color(0xff4a6fa5);
 
+/// 🎨 طلایی
 const Color kAccentGold = Color(0xffc9a961);
 const Color kAccentGoldLight = Color(0xffe0c987);
 const Color kAccentGoldDark = Color(0xffa88840);
 const Color kAccentGoldSoft = Color(0xfff0e4c0);
 
-const Color kUrgent = Color(0xffdc2626);
-const Color kUrgentDark = Color(0xff991b1b);
+/// 🎨 رنگ‌های معنایی
+const Color kUrgent = Color(0xffc1121f);
+const Color kUrgentDark = Color(0xff9a0e17);
 const Color kSuccess = Color(0xff059669);
 const Color kSuccessLight = Color(0xff34d399);
 const Color kWarning = Color(0xffd97706);
 const Color kInfo = Color(0xff2563eb);
 const Color kInfoLight = Color(0xff60a5fa);
 
-const Color kDarkBg = Color(0xff0a0e14);
-const Color kDarkCard = Color(0xff141a22);
-const Color kDarkCard2 = Color(0xff1c242e);
-const Color kDarkCard3 = Color(0xff232b36);
-const Color kDarkBorder = Color(0xff232b36);
-const Color kDarkText = Color(0xffe8e8e8);
-const Color kDarkTextMuted = Color(0xff8b949e);
+/// 🎨 رنگ تب‌ها
+const Color kTabHome = Color(0xff1a2b47);
+const Color kTabArticles = Color(0xff1e40af);
+const Color kTabNews = Color(0xffc1121f);
+const Color kTabShop = Color(0xffd97706);
+const Color kTabAccount = Color(0xff0d9488);
 
-const Color kLightBg = Color(0xfff8f7f4);
+/// 🌙 سطوح تیره
+const Color kDarkBg = Color(0xff0a121e);
+const Color kDarkCard = Color(0xff1a2538);
+const Color kDarkCard2 = Color(0xff25334a);
+const Color kDarkCard3 = Color(0xff30405a);
+const Color kDarkBorder = Color(0xff344864);
+const Color kDarkText = Color(0xfff0f4f8);
+const Color kDarkTextMuted = Color(0xff94a3b8);
+
+/// ☀️ سطوح روشن
+const Color kLightBg = Color(0xfff5f7fa);
 const Color kLightCard = Color(0xffffffff);
-const Color kLightCard2 = Color(0xfff1efea);
-const Color kLightCard3 = Color(0xffe8e6e0);
-const Color kLightBorder = Color(0xffe5e3dd);
+const Color kLightCard2 = Color(0xffeef2f7);
+const Color kLightCard3 = Color(0xffe3e9f0);
+const Color kLightBorder = Color(0xffdde3ea);
 const Color kLightText = Color(0xff0f1419);
 const Color kLightTextMuted = Color(0xff5c6370);
 
@@ -84,10 +103,10 @@ const List<Color> accentPalette = [
 Color get bgC => darkModeNotifier.value ? kDarkBg : kLightBg;
 Color get bgGrad1 => darkModeNotifier.value ? kDarkBg : kLightBg;
 Color get bgGrad2 => darkModeNotifier.value
-    ? const Color(0xff10161f)
-    : const Color(0xfff0ede6);
+    ? const Color(0xff141d2e)
+    : const Color(0xffeef2f7);
 
-/// 🎨 کارت‌ها (سه لایه)
+/// 🎨 کارت‌ها
 Color get pnl => darkModeNotifier.value ? kDarkCard : kLightCard;
 Color get pnl2 => darkModeNotifier.value ? kDarkCard2 : kLightCard2;
 Color get pnl3 => darkModeNotifier.value ? kDarkCard3 : kLightCard3;
@@ -109,7 +128,7 @@ Color get gold => kAccentGold;
 Color get rose => kUrgent;
 Color get purple => const Color(0xff6d28d9);
 
-/// 🎨 مرزها و خطوط
+/// 🎨 مرزها
 Color get lineC => darkModeNotifier.value ? kDarkBorder : kLightBorder;
 Color get softLine => darkModeNotifier.value
     ? const Color(0xff1c242e)
@@ -347,11 +366,294 @@ Future<void> clearFollowedCategories() async {
     await prefs.remove('followed_categories');
   } catch (_) {}
 }
+
+/* ==================== IN-APP NOTIFICATIONS ==================== */
+
+Future<void> loadInAppNotifications() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString('in_app_notifications');
+    if (data != null && data.isNotEmpty) {
+      final list = (json.decode(data) as List)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+      if (list.length > 50) {
+        list.removeRange(50, list.length);
+      }
+      inAppNotificationsNotifier.value = list;
+    }
+    lastNewsCheckNotifier.value =
+        prefs.getString('last_news_check') ?? '';
+  } catch (_) {}
+}
+
+Future<void> _saveInAppNotifications() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'in_app_notifications',
+      json.encode(inAppNotificationsNotifier.value),
+    );
+  } catch (_) {}
+}
+
+Future<void> _saveLastNewsCheck(DateTime time) async {
+  try {
+    final iso = time.toIso8601String();
+    lastNewsCheckNotifier.value = iso;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('last_news_check', iso);
+  } catch (_) {}
+}
+
+Future<void> checkForNewNotifications() async {
+  try {
+    final list = await getNewNewsList();
+    if (list.isEmpty) return;
+
+    final lastCheck = lastNewsCheckNotifier.value.isNotEmpty
+        ? DateTime.tryParse(lastNewsCheckNotifier.value)
+        : null;
+
+    final now = DateTime.now();
+    final existing = List<Map<String, dynamic>>.from(
+        inAppNotificationsNotifier.value);
+    final existingIds = existing.map((e) => e['id'].toString()).toSet();
+
+    final newOnes = <Map<String, dynamic>>[];
+
+    for (final news in list) {
+      final id = pId(news);
+      if (id.isEmpty || existingIds.contains(id)) continue;
+      if (lastCheck != null) {
+        try {
+          final newsDate = DateTime.parse(news['date']).toLocal();
+          if (newsDate.isBefore(lastCheck)) continue;
+        } catch (_) {
+          continue;
+        }
+      }
+      newOnes.add({
+        'id': id,
+        'title': pTitle(news),
+        'excerpt': pExcerpt(news, maxChars: 100),
+        'link': pLink(news),
+        'image': pImg(news),
+        'date': news['date'] ?? '',
+        'read': false,
+        'createdAt': now.toIso8601String(),
+      });
+    }
+
+    if (newOnes.isNotEmpty) {
+      final updated = [...newOnes, ...existing];
+      if (updated.length > 50) {
+        updated.removeRange(50, updated.length);
+      }
+      inAppNotificationsNotifier.value = updated;
+      await _saveInAppNotifications();
+    }
+
+    await _saveLastNewsCheck(now);
+  } catch (_) {}
+}
+
+Future<void> markNotificationRead(String id) async {
+  final list = List<Map<String, dynamic>>.from(
+      inAppNotificationsNotifier.value);
+  final index = list.indexWhere((e) => e['id'].toString() == id);
+  if (index != -1) {
+    list[index] = {...list[index], 'read': true};
+    inAppNotificationsNotifier.value = list;
+    await _saveInAppNotifications();
+  }
+}
+
+Future<void> markAllNotificationsRead() async {
+  final list = inAppNotificationsNotifier.value
+      .map((e) => {...e, 'read': true})
+      .toList();
+  inAppNotificationsNotifier.value = list;
+  await _saveInAppNotifications();
+}
+
+Future<void> clearAllNotifications() async {
+  inAppNotificationsNotifier.value = [];
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('in_app_notifications');
+  } catch (_) {}
+}
+
+/* ==================== READING STATS ==================== */
+
+Future<void> trackArticleRead(dynamic post, {String? fromCategory}) async {
+  try {
+    final id = pId(post);
+    if (id.isEmpty) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now();
+    final todayKey = '${now.year}-${now.month}-${now.day}';
+
+    final data = prefs.getString('read_articles') ?? '[]';
+    final list = (json.decode(data) as List)
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+
+    final existingIndex = list.indexWhere((e) => e['id'] == id);
+    if (existingIndex != -1) {
+      list[existingIndex]['lastRead'] = now.toIso8601String();
+      list[existingIndex]['readCount'] =
+          ((list[existingIndex]['readCount'] as int?) ?? 1) + 1;
+    } else {
+      final wordCount = clean(post['content']?['rendered'] ?? '')
+          .split(RegExp(r'\s+'))
+          .where((w) => w.isNotEmpty)
+          .length;
+      final readTime = (wordCount / 200).ceil();
+
+      list.insert(0, {
+        'id': id,
+        'title': pTitle(post),
+        'image': pImg(post),
+        'category': fromCategory ?? pCategory(post),
+        'link': pLink(post),
+        'readTime': readTime < 1 ? 1 : readTime,
+        'firstRead': now.toIso8601String(),
+        'lastRead': now.toIso8601String(),
+        'readCount': 1,
+      });
+    }
+
+    if (list.length > 200) {
+      list.removeRange(200, list.length);
+    }
+
+    await prefs.setString('read_articles', json.encode(list));
+    readArticlesNotifier.value = list;
+    await _updateReadingStats();
+    await _trackReadingDay(todayKey, list.length);
+  } catch (_) {}
+}
+
+Future<void> _updateReadingStats() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString('read_articles') ?? '[]';
+    final list = (json.decode(data) as List)
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+
+    final now = DateTime.now();
+    final weekAgo = now.subtract(const Duration(days: 7));
+    final monthAgo = now.subtract(const Duration(days: 30));
+
+    int totalRead = list.length;
+    int weekCount = 0;
+    int monthCount = 0;
+    int totalReadTime = 0;
+    int weekReadTime = 0;
+    Map<String, int> categoryCount = {};
+    Map<String, int> dailyCount = {};
+
+    for (final item in list) {
+      try {
+        final lastRead = DateTime.parse(item['lastRead'] ?? '');
+        final readTime = (item['readTime'] as int?) ?? 1;
+        final cat = item['category']?.toString() ?? 'سایر';
+
+        totalReadTime += readTime;
+
+        if (lastRead.isAfter(weekAgo)) {
+          weekCount++;
+          weekReadTime += readTime;
+        }
+        if (lastRead.isAfter(monthAgo)) {
+          monthCount++;
+        }
+
+        categoryCount[cat] = (categoryCount[cat] ?? 0) + 1;
+
+        final dayKey = '${lastRead.year}-${lastRead.month}-${lastRead.day}';
+        dailyCount[dayKey] = (dailyCount[dayKey] ?? 0) + 1;
+      } catch (_) {}
+    }
+
+    int streak = 0;
+    for (int i = 0; i < 30; i++) {
+      final day = now.subtract(Duration(days: i));
+      final key = '${day.year}-${day.month}-${day.day}';
+      if (dailyCount.containsKey(key)) {
+        streak++;
+      } else if (i > 0) {
+        break;
+      }
+    }
+
+    final stats = {
+      'totalRead': totalRead,
+      'weekCount': weekCount,
+      'monthCount': monthCount,
+      'totalReadTime': totalReadTime,
+      'weekReadTime': weekReadTime,
+      'streak': streak,
+      'categoryCount': categoryCount,
+      'dailyCount': dailyCount,
+    };
+
+    readingStatsNotifier.value = stats;
+  } catch (_) {}
+}
+
+Future<void> _trackReadingDay(String todayKey, int count) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final days = prefs.getStringList('reading_days') ?? [];
+    if (!days.contains(todayKey)) {
+      days.add(todayKey);
+      if (days.length > 90) {
+        days.removeRange(0, days.length - 90);
+      }
+      await prefs.setStringList('reading_days', days);
+    }
+  } catch (_) {}
+}
+
+Future<void> loadReadingStats() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString('read_articles');
+    if (data != null && data.isNotEmpty) {
+      final list = (json.decode(data) as List)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+      readArticlesNotifier.value = list;
+      await _updateReadingStats();
+    }
+  } catch (_) {}
+}
+
+Future<void> clearReadingStats() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('read_articles');
+    await prefs.remove('reading_days');
+    readArticlesNotifier.value = [];
+    readingStatsNotifier.value = {};
+  } catch (_) {}
+}
 /* ==================== NAVIGATION ==================== */
 
 Future<void> openUrl(BuildContext context, String url,
-    {String title = 'مشاهده'}) async {
+    {String title = 'مشاهده', dynamic post}) async {
   if (url.isEmpty) return;
+
+  // 📊 ثبت آمار مطالعه
+  if (post != null) {
+    trackArticleRead(post);
+  }
+
   Navigator.push(
     context,
     MaterialPageRoute(
@@ -638,24 +940,20 @@ List<int> _toJalali(int gy, int gm, int gd) {
 
 /* ==================== PERSIAN TO FINGLISH (SLUG) ==================== */
 
-/// تبدیل متن فارسی به Finglish (برای ساخت slug انگلیسی)
 String persianToFinglish(String input) {
   if (input.isEmpty) return '';
 
-  // حذف نیم‌فاصله و اعداد فارسی
   String text = input
-      .replaceAll('\u200c', ' ') // نیم‌فاصله
+      .replaceAll('\u200c', ' ')
       .replaceAll('‌', ' ')
       .replaceAll('ي', 'ی')
       .replaceAll('ك', 'ک');
 
-  // تبدیل اعداد فارسی به انگلیسی
   const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
   for (int i = 0; i < persianDigits.length; i++) {
     text = text.replaceAll(persianDigits[i], i.toString());
   }
 
-  // دیکشنری تبدیل حروف
   const replacements = {
     'آ': 'a', 'ا': 'a', 'ب': 'b', 'پ': 'p', 'ت': 't', 'ث': 's',
     'ج': 'j', 'چ': 'ch', 'ح': 'h', 'خ': 'kh', 'د': 'd', 'ذ': 'z',
@@ -676,14 +974,12 @@ String persianToFinglish(String input) {
     }
   }
 
-  // پاکسازی نهایی
   String result = buffer.toString().toLowerCase();
   result = result.replaceAll(RegExp(r'[^a-z0-9\s-]'), '');
   result = result.replaceAll(RegExp(r'\s+'), '-');
   result = result.replaceAll(RegExp(r'-+'), '-');
   result = result.trim().replaceAll(RegExp(r'^-|-$'), '');
 
-  // محدودیت طول
   if (result.length > 80) {
     result = result.substring(0, 80);
     if (result.endsWith('-')) {
@@ -694,7 +990,6 @@ String persianToFinglish(String input) {
   return result;
 }
 
-/// ساخت Slug یکتا با timestamp
 String generateSlug(String title) {
   final slug = persianToFinglish(title);
   if (slug.isEmpty) {
@@ -878,7 +1173,6 @@ String _basicAuth(String user, String pass) {
   return base64Encode(utf8.encode('$user:$clean'));
 }
 
-/// 📝 انتشار خبر فوری جدید (با Slug انگلیسی)
 Future<Map<String, dynamic>> postNewNews({
   required String username,
   required String appPassword,
@@ -887,8 +1181,6 @@ Future<Map<String, dynamic>> postNewNews({
 }) async {
   final auth = _basicAuth(username, appPassword);
   final uri = Uri.parse('$api/new_news');
-  
-  // 🎯 ساخت Slug انگلیسی از عنوان فارسی
   final slug = generateSlug(title);
 
   final r = await http.post(
@@ -901,7 +1193,7 @@ Future<Map<String, dynamic>> postNewNews({
     body: jsonEncode({
       'title': title,
       'content': content,
-      'slug': slug,  // ✅ Slug انگلیسی
+      'slug': slug,
       'status': 'publish',
     }),
   );
@@ -915,7 +1207,6 @@ Future<Map<String, dynamic>> postNewNews({
   throw Exception('خطا در ارسال (${r.statusCode})');
 }
 
-/// 📝 ویرایش خبر فوری (با Slug انگلیسی)
 Future<Map<String, dynamic>> updateNews({
   required String username,
   required String appPassword,
@@ -925,8 +1216,6 @@ Future<Map<String, dynamic>> updateNews({
 }) async {
   final auth = _basicAuth(username, appPassword);
   final uri = Uri.parse('$api/new_news/$postId');
-  
-  // 🎯 ساخت Slug انگلیسی از عنوان فارسی
   final slug = generateSlug(title);
 
   final r = await http.put(
@@ -939,7 +1228,7 @@ Future<Map<String, dynamic>> updateNews({
     body: jsonEncode({
       'title': title,
       'content': content,
-      'slug': slug,  // ✅ Slug انگلیسی
+      'slug': slug,
     }),
   );
   if (r.statusCode == 200 || r.statusCode == 201) {
@@ -1052,6 +1341,11 @@ void main() async {
     await loadAccentColor();
     await loadThemeMode();
     await loadFollowedCategories();
+    await loadInAppNotifications();
+    await loadReadingStats();
+    Future.delayed(const Duration(seconds: 2), () {
+      checkForNewNotifications();
+    });
   } catch (_) {}
   runApp(const App());
 }
@@ -1194,7 +1488,7 @@ class _SplashScreenState extends State<SplashScreen>
                   ]
                 : [
                     kLightBg,
-                    const Color(0xfff0ede6),
+                    const Color(0xffeef2f7),
                     kAccentGoldSoft,
                   ],
           ),
@@ -1377,8 +1671,7 @@ class _DotsLoaderState extends State<_DotsLoader>
     );
   }
 }
-
-/* ==================== ROOT ==================== */
+/* ==================== ROOT (WITH DEEP LINKING) ==================== */
 
 class Root extends StatefulWidget {
   const Root({super.key});
@@ -1388,6 +1681,8 @@ class Root extends StatefulWidget {
 
 class _RootState extends State<Root> {
   int _i = 0;
+  final _appLinks = AppLinks();
+  StreamSubscription<Uri>? _linkSub;
 
   static const _pages = [
     Home(),
@@ -1396,6 +1691,103 @@ class _RootState extends State<Root> {
     ShopPage(),
     AccountPage(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _initDeepLinks();
+  }
+
+  @override
+  void dispose() {
+    _linkSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _initDeepLinks() async {
+    try {
+      final initialUri = await _appLinks.getInitialLink();
+      if (initialUri != null && mounted) {
+        _handleDeepLink(initialUri);
+      }
+
+      _linkSub = _appLinks.uriLinkStream.listen(
+        (uri) {
+          if (mounted) _handleDeepLink(uri);
+        },
+        onError: (_) {},
+      );
+    } catch (_) {}
+  }
+
+  void _handleDeepLink(Uri uri) async {
+    try {
+      final host = uri.host.toLowerCase();
+      if (!host.contains('itarbiatbadani.ir')) return;
+
+      final pathSegments = uri.pathSegments
+          .where((s) => s.isNotEmpty)
+          .toList();
+      if (pathSegments.isEmpty) return;
+
+      final fullUrl = uri.toString();
+      final slug = pathSegments.last;
+
+      if (mounted) {
+        showSnack(context, 'در حال باز کردن لینک...');
+      }
+
+      try {
+        final url = '$api/posts?slug=${Uri.encodeComponent(slug)}'
+            '&_embed=wp:featuredmedia,wp:term,author';
+        final response = await http.get(Uri.parse(url));
+        if (response.statusCode == 200) {
+          final list = json.decode(response.body) as List;
+          if (list.isNotEmpty && mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ModernWebPage(
+                  url: pLink(list.first),
+                  title: pTitle(list.first),
+                ),
+              ),
+            );
+            return;
+          }
+        }
+
+        final newsUrl = '$api/new_news?slug=${Uri.encodeComponent(slug)}'
+            '&_embed=wp:featuredmedia,wp:term,author&_fields=id,link,title,date,excerpt,content,_embedded,_links';
+        final newsResponse = await http.get(Uri.parse(newsUrl));
+        if (newsResponse.statusCode == 200) {
+          final newsList = json.decode(newsResponse.body) as List;
+          if (newsList.isNotEmpty && mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    UrgentNewsDetailPage(news: newsList.first),
+              ),
+            );
+            return;
+          }
+        }
+      } catch (_) {}
+
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ModernWebPage(
+              url: fullUrl,
+              title: 'مشاهده',
+            ),
+          ),
+        );
+      }
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1485,31 +1877,31 @@ class _ModernNavBar extends StatelessWidget {
       icon: Icons.home_outlined,
       activeIcon: Icons.home_rounded,
       label: 'خانه',
-      color: Color(0xff1a2b47),
+      color: kTabHome,
     ),
     _NavItem(
       icon: Icons.article_outlined,
       activeIcon: Icons.article_rounded,
       label: 'مقالات',
-      color: Color(0xff2563eb),
+      color: kTabArticles,
     ),
     _NavItem(
       icon: Icons.newspaper_outlined,
       activeIcon: Icons.newspaper_rounded,
       label: 'اخبار',
-      color: Color(0xffdc2626),
+      color: kTabNews,
     ),
     _NavItem(
       icon: Icons.shopping_bag_outlined,
       activeIcon: Icons.shopping_bag_rounded,
       label: 'فروشگاه',
-      color: Color(0xffea580c),
+      color: kTabShop,
     ),
     _NavItem(
       icon: Icons.person_outline_rounded,
       activeIcon: Icons.person_rounded,
       label: 'حساب من',
-      color: Color(0xff8b5cf6),
+      color: kTabAccount,
     ),
   ];
 }
@@ -1601,7 +1993,7 @@ class _PremiumNavItemState extends State<_PremiumNavItem>
                         end: Alignment.bottomRight,
                         colors: [
                           item.color,
-                          item.color.withOpacity(0.7),
+                          Color.lerp(item.color, Colors.black, 0.15)!,
                         ],
                       )
                     : null,
@@ -1724,6 +2116,7 @@ class _HomeState extends State<Home> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {
         precacheImage(NetworkImage(heroImg), context);
+        checkForNewNotifications();
       } catch (_) {}
     });
   }
@@ -1743,6 +2136,7 @@ class _HomeState extends State<Home> {
     });
     try {
       await _f;
+      await checkForNewNotifications();
     } catch (_) {}
   }
 
@@ -1819,6 +2213,13 @@ class _HomeState extends State<Home> {
                         key: _bannerKey, future: _newsFuture),
                   ),
                   SliverToBoxAdapter(child: ModernServicesSection()),
+                  SliverToBoxAdapter(
+                    child: ModernSectionTitle(
+                      title: 'دسته‌بندی‌ها',
+                      icon: Icons.grid_view_rounded,
+                    ),
+                  ),
+                  SliverToBoxAdapter(child: ModernCatGrid()),
                   SliverToBoxAdapter(child: ModernSocial()),
                   const SliverToBoxAdapter(child: SizedBox(height: 140)),
                 ],
@@ -2004,13 +2405,62 @@ Widget ModernHeader(BuildContext context, [String? t]) {
               ],
             ),
           ),
-          // 🔖 نشان‌شده‌ها
-          _HeaderIconButton(
-            icon: Icons.bookmark_outline_rounded,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const BookmarksPage()),
-            ),
+          // 🔔 اعلان‌ها
+          ValueListenableBuilder<List<Map<String, dynamic>>>(
+            valueListenable: inAppNotificationsNotifier,
+            builder: (c, list, __) {
+              final unread =
+                  list.where((e) => e['read'] != true).length;
+              return Stack(
+                children: [
+                  _HeaderIconButton(
+                    icon: Icons.notifications_outlined,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const NotificationsPage()),
+                    ),
+                  ),
+                  if (unread > 0)
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [kUrgent, kUrgentDark],
+                          ),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: pnl, width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: kUrgent.withOpacity(0.5),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          unread > 9 ? '۹+' : '$unread',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'Vazirmatn',
+                            height: 1.1,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
           const SizedBox(width: 4),
           // 🌗 تغییر تم
@@ -2078,7 +2528,6 @@ class _HeaderIconButton extends StatelessWidget {
     );
   }
 }
-
 /* ==================== LIVE NEWS TICKER ==================== */
 
 class LiveNewsTicker extends StatefulWidget {
@@ -2166,11 +2615,8 @@ class _LiveNewsTickerState extends State<LiveNewsTicker> {
             padding: const EdgeInsets.symmetric(
                 horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  kUrgent,
-                  kUrgentDark,
-                ],
+              gradient: const LinearGradient(
+                colors: [kUrgent, kUrgentDark],
               ),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
@@ -2312,87 +2758,101 @@ void _showThemeModePicker(BuildContext context) {
     context: context,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
-    builder: (ctx) => Container(
-      decoration: BoxDecoration(
-        color: pnl,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(color: lineC),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 44,
-            height: 4,
-            decoration: BoxDecoration(
-              color: mutC.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(999),
+    builder: (ctx) => Directionality(
+      textDirection: TextDirection.rtl,
+      child: Container(
+        decoration: BoxDecoration(
+          color: pnl,
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(28)),
+          border: Border.all(color: lineC),
+        ),
+        child: SafeArea(
+          bottom: true,
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              12,
+              20,
+              24 + MediaQuery.of(ctx).padding.bottom,
             ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [kPrimaryNavy, kAccentGold],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: mutC.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(999),
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: kPrimaryNavy.withOpacity(0.4),
-                      blurRadius: 12,
-                      offset: const Offset(0, 3),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [kPrimaryNavy, kAccentGold],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: kPrimaryNavy.withOpacity(0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.brightness_6_rounded,
+                          color: Colors.white, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'حالت نمایش',
+                      style: TextStyle(
+                        color: txtC,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn',
+                      ),
                     ),
                   ],
                 ),
-                child: const Icon(Icons.brightness_6_rounded,
-                    color: Colors.white, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'حالت نمایش',
-                style: TextStyle(
-                  color: txtC,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'Vazirmatn',
+                const SizedBox(height: 20),
+                _themeOption(
+                  icon: Icons.light_mode_rounded,
+                  label: 'روشن',
+                  subtitle: 'همیشه در حالت روشن',
+                  color: kAccentGold,
+                  value: 'light',
+                  ctx: ctx,
                 ),
-              ),
-            ],
+                const SizedBox(height: 10),
+                _themeOption(
+                  icon: Icons.dark_mode_rounded,
+                  label: 'تاریک',
+                  subtitle: 'همیشه در حالت تاریک',
+                  color: kPrimaryNavy,
+                  value: 'dark',
+                  ctx: ctx,
+                ),
+                const SizedBox(height: 10),
+                _themeOption(
+                  icon: Icons.brightness_auto_rounded,
+                  label: 'خودکار',
+                  subtitle: 'بر اساس ساعت روز',
+                  color: accentNotifier.value,
+                  value: 'auto',
+                  ctx: ctx,
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 20),
-          _themeOption(
-            icon: Icons.light_mode_rounded,
-            label: 'روشن',
-            subtitle: 'همیشه در حالت روشن',
-            color: kAccentGold,
-            value: 'light',
-            ctx: ctx,
-          ),
-          const SizedBox(height: 10),
-          _themeOption(
-            icon: Icons.dark_mode_rounded,
-            label: 'تاریک',
-            subtitle: 'همیشه در حالت تاریک',
-            color: kPrimaryNavy,
-            value: 'dark',
-            ctx: ctx,
-          ),
-          const SizedBox(height: 10),
-          _themeOption(
-            icon: Icons.brightness_auto_rounded,
-            label: 'خودکار',
-            subtitle: 'بر اساس ساعت روز',
-            color: accentNotifier.value,
-            value: 'auto',
-            ctx: ctx,
-          ),
-        ],
+        ),
       ),
     ),
   );
@@ -2447,8 +2907,8 @@ Widget _themeOption({
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   gradient: selected
                       ? LinearGradient(
@@ -2478,21 +2938,53 @@ Widget _themeOption({
                         fontFamily: 'Vazirmatn',
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       subtitle,
                       style: TextStyle(
                         color: mutC,
-                        fontSize: 11,
+                        fontSize: 11.5,
+                        height: 1.5,
                         fontFamily: 'Vazirmatn',
                       ),
                     ),
                   ],
                 ),
               ),
-              if (selected)
-                Icon(Icons.check_circle_rounded,
-                    color: color, size: 24),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: selected
+                      ? LinearGradient(
+                          colors: [color, color.withOpacity(0.7)],
+                        )
+                      : null,
+                  border: Border.all(
+                    color: selected
+                        ? color
+                        : mutC.withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: color.withOpacity(0.4),
+                            blurRadius: 8,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: selected
+                    ? const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      )
+                    : null,
+              ),
             ],
           ),
         ),
@@ -2500,6 +2992,7 @@ Widget _themeOption({
     },
   );
 }
+
 /* ==================== CATEGORY CHIPS BAR ==================== */
 
 class CategoryChipsBar extends StatefulWidget {
@@ -2510,13 +3003,15 @@ class CategoryChipsBar extends StatefulWidget {
 }
 
 class _CategoryChipsBarState extends State<CategoryChipsBar> {
-  int _selected = -1;
-
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<Set<String>>(
       valueListenable: followedCategoriesNotifier,
       builder: (context, followed, _) {
+        final followedCats = cats
+            .where((cat) => followed.contains(cat.s))
+            .toList();
+
         return Container(
           margin: const EdgeInsets.only(top: 4, bottom: 6),
           height: 44,
@@ -2524,75 +3019,123 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 14),
-            itemCount: cats.length + 3,
+            itemCount: followedCats.length + 6,
             separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (c, i) {
-              // 🎯 دکمه «دسته‌های من»
+              // 🏋️ ماشین‌حساب BMI (اول از همه)
               if (i == 0) {
+                return _actionChip(
+                  icon: Icons.calculate_rounded,
+                  label: 'تناسب اندام',
+                  color: kTabShop,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const BMICalculatorPage()),
+                    );
+                  },
+                );
+              }
+
+              // 📊 آمار مطالعه
+              if (i == 1) {
+                return ValueListenableBuilder<Map<String, dynamic>>(
+                  valueListenable: readingStatsNotifier,
+                  builder: (c, stats, __) {
+                    final count = stats['totalRead'] ?? 0;
+                    return _actionChip(
+                      icon: Icons.insights_rounded,
+                      label: 'آمار مطالعه',
+                      color: kSuccess,
+                      badge: count > 0 ? '$count' : null,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const ReadingStatsPage()),
+                        );
+                      },
+                    );
+                  },
+                );
+              }
+
+              // 🔖 نشان‌شده‌ها
+              if (i == 2) {
+                return _actionChip(
+                  icon: Icons.bookmark_rounded,
+                  label: 'نشان‌شده‌ها',
+                  color: kAccentGold,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const BookmarksPage()),
+                    );
+                  },
+                );
+              }
+
+              // ❤️ دسته‌های من
+              if (i == 3) {
                 final count = followed.length;
+                final hasItems = count > 0;
+                final isDark = darkModeNotifier.value;
                 return GestureDetector(
                   onTap: () {
                     HapticFeedback.selectionClick();
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) =>
-                            const FollowedCategoriesPage(),
+                        builder: (_) => const FollowedCategoriesPage(),
                       ),
                     );
                   },
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          kPrimaryNavy
-                              .withOpacity(count > 0 ? 1 : 0.15),
-                          kAccentGold
-                              .withOpacity(count > 0 ? 1 : 0.15),
-                        ],
-                      ),
+                      gradient: hasItems
+                          ? const LinearGradient(
+                              colors: [kPrimaryNavy, kAccentGold])
+                          : null,
+                      color: hasItems
+                          ? null
+                          : (isDark ? kDarkCard2 : kLightCard),
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(
-                        color: kPrimaryNavy
-                            .withOpacity(count > 0 ? 1 : 0.3),
-                        width: 1.2,
+                        color: hasItems
+                            ? kAccentGold.withOpacity(0.6)
+                            : (isDark ? kDarkBorder : kLightBorder),
+                        width: 1.5,
                       ),
-                      boxShadow: count > 0
-                          ? [
-                              BoxShadow(
-                                color: kAccentGold
-                                    .withOpacity(0.4),
-                                blurRadius: 12,
-                                offset: const Offset(0, 3),
-                              ),
-                            ]
-                          : null,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.favorite_rounded,
-                          color: count > 0
+                          hasItems
+                              ? Icons.favorite_rounded
+                              : Icons.favorite_border_rounded,
+                          color: hasItems
                               ? Colors.white
-                              : kPrimaryNavy,
+                              : (isDark ? txtC : kPrimaryNavy),
                           size: 15,
                         ),
                         const SizedBox(width: 6),
                         Text(
                           'دسته‌های من',
                           style: TextStyle(
-                            color: count > 0
-                                ? Colors.white
-                                : kPrimaryNavy,
+                            color: hasItems ? Colors.white : txtC,
                             fontSize: 12,
                             fontWeight: FontWeight.w900,
                             fontFamily: 'Vazirmatn',
                           ),
                         ),
-                        if (count > 0) ...[
+                        if (hasItems) ...[
                           const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -2618,78 +3161,28 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
                 );
               }
 
-              if (i == 1) {
-                final sel = _selected == -1;
-                return _chip(
-                  label: 'همه',
-                  icon: Icons.apps_rounded,
-                  color: accentNotifier.value,
-                  selected: sel,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() => _selected = -1);
-                  },
-                );
-              }
-
-              // 🎯 دکمه «همه دسته‌ها» در انتها
-              if (i == cats.length + 2) {
-                return GestureDetector(
+              // 🎯 همه دسته‌ها (آخر)
+              if (i == followedCats.length + 5) {
+                return _actionChip(
+                  icon: Icons.grid_view_rounded,
+                  label: 'همه دسته‌ها',
+                  color: kPrimaryNavy,
                   onTap: () {
                     HapticFeedback.selectionClick();
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const AllCategoriesPage(),
-                      ),
+                          builder: (_) => const AllCategoriesPage()),
                     );
                   },
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14),
-                    decoration: BoxDecoration(
-                      color: pnl,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: lineC),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.grid_view_rounded,
-                            color: txtC, size: 15),
-                        const SizedBox(width: 6),
-                        Text(
-                          'همه دسته‌ها',
-                          style: TextStyle(
-                            color: txtC,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'Vazirmatn',
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(Icons.arrow_back_ios_new_rounded,
-                            color: txtC, size: 10),
-                      ],
-                    ),
-                  ),
                 );
               }
 
-              final cat = cats[i - 2];
-              final sel = _selected == i - 2;
-              final isFollowed = followed.contains(cat.s);
-              return _chip(
-                label: cat.n.length > 20
-                    ? '${cat.n.substring(0, 18)}...'
-                    : cat.n,
-                icon: cat.i,
-                color: cat.c,
-                selected: sel,
-                isFollowed: isFollowed,
+              // 📂 دسته‌های دنبال‌شده
+              final cat = followedCats[i - 4];
+              return GestureDetector(
                 onTap: () {
                   HapticFeedback.selectionClick();
-                  setState(() => _selected = i - 2);
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -2700,13 +3193,42 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
                 onLongPress: () {
                   HapticFeedback.mediumImpact();
                   toggleFollowCategory(cat.s);
-                  showSnack(
-                    context,
-                    isFollowed
-                        ? 'لغو دنبال کردن «${cat.n}»'
-                        : 'دنبال کردن «${cat.n}»',
-                  );
+                  showSnack(context, 'لغو دنبال کردن «${cat.n}»');
                 },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [cat.c, cat.c.withOpacity(0.7)],
+                    ),
+                    borderRadius: BorderRadius.circular(999),
+                    boxShadow: [
+                      BoxShadow(
+                        color: cat.c.withOpacity(0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(cat.i, color: Colors.white, size: 15),
+                      const SizedBox(width: 6),
+                      Text(
+                        cat.n.length > 18
+                            ? '${cat.n.substring(0, 16)}...'
+                            : cat.n,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               );
             },
           ),
@@ -2715,87 +3237,53 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
     );
   }
 
-  Widget _chip({
-    required String label,
+  Widget _actionChip({
     required IconData icon,
+    required String label,
     required Color color,
-    required bool selected,
-    bool isFollowed = false,
+    String? badge,
     required VoidCallback onTap,
-    VoidCallback? onLongPress,
   }) {
-    final isDark = darkModeNotifier.value;
     return GestureDetector(
       onTap: onTap,
-      onLongPress: onLongPress,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
+      child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          gradient: selected
-              ? LinearGradient(
-                  colors: [color, color.withOpacity(0.7)],
-                )
-              : null,
-          color: selected
-              ? null
-              : (isDark
-                  ? Colors.white.withOpacity(0.05)
-                  : Colors.white),
+          color: pnl,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: selected
-                ? color
-                : (isFollowed
-                    ? color.withOpacity(0.5)
-                    : (isDark
-                        ? Colors.white.withOpacity(0.10)
-                        : Colors.black.withOpacity(0.06))),
-            width: selected || isFollowed ? 1.5 : 1.2,
-          ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: color.withOpacity(0.4),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
+          border: Border.all(color: color.withOpacity(0.35), width: 1.2),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: selected ? Colors.white : color,
-              size: 16,
-            ),
+            Icon(icon, color: color, size: 15),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                color: selected ? Colors.white : txtC,
+                color: color,
                 fontSize: 12,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w900,
                 fontFamily: 'Vazirmatn',
               ),
             ),
-            if (isFollowed && !selected) ...[
-              const SizedBox(width: 4),
+            if (badge != null) ...[
+              const SizedBox(width: 5),
               Container(
-                width: 6,
-                height: 6,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 5, vertical: 1),
                 decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withOpacity(0.6),
-                      blurRadius: 4,
-                    ),
-                  ],
+                  color: color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  badge,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                  ),
                 ),
               ),
             ],
@@ -2805,8 +3293,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
     );
   }
 }
-
-/* ==================== HERO CAROUSEL ==================== */
+/* ==================== HERO CAROUSEL (UPGRADED) ==================== */
 
 class HeroCarousel extends StatefulWidget {
   final Future<List>? postsFuture;
@@ -2819,19 +3306,35 @@ class HeroCarousel extends StatefulWidget {
 class _HeroCarouselState extends State<HeroCarousel> {
   final _pageCtrl = PageController(viewportFraction: 0.9);
   Timer? _timer;
+  Timer? _progressTimer;
   int _current = 0;
   int _count = 0;
+  double _autoProgress = 0;
 
   @override
   void dispose() {
     _timer?.cancel();
+    _progressTimer?.cancel();
     _pageCtrl.dispose();
     super.dispose();
   }
 
   void _startAuto(int count) {
     _timer?.cancel();
+    _progressTimer?.cancel();
     if (count <= 1) return;
+
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 50), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      setState(() {
+        _autoProgress += 0.01;
+        if (_autoProgress >= 1.0) _autoProgress = 0;
+      });
+    });
+
     _timer = Timer.periodic(const Duration(seconds: 5), (t) {
       if (!mounted || !_pageCtrl.hasClients) return;
       final next = (_current + 1) % count;
@@ -2840,6 +3343,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
         duration: const Duration(milliseconds: 700),
         curve: Curves.easeInOutCubic,
       );
+      setState(() => _autoProgress = 0);
     });
   }
 
@@ -2850,14 +3354,14 @@ class _HeroCarouselState extends State<HeroCarousel> {
       builder: (c, s) {
         if (s.connectionState == ConnectionState.waiting) {
           return Container(
-            height: 240,
+            height: 260,
             margin: const EdgeInsets.fromLTRB(14, 16, 14, 12),
             decoration: BoxDecoration(
               color: pnl,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(28),
               border: Border.all(color: lineC),
             ),
-            child: const ShimmerBox(height: 240, radius: 24),
+            child: const ShimmerBox(height: 260, radius: 28),
           );
         }
         final posts = (s.data ?? []).take(5).toList();
@@ -2875,22 +3379,30 @@ class _HeroCarouselState extends State<HeroCarousel> {
         }
 
         return Container(
-          margin: const EdgeInsets.only(top: 16, bottom: 12),
+          margin: const EdgeInsets.only(top: 16, bottom: 8),
           child: Column(
             children: [
               SizedBox(
-                height: 240,
+                height: 260,
                 child: PageView.builder(
                   controller: _pageCtrl,
-                  onPageChanged: (i) => setState(() => _current = i),
+                  onPageChanged: (i) {
+                    setState(() {
+                      _current = i;
+                      _autoProgress = 0;
+                    });
+                  },
                   itemCount: posts.length,
                   itemBuilder: (c, i) => Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 6),
-                    child: _CarouselCard(post: posts[i]),
+                    child: _CarouselCard(
+                      post: posts[i],
+                      isActive: i == _current,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               _buildDots(posts.length),
             ],
           ),
@@ -2904,23 +3416,57 @@ class _HeroCarouselState extends State<HeroCarousel> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(count, (i) {
         final active = i == _current;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          width: active ? 24 : 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: active
-                ? kAccentGold
-                : mutC.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(999),
-            boxShadow: active
-                ? [
-                    BoxShadow(
-                      color: kAccentGold.withOpacity(0.5),
-                      blurRadius: 8,
+        return GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            _pageCtrl.animateToPage(
+              i,
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeInOutCubic,
+            );
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutCubic,
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            width: active ? 32 : 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: active
+                  ? kAccentGold
+                  : mutC.withOpacity(0.25),
+              borderRadius: BorderRadius.circular(999),
+              boxShadow: active
+                  ? [
+                      BoxShadow(
+                        color: kAccentGold.withOpacity(0.6),
+                        blurRadius: 10,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: active
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: Stack(
+                      children: [
+                        FractionallySizedBox(
+                          widthFactor: _autoProgress,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.white.withOpacity(0.9),
+                                  kAccentGoldLight,
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ]
+                  )
                 : null,
           ),
         );
@@ -2929,9 +3475,15 @@ class _HeroCarouselState extends State<HeroCarousel> {
   }
 }
 
+/* ==================== CAROUSEL CARD (UPGRADED) ==================== */
+
 class _CarouselCard extends StatefulWidget {
   final dynamic post;
-  const _CarouselCard({required this.post});
+  final bool isActive;
+  const _CarouselCard({
+    required this.post,
+    this.isActive = false,
+  });
 
   @override
   State<_CarouselCard> createState() => _CarouselCardState();
@@ -2947,9 +3499,9 @@ class _CarouselCardState extends State<_CarouselCard>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 8),
+      duration: const Duration(seconds: 10),
     )..repeat(reverse: true);
-    _ken = Tween<double>(begin: 1.0, end: 1.12).animate(
+    _ken = Tween<double>(begin: 1.0, end: 1.15).animate(
       CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
     );
   }
@@ -2967,120 +3519,199 @@ class _CarouselCardState extends State<_CarouselCard>
     final cat = pCategory(widget.post);
     final link = pLink(widget.post);
     final date = pTimeAgo(widget.post);
+    final excerpt = pExcerpt(widget.post, maxChars: 80);
 
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
-        openUrl(context, link);
+        openUrl(context, link, post: widget.post);
       },
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.25),
-              blurRadius: 30,
-              offset: const Offset(0, 12),
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 400),
+        scale: widget.isActive ? 1.0 : 0.95,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 400),
+          opacity: widget.isActive ? 1.0 : 0.7,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(
+                      widget.isActive ? 0.35 : 0.15),
+                  blurRadius: widget.isActive ? 35 : 20,
+                  offset: Offset(0, widget.isActive ? 15 : 8),
+                ),
+                BoxShadow(
+                  color: kAccentGold.withOpacity(
+                      widget.isActive ? 0.15 : 0.05),
+                  blurRadius: 40,
+                  spreadRadius: -5,
+                ),
+              ],
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (img.isNotEmpty)
-                AnimatedBuilder(
-                  animation: _ken,
-                  builder: (context, _) {
-                    return Transform.scale(
-                      scale: _ken.value,
-                      child: CachedNetworkImage(
-                        imageUrl: img,
-                        fit: BoxFit.cover,
-                        memCacheWidth: 1080,
-                        memCacheHeight: 720,
-                        maxWidthDiskCache: 1080,
-                        maxHeightDiskCache: 720,
-                        fadeInDuration:
-                            const Duration(milliseconds: 400),
-                        fadeOutDuration:
-                            const Duration(milliseconds: 200),
-                        placeholder: (_, __) => Container(color: pnl2),
-                        errorWidget: (_, __, ___) => Container(
-                          color: pnl2,
-                          child: Icon(Icons.article_rounded,
-                              color: accentNotifier.value, size: 60),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (img.isNotEmpty)
+                    AnimatedBuilder(
+                      animation: _ken,
+                      builder: (context, _) {
+                        return Transform.scale(
+                          scale: _ken.value,
+                          child: CachedNetworkImage(
+                            imageUrl: img,
+                            fit: BoxFit.cover,
+                            memCacheWidth: 1080,
+                            memCacheHeight: 720,
+                            maxWidthDiskCache: 1080,
+                            maxHeightDiskCache: 720,
+                            fadeInDuration:
+                                const Duration(milliseconds: 500),
+                            fadeOutDuration:
+                                const Duration(milliseconds: 250),
+                            placeholder: (_, __) =>
+                                Container(color: pnl2),
+                            errorWidget: (_, __, ___) => Container(
+                              color: pnl2,
+                              child: Icon(Icons.article_rounded,
+                                  color: accentNotifier.value,
+                                  size: 60),
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  else
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            accentNotifier.value,
+                            kPrimaryNavy,
+                          ],
                         ),
                       ),
-                    );
-                  },
-                )
-              else
-                Container(color: pnl2),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.3),
-                      Colors.black.withOpacity(0.9),
-                    ],
-                    stops: const [0.2, 0.6, 1.0],
+                      child: Icon(Icons.article_rounded,
+                          color: Colors.white.withOpacity(0.3),
+                          size: 60),
+                    ),
+
+                  // گرادیان سینمایی
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.5),
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.4),
+                          Colors.black.withOpacity(0.95),
+                        ],
+                        stops: const [0.0, 0.35, 0.6, 1.0],
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              Positioned(
-                left: 18,
-                right: 18,
-                bottom: 18,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
+
+                  // گرادیان تزئینی طلایی پایین
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      height: 4,
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            kTabArticles,
+                            kAccentGold,
+                            kAccentGoldLight,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // محتوای بالا
+                  Positioned(
+                    left: 18,
+                    right: 18,
+                    top: 16,
+                    child: Row(
                       children: [
                         if (cat.isNotEmpty)
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
+                                horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  kAccentGold,
-                                  kAccentGoldDark,
+                                  kAccentGold.withOpacity(0.95),
+                                  kAccentGoldDark.withOpacity(0.95),
                                 ],
                               ),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(10),
                               boxShadow: [
                                 BoxShadow(
-                                  color: kAccentGold
-                                      .withOpacity(0.5),
-                                  blurRadius: 12,
+                                  color: kAccentGold.withOpacity(0.5),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 3),
                                 ),
                               ],
-                            ),
-                            child: Text(
-                              cat,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w900,
-                                fontFamily: 'Vazirmatn',
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.3),
+                                width: 1,
                               ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.white
+                                            .withOpacity(0.8),
+                                        blurRadius: 6,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  cat,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w900,
+                                    fontFamily: 'Vazirmatn',
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         const Spacer(),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
+                              horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.black.withOpacity(0.55),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.2),
+                              width: 1,
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -3091,8 +3722,9 @@ class _CarouselCardState extends State<_CarouselCard>
                               Text(
                                 date,
                                 style: const TextStyle(
-                                  color: Colors.white70,
+                                  color: Colors.white,
                                   fontSize: 10,
+                                  fontWeight: FontWeight.w700,
                                   fontFamily: 'Vazirmatn',
                                 ),
                               ),
@@ -3101,66 +3733,109 @@ class _CarouselCardState extends State<_CarouselCard>
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w900,
-                        height: 1.5,
-                        fontFamily: 'Vazirmatn',
-                        shadows: [
-                          Shadow(
-                            color: Colors.black54,
-                            blurRadius: 8,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
+                  ),
+
+                  // محتوای پایین
+                  Positioned(
+                    left: 18,
+                    right: 18,
+                    bottom: 18,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.2),
+                        Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
+                            height: 1.5,
+                            fontFamily: 'Vazirmatn',
+                            shadows: [
+                              Shadow(
+                                color: Colors.black87,
+                                blurRadius: 12,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (excerpt.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            excerpt,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.75),
+                              fontSize: 11.5,
+                              fontFamily: 'Vazirmatn',
+                              shadows: const [
+                                Shadow(
+                                  color: Colors.black54,
+                                  blurRadius: 6,
+                                ),
+                              ],
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Text(
-                                'مطالعه',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  fontFamily: 'Vazirmatn',
+                        ],
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    kAccentGold,
+                                    kAccentGoldDark,
+                                  ],
                                 ),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: kAccentGold
+                                        .withOpacity(0.5),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
-                              SizedBox(width: 4),
-                              Icon(
-                                Icons.arrow_back_rounded,
-                                color: Colors.white,
-                                size: 12,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Text(
+                                    'مطالعه کامل',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w900,
+                                      fontFamily: 'Vazirmatn',
+                                    ),
+                                  ),
+                                  SizedBox(width: 6),
+                                  Icon(
+                                    Icons.arrow_back_rounded,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -3591,7 +4266,7 @@ class _ModernPostCardState extends State<ModernPostCard>
         _ctrl.reverse();
         setState(() => _pressed = false);
       },
-      onTap: () => openUrl(context, link),
+      onTap: () => openUrl(context, link, post: post),
       child: ScaleTransition(
         scale: _scaleAnim,
         child: AnimatedContainer(
@@ -3602,21 +4277,25 @@ class _ModernPostCardState extends State<ModernPostCard>
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
               colors: isDark
-                  ? [kDarkCard, kDarkBg]
+                  ? [kDarkCard, kDarkCard2]
                   : [Colors.white, kLightCard2],
             ),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: _pressed
-                  ? kAccentGold.withOpacity(0.5)
-                  : lineC,
+                  ? kAccentGold.withOpacity(0.6)
+                  : (isDark ? kDarkBorder.withOpacity(0.5) : lineC),
               width: _pressed ? 1.5 : 1,
             ),
             boxShadow: [
+              if (_pressed)
+                BoxShadow(
+                  color: kAccentGold.withOpacity(0.35),
+                  blurRadius: 24,
+                  spreadRadius: -3,
+                ),
               BoxShadow(
-                color: _pressed
-                    ? kAccentGold.withOpacity(0.2)
-                    : Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+                color: Colors.black.withOpacity(isDark ? 0.4 : 0.06),
                 blurRadius: _pressed ? 20 : 14,
                 offset: const Offset(0, 4),
               ),
@@ -3740,25 +4419,18 @@ class _ModernPostCardState extends State<ModernPostCard>
                             Row(
                               children: [
                                 if (cat.isNotEmpty)
-                                  Flexible(
+                                  Expanded(
                                     child: Container(
                                       padding:
                                           const EdgeInsets.symmetric(
                                               horizontal: 8,
                                               vertical: 4),
                                       decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            accentNotifier.value
-                                                .withOpacity(0.15),
-                                            accentNotifier.value
-                                                .withOpacity(0.08),
-                                          ],
-                                        ),
+                                        color: chipBg,
                                         borderRadius:
                                             BorderRadius.circular(7),
                                         border: Border.all(
-                                          color: accentNotifier.value
+                                          color: chipFg
                                               .withOpacity(0.25),
                                           width: 0.8,
                                         ),
@@ -3770,29 +4442,20 @@ class _ModernPostCardState extends State<ModernPostCard>
                                             width: 5,
                                             height: 5,
                                             decoration: BoxDecoration(
-                                              color:
-                                                  accentNotifier.value,
+                                              color: chipFg,
                                               shape: BoxShape.circle,
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: accentNotifier
-                                                      .value
-                                                      .withOpacity(0.5),
-                                                  blurRadius: 4,
-                                                ),
-                                              ],
                                             ),
                                           ),
                                           const SizedBox(width: 4),
-                                          Flexible(
+                                          Expanded(
                                             child: Text(
                                               cat,
                                               maxLines: 1,
+                                              softWrap: false,
                                               overflow:
-                                                  TextOverflow.ellipsis,
+                                                  TextOverflow.visible,
                                               style: TextStyle(
-                                                color: accentNotifier
-                                                    .value,
+                                                color: chipFg,
                                                 fontSize: 9.5,
                                                 fontWeight:
                                                     FontWeight.w900,
@@ -3941,17 +4604,26 @@ class FeaturedPostCard extends StatelessWidget {
     final date = pDate(post);
     final excerpt = pExcerpt(post, maxChars: 130);
     final id = pId(post);
+    final isDark = darkModeNotifier.value;
 
     return GestureDetector(
-      onTap: () => openUrl(context, link),
+      onTap: () => openUrl(context, link, post: post),
       child: Container(
         decoration: BoxDecoration(
-          color: pnl,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? [kDarkCard, kDarkCard2]
+                : [Colors.white, kLightCard2],
+          ),
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: lineC),
+          border: Border.all(
+            color: isDark ? kDarkBorder.withOpacity(0.5) : lineC,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withOpacity(isDark ? 0.35 : 0.06),
               blurRadius: 18,
               offset: const Offset(0, 6),
             ),
@@ -4039,44 +4711,40 @@ class FeaturedPostCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (cat.isNotEmpty)
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 260),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: chipBg,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                              color: chipFg.withOpacity(0.25)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: chipBg,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: chipFg.withOpacity(0.25)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: chipFg,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              cat,
+                              maxLines: 2,
+                              style: TextStyle(
                                 color: chipFg,
-                                shape: BoxShape.circle,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w900,
+                                fontFamily: 'Vazirmatn',
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                cat,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: chipFg,
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w900,
-                                  fontFamily: 'Vazirmatn',
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   const SizedBox(height: 12),
@@ -4224,7 +4892,7 @@ class SidePostCard extends StatelessWidget {
     final id = pId(post);
 
     return GestureDetector(
-      onTap: () => openUrl(context, link),
+      onTap: () => openUrl(context, link, post: post),
       child: Container(
         padding: const EdgeInsets.all(11),
         decoration: BoxDecoration(
@@ -4248,9 +4916,7 @@ class SidePostCard extends StatelessWidget {
                   Row(
                     children: [
                       if (cat.isNotEmpty)
-                        ConstrainedBox(
-                          constraints:
-                              const BoxConstraints(maxWidth: 160),
+                        Expanded(
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 7, vertical: 4),
@@ -4270,11 +4936,12 @@ class SidePostCard extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(width: 4),
-                                Flexible(
+                                Expanded(
                                   child: Text(
                                     cat,
                                     maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: false,
+                                    overflow: TextOverflow.visible,
                                     style: TextStyle(
                                       color: chipFg,
                                       fontSize: 9.5,
@@ -4445,14 +5112,31 @@ class ModernProductCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: pnl,
+          gradient: LinearGradient(
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+            colors: darkModeNotifier.value
+                ? [kDarkCard, kDarkCard2]
+                : [Colors.white, kLightCard2],
+          ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: lineC),
+          border: Border.all(
+            color: darkModeNotifier.value
+                ? kDarkBorder.withOpacity(0.5)
+                : lineC,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 14,
+              color: kAccentGold.withOpacity(
+                  darkModeNotifier.value ? 0.10 : 0.06),
+              blurRadius: 16,
               offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(
+                  darkModeNotifier.value ? 0.3 : 0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -4499,11 +5183,8 @@ class ModernProductCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 7, vertical: 4),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                kUrgent,
-                                kUrgentDark,
-                              ],
+                            gradient: const LinearGradient(
+                              colors: [kUrgent, kUrgentDark],
                             ),
                             borderRadius: BorderRadius.circular(7),
                             boxShadow: [
@@ -5138,7 +5819,6 @@ class _ModernLiveDotState extends State<ModernLiveDot>
     );
   }
 }
-
 /* ==================== MODERN URGENT NEWS CARD ==================== */
 
 class ModernUrgentNewsCard extends StatefulWidget {
@@ -5250,19 +5930,19 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
           border: Border.all(
             color: _pressed
                 ? _blue2
-                : _blue1.withOpacity(isDark ? 0.5 : 0.4),
-            width: _pressed ? 2 : 1.2,
+                : _blue1.withOpacity(isDark ? 0.35 : 0.30),
+            width: _pressed ? 1.8 : 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: _blue2.withOpacity(_pressed ? 0.4 : 0.22),
+              color: _blue2.withOpacity(_pressed ? 0.35 : 0.15),
               blurRadius: _pressed ? 28 : 18,
               offset: const Offset(0, 6),
             ),
             BoxShadow(
-              color: _blue1.withOpacity(_pressed ? 0.3 : 0.12),
-              blurRadius: _pressed ? 20 : 12,
-              offset: const Offset(0, 3),
+              color: _blue1.withOpacity(_pressed ? 0.20 : 0.08),
+              blurRadius: _pressed ? 24 : 14,
+              spreadRadius: _pressed ? -3 : -5,
             ),
           ],
         ),
@@ -6279,7 +6959,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
     );
   }
 }
-/* ==================== PREMIUM NEWS PAGE (WITH TIME FILTER) ==================== */
+/* ==================== PREMIUM NEWS PAGE ==================== */
 
 class NewsPage extends StatefulWidget {
   const NewsPage({super.key});
@@ -6808,7 +7488,7 @@ class _PremiumNewsCardState extends State<_PremiumNewsCard> {
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
-      onTap: () => openUrl(context, link),
+      onTap: () => openUrl(context, link, post: post),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.only(bottom: 12),
@@ -8784,7 +9464,7 @@ class _AccountPageState extends State<AccountPage>
                   child: LinearProgressIndicator(
                     value: _progress,
                     backgroundColor: lineC,
-                    color: const Color(0xff8b5cf6),
+                    color: kTabAccount,
                     minHeight: 4,
                   ),
                 ),
@@ -8875,18 +9555,18 @@ class _AccountPageState extends State<AccountPage>
                                 width: 80,
                                 height: 80,
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
+                                  gradient: LinearGradient(
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                     colors: [
-                                      Color(0xff8b5cf6),
+                                      kTabAccount,
                                       kPrimaryNavy,
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xff8b5cf6)
+                                      color: kTabAccount
                                           .withOpacity(0.4),
                                       blurRadius: 24,
                                       offset: const Offset(0, 8),
@@ -8919,12 +9599,12 @@ class _AccountPageState extends State<AccountPage>
                                 ),
                               ),
                               const SizedBox(height: 20),
-                              const SizedBox(
+                              SizedBox(
                                 width: 30,
                                 height: 30,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 3,
-                                  color: Color(0xff8b5cf6),
+                                  color: kTabAccount,
                                 ),
                               ),
                             ],
@@ -8952,19 +9632,18 @@ class _AccountPageState extends State<AccountPage>
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xff8b5cf6),
+                    kTabAccount,
                     kPrimaryNavy,
                   ],
                 ),
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xff8b5cf6)
-                        .withOpacity(0.4),
+                    color: kTabAccount.withOpacity(0.4),
                     blurRadius: 14,
                     offset: const Offset(0, 4),
                   ),
@@ -8981,7 +9660,7 @@ class _AccountPageState extends State<AccountPage>
               child: ShaderMask(
                 shaderCallback: (bounds) => LinearGradient(
                   colors: [
-                    const Color(0xff8b5cf6),
+                    kTabAccount,
                     kPrimaryNavy,
                   ],
                 ).createShader(bounds),
@@ -9709,25 +10388,30 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                   ),
                 ),
                 const SizedBox(height: 14),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.end,
+                Row(
                   children: [
-                    _infoChip(
-                      icon: Icons.calendar_today_rounded,
-                      label: date,
-                      color: const Color(0xff0ea5e9),
+                    Expanded(
+                      child: _infoChip(
+                        icon: Icons.calendar_today_rounded,
+                        label: date,
+                        color: const Color(0xff0ea5e9),
+                      ),
                     ),
-                    _infoChip(
-                      icon: Icons.access_time_rounded,
-                      label: '$readTime دقیقه',
-                      color: const Color(0xff38bdf8),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: _infoChip(
+                        icon: Icons.access_time_rounded,
+                        label: '$readTime دقیقه',
+                        color: const Color(0xff38bdf8),
+                      ),
                     ),
-                    _infoChip(
-                      icon: Icons.text_fields_rounded,
-                      label: '$words کلمه',
-                      color: const Color(0xff0284c7),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: _infoChip(
+                        icon: Icons.text_fields_rounded,
+                        label: '$words کلمه',
+                        color: const Color(0xff0284c7),
+                      ),
                     ),
                   ],
                 ),
@@ -9746,29 +10430,35 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
   }) {
     final isDark = darkModeNotifier.value;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
         color: isDark
-            ? color.withOpacity(0.18)
-            : color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: color.withOpacity(0.35), width: 0.8),
+            ? color.withOpacity(0.15)
+            : color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: color.withOpacity(isDark ? 0.30 : 0.20),
+          width: 0.8,
+        ),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, color: color, size: 12),
           const SizedBox(width: 5),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.visible,
-            softWrap: false,
-            style: TextStyle(
-              color: isDark ? color.withOpacity(0.95) : color,
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              fontFamily: 'Vazirmatn',
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+              style: TextStyle(
+                color: isDark ? color.withOpacity(0.95) : color,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                fontFamily: 'Vazirmatn',
+              ),
             ),
           ),
         ],
@@ -10920,7 +11610,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
   }
 }
 
-/* ==================== ADMIN PANEL WITH FILE UPLOAD ==================== */
+/* ==================== ADMIN PANEL ==================== */
 
 class AdminPanelPage extends StatefulWidget {
   final String username;
@@ -10958,7 +11648,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     });
   }
 
-  /// 📝 نمایش پیش‌نمایش لینک (slug) که ساخته می‌شود
   String _getSlugPreview() {
     final title = _titleCtrl.text.trim();
     if (title.isEmpty) return '';
@@ -11577,7 +12266,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                   ),
                 ),
               ),
-              // 🔗 پیش‌نمایش لینک
               if (_titleCtrl.text.trim().isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Container(
@@ -12051,6 +12739,427 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     );
   }
 }
+/* ==================== NOTIFICATIONS PAGE ==================== */
+
+class NotificationsPage extends StatefulWidget {
+  const NotificationsPage({super.key});
+  @override
+  State<NotificationsPage> createState() => _NotificationsPageState();
+}
+
+class _NotificationsPageState extends State<NotificationsPage> {
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _check();
+  }
+
+  Future<void> _check() async {
+    setState(() => _loading = true);
+    try {
+      await checkForNewNotifications();
+    } catch (_) {}
+    if (mounted) setState(() => _loading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => ValueListenableBuilder<
+          List<Map<String, dynamic>>>(
+        valueListenable: inAppNotificationsNotifier,
+        builder: (context, notifications, ___) {
+          final unread =
+              notifications.where((e) => e['read'] != true).length;
+
+          return Scaffold(
+            backgroundColor: bgC,
+            appBar: AppBar(
+              title: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [kSuccess, kSuccessLight],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: kSuccess.withOpacity(0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                        Icons.notifications_active_rounded,
+                        color: Colors.white,
+                        size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'اعلان‌ها',
+                        style: TextStyle(
+                          color: txtC,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                      if (unread > 0)
+                        Text(
+                          '$unread جدید',
+                          style: TextStyle(
+                            color: kUrgent,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+              backgroundColor: bgC,
+              foregroundColor: txtC,
+              elevation: 0,
+              actions: [
+                if (notifications.isNotEmpty) ...[
+                  IconButton(
+                    tooltip: 'خوانده‌شده کردن همه',
+                    onPressed: () async {
+                      HapticFeedback.lightImpact();
+                      await markAllNotificationsRead();
+                      if (context.mounted) {
+                        showSnack(context,
+                            'همه اعلان‌ها خوانده‌شده شد');
+                      }
+                    },
+                    icon: Icon(Icons.done_all_rounded,
+                        color: accentNotifier.value, size: 22),
+                  ),
+                  IconButton(
+                    tooltip: 'حذف همه',
+                    onPressed: () => _confirmClear(context),
+                    icon: Icon(Icons.delete_sweep_rounded,
+                        color: rose, size: 22),
+                  ),
+                ],
+              ],
+            ),
+            body: _loading
+                ? const SearchSkeleton()
+                : notifications.isEmpty
+                    ? _buildEmpty()
+                    : RefreshIndicator(
+                        color: kSuccess,
+                        backgroundColor: pnl,
+                        strokeWidth: 3,
+                        onRefresh: _check,
+                        child: ListView.builder(
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(
+                              14, 14, 14, 100),
+                          itemCount: notifications.length,
+                          itemBuilder: (c, i) =>
+                              _notificationCard(notifications[i]),
+                        ),
+                      ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _notificationCard(Map<String, dynamic> n) {
+    final isRead = n['read'] == true;
+    final id = n['id'].toString();
+    final title = n['title']?.toString() ?? '';
+    final excerpt = n['excerpt']?.toString() ?? '';
+    final image = n['image']?.toString() ?? '';
+    final dateStr = n['date']?.toString() ?? '';
+
+    DateTime? date;
+    try {
+      date = DateTime.parse(dateStr).toLocal();
+    } catch (_) {}
+
+    final timeAgo = date != null
+        ? pTimeAgo({'date': date.toIso8601String()})
+        : '';
+
+    return GestureDetector(
+      onTap: () async {
+        HapticFeedback.selectionClick();
+        await markNotificationRead(id);
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => UrgentNewsDetailPage(
+              news: {
+                'id': id,
+                'title': {'rendered': title},
+                'content': {'rendered': excerpt},
+                'link': n['link'],
+                'date': dateStr,
+                '_embedded': {
+                  'wp:featuredmedia': [
+                    {'source_url': image}
+                  ],
+                },
+              },
+            ),
+          ),
+        );
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          gradient: !isRead
+              ? LinearGradient(
+                  begin: Alignment.topRight,
+                  end: Alignment.bottomLeft,
+                  colors: [
+                    kSuccess.withOpacity(0.10),
+                    kSuccess.withOpacity(0.02),
+                  ],
+                )
+              : null,
+          color: isRead ? pnl : null,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: !isRead
+                ? kSuccess.withOpacity(0.35)
+                : lineC,
+            width: !isRead ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Stack(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: pnl2,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: image.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: image,
+                            fit: BoxFit.cover,
+                            memCacheWidth: 200,
+                            placeholder: (_, __) =>
+                                Container(color: pnl2),
+                            errorWidget: (_, __, ___) => Icon(
+                              Icons.newspaper_rounded,
+                              color: mutC,
+                              size: 24,
+                            ),
+                          )
+                        : Icon(
+                            Icons.newspaper_rounded,
+                            color: mutC,
+                            size: 24,
+                          ),
+                  ),
+                ),
+                if (!isRead)
+                  Positioned(
+                    top: 2,
+                    right: 2,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: kUrgent,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: bgC, width: 2),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: txtC,
+                      fontSize: 13,
+                      fontWeight: isRead
+                          ? FontWeight.w700
+                          : FontWeight.w900,
+                      height: 1.5,
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                  if (excerpt.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      excerpt,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: mutC,
+                        fontSize: 11,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.schedule_rounded,
+                          color: mutC, size: 11),
+                      const SizedBox(width: 3),
+                      Text(
+                        timeAgo,
+                        style: TextStyle(
+                          color: mutC,
+                          fontSize: 10,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    kSuccess.withOpacity(0.15),
+                    kSuccess.withOpacity(0.05),
+                  ],
+                ),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: kSuccess.withOpacity(0.3),
+                  width: 1.5,
+                ),
+              ),
+              child: const Icon(
+                Icons.notifications_off_rounded,
+                color: kSuccess,
+                size: 48,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'اعلان جدیدی ندارید',
+              style: TextStyle(
+                color: txtC,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'خبرهای فوری جدید اپ در اینجا نمایش داده می‌شود',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: mutC,
+                fontSize: 12,
+                height: 1.7,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmClear(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: pnl,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Text(
+          'حذف همه اعلان‌ها',
+          style: TextStyle(
+            color: txtC,
+            fontWeight: FontWeight.w900,
+            fontFamily: 'Vazirmatn',
+          ),
+        ),
+        content: Text(
+          'آیا می‌خواهید همه اعلان‌ها را حذف کنید؟',
+          style: TextStyle(
+            color: mutC,
+            fontFamily: 'Vazirmatn',
+            height: 1.7,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('انصراف',
+                style: TextStyle(
+                    color: mutC, fontFamily: 'Vazirmatn')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('حذف',
+                style: TextStyle(
+                    color: rose,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn')),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      await clearAllNotifications();
+      if (context.mounted) {
+        showSnack(context, 'همه اعلان‌ها حذف شد');
+      }
+    }
+  }
+}
+
 /* ==================== FOLLOWED CATEGORIES PAGE ==================== */
 
 class FollowedCategoriesPage extends StatefulWidget {
@@ -12069,6 +13178,10 @@ class _FollowedCategoriesPageState
       builder: (context, _, __) => ValueListenableBuilder<Set<String>>(
         valueListenable: followedCategoriesNotifier,
         builder: (context, followed, ___) {
+          final followedCats = cats
+              .where((cat) => followed.contains(cat.s))
+              .toList();
+
           return Scaffold(
             backgroundColor: bgC,
             appBar: AppBar(
@@ -12079,19 +13192,9 @@ class _FollowedCategoriesPageState
                     height: 36,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [
-                          kPrimaryNavy,
-                          kAccentGold,
-                        ],
+                        colors: [kPrimaryNavy, kAccentGold],
                       ),
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: kPrimaryNavy.withOpacity(0.4),
-                          blurRadius: 12,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
                     ),
                     child: const Icon(Icons.favorite_rounded,
                         color: Colors.white, size: 20),
@@ -12121,130 +13224,151 @@ class _FollowedCategoriesPageState
                   ),
               ],
             ),
-            body: Column(
-              children: [
-                Container(
-                  margin: const EdgeInsets.fromLTRB(14, 8, 14, 12),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        kPrimaryNavy.withOpacity(0.12),
-                        kAccentGold.withOpacity(0.05),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: kPrimaryNavy.withOpacity(0.25),
-                    ),
-                  ),
-                  child: Row(
+            body: followedCats.isEmpty
+                ? _buildEmptyState(context)
+                : Column(
                     children: [
                       Container(
-                        width: 40,
-                        height: 40,
+                        margin:
+                            const EdgeInsets.fromLTRB(14, 8, 14, 12),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              kPrimaryNavy,
-                              kAccentGold,
+                              kPrimaryNavy.withOpacity(0.12),
+                              kAccentGold.withOpacity(0.05),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: kPrimaryNavy.withOpacity(0.25),
+                          ),
                         ),
-                        child: const Icon(
-                            Icons.notifications_active_rounded,
-                            color: Colors.white,
-                            size: 20),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
                           children: [
-                            Text(
-                              followed.isEmpty
-                                  ? 'هنوز دسته‌ای دنبال نمی‌کنید'
-                                  : '${followed.length} دسته‌بندی دنبال می‌شود',
-                              style: TextStyle(
-                                color: txtC,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w900,
-                                fontFamily: 'Vazirmatn',
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [kPrimaryNavy, kAccentGold],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                  Icons.favorite_rounded,
+                                  color: Colors.white,
+                                  size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                '${followed.length} دسته‌بندی دنبال می‌شود',
+                                style: TextStyle(
+                                  color: txtC,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w900,
+                                  fontFamily: 'Vazirmatn',
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'با دنبال کردن، در صفحه اصلی مطالب موردعلاقه‌تان را می‌بینید',
-                              style: TextStyle(
-                                color: mutC,
-                                fontSize: 10.5,
-                                height: 1.5,
-                                fontFamily: 'Vazirmatn',
+                            GestureDetector(
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const AllCategoriesPage(),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: kPrimaryNavy
+                                      .withOpacity(0.12),
+                                  borderRadius:
+                                      BorderRadius.circular(8),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.add_rounded,
+                                        color: kPrimaryNavy, size: 14),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'افزودن',
+                                      style: TextStyle(
+                                        color: kPrimaryNavy,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w900,
+                                        fontFamily: 'Vazirmatn',
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
+                      Expanded(
+                        child: ListView.builder(
+                          physics: const BouncingScrollPhysics(),
+                          padding:
+                              const EdgeInsets.fromLTRB(14, 0, 14, 100),
+                          itemCount: followedCats.length,
+                          itemBuilder: (c, i) {
+                            final cat = followedCats[i];
+                            return _categoryCard(cat);
+                          },
+                        ),
+                      ),
                     ],
                   ),
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 100),
-                    itemCount: cats.length,
-                    itemBuilder: (c, i) {
-                      final cat = cats[i];
-                      final isFollowed = followed.contains(cat.s);
-                      return _categoryToggleCard(cat, isFollowed);
-                    },
-                  ),
-                ),
-              ],
-            ),
           );
         },
       ),
     );
   }
 
-  Widget _categoryToggleCard(Cat cat, bool isFollowed) {
+  Widget _categoryCard(Cat cat) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.mediumImpact();
-        toggleFollowCategory(cat.s);
+        HapticFeedback.selectionClick();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CategoryPostsPage(c: cat),
+          ),
+        );
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
+      child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          gradient: isFollowed
-              ? LinearGradient(
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
-                  colors: [
-                    cat.c.withOpacity(0.18),
-                    cat.c.withOpacity(0.05),
-                  ],
-                )
-              : null,
-          color: isFollowed ? null : pnl,
+          gradient: LinearGradient(
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+            colors: [
+              cat.c.withOpacity(0.15),
+              cat.c.withOpacity(0.05),
+            ],
+          ),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isFollowed ? cat.c : lineC,
-            width: isFollowed ? 1.5 : 1,
+            color: cat.c.withOpacity(0.5),
+            width: 1.2,
           ),
-          boxShadow: isFollowed
-              ? [
-                  BoxShadow(
-                    color: cat.c.withOpacity(0.25),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
+          boxShadow: [
+            BoxShadow(
+              color: cat.c.withOpacity(0.15),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -12252,82 +13376,155 @@ class _FollowedCategoriesPageState
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                gradient: isFollowed
-                    ? LinearGradient(
-                        colors: [cat.c, cat.c.withOpacity(0.7)],
-                      )
-                    : null,
-                color: isFollowed ? null : cat.c.withOpacity(0.15),
+                gradient: LinearGradient(
+                  colors: [cat.c, cat.c.withOpacity(0.7)],
+                ),
                 borderRadius: BorderRadius.circular(14),
-                boxShadow: isFollowed
-                    ? [
-                        BoxShadow(
-                          color: cat.c.withOpacity(0.4),
-                          blurRadius: 12,
-                          offset: const Offset(0, 3),
-                        ),
-                      ]
-                    : null,
+                boxShadow: [
+                  BoxShadow(
+                    color: cat.c.withOpacity(0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
-              child: Icon(
-                cat.i,
-                color: isFollowed ? Colors.white : cat.c,
-                size: 24,
-              ),
+              child: Icon(cat.i, color: Colors.white, size: 24),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 cat.n,
                 style: TextStyle(
-                  color: isFollowed ? cat.c : txtC,
+                  color: txtC,
                   fontSize: 13,
-                  fontWeight:
-                      isFollowed ? FontWeight.w900 : FontWeight.w700,
+                  fontWeight: FontWeight.w900,
                   height: 1.5,
                   fontFamily: 'Vazirmatn',
                 ),
               ),
             ),
             const SizedBox(width: 8),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                gradient: isFollowed
-                    ? LinearGradient(
-                        colors: [cat.c, cat.c.withOpacity(0.7)],
-                      )
-                    : null,
-                color: isFollowed ? null : cat.c.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: isFollowed ? cat.c : cat.c.withOpacity(0.3),
-                  width: 1,
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.mediumImpact();
+                toggleFollowCategory(cat.s);
+                showSnack(context, 'لغو دنبال کردن «${cat.n}»');
+              },
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: rose.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: rose.withOpacity(0.3)),
+                ),
+                child: Icon(
+                  Icons.close_rounded,
+                  color: rose,
+                  size: 18,
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isFollowed
-                        ? Icons.check_rounded
-                        : Icons.add_rounded,
-                    color: isFollowed ? Colors.white : cat.c,
-                    size: 14,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    kAccentGold.withOpacity(0.15),
+                    kAccentGold.withOpacity(0.05),
+                  ],
+                ),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: kAccentGold.withOpacity(0.3),
+                  width: 1.5,
+                ),
+              ),
+              child: const Icon(
+                Icons.favorite_border_rounded,
+                color: kAccentGold,
+                size: 48,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'هنوز دسته‌ای دنبال نمی‌کنید',
+              style: TextStyle(
+                color: txtC,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'با زدن دکمه زیر، از لیست دسته‌ها آن‌هایی که\nموردعلاقه‌تان است را دنبال کنید',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: mutC,
+                fontSize: 12,
+                height: 1.7,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AllCategoriesPage(),
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    isFollowed ? 'دنبال می‌شود' : 'دنبال کن',
-                    style: TextStyle(
-                      color: isFollowed ? Colors.white : cat.c,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'Vazirmatn',
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [kPrimaryNavy, kAccentGold],
+                  ),
+                  borderRadius: BorderRadius.circular(999),
+                  boxShadow: [
+                    BoxShadow(
+                      color: kPrimaryNavy.withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 3),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded,
+                        color: Colors.white, size: 18),
+                    SizedBox(width: 6),
+                    Text(
+                      'انتخاب دسته‌بندی',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -12385,6 +13582,1708 @@ class _FollowedCategoriesPageState
   }
 }
 
+/* ==================== BMI CALCULATOR PAGE ==================== */
+
+class BMICalculatorPage extends StatefulWidget {
+  const BMICalculatorPage({super.key});
+  @override
+  State<BMICalculatorPage> createState() => _BMICalculatorPageState();
+}
+
+class _BMICalculatorPageState extends State<BMICalculatorPage> {
+  final _heightCtrl = TextEditingController(text: '170');
+  final _weightCtrl = TextEditingController(text: '70');
+  final _ageCtrl = TextEditingController(text: '25');
+
+  String _gender = 'male';
+  String _activityLevel = 'moderate';
+
+  double? _bmi;
+  String _bmiCategory = '';
+  Color _bmiColor = kSuccess;
+  int? _bmr;
+  int? _tdee;
+  int? _idealWeightMin;
+  int? _idealWeightMax;
+
+  final List<Map<String, dynamic>> _activityLevels = [
+    {'key': 'sedentary', 'label': 'کم‌تحرک', 'mult': 1.2, 'desc': 'بدون ورزش'},
+    {'key': 'light', 'label': 'سبک', 'mult': 1.375, 'desc': '۱-۳ روز در هفته'},
+    {'key': 'moderate', 'label': 'متوسط', 'mult': 1.55, 'desc': '۳-۵ روز در هفته'},
+    {'key': 'active', 'label': 'فعال', 'mult': 1.725, 'desc': '۶-۷ روز در هفته'},
+    {'key': 'veryActive', 'label': 'خیلی فعال', 'mult': 1.9, 'desc': 'ورزشکار حرفه‌ای'},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSaved();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _calculate());
+  }
+
+  Future<void> _loadSaved() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _heightCtrl.text = prefs.getString('bmi_height') ?? '170';
+      _weightCtrl.text = prefs.getString('bmi_weight') ?? '70';
+      _ageCtrl.text = prefs.getString('bmi_age') ?? '25';
+      _gender = prefs.getString('bmi_gender') ?? 'male';
+      _activityLevel = prefs.getString('bmi_activity') ?? 'moderate';
+      if (mounted) setState(() {});
+    } catch (_) {}
+  }
+
+  Future<void> _save() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('bmi_height', _heightCtrl.text);
+      await prefs.setString('bmi_weight', _weightCtrl.text);
+      await prefs.setString('bmi_age', _ageCtrl.text);
+      await prefs.setString('bmi_gender', _gender);
+      await prefs.setString('bmi_activity', _activityLevel);
+    } catch (_) {}
+  }
+
+  void _calculate() {
+    final height = double.tryParse(_heightCtrl.text) ?? 0;
+    final weight = double.tryParse(_weightCtrl.text) ?? 0;
+    final age = int.tryParse(_ageCtrl.text) ?? 0;
+
+    if (height < 50 || weight < 10 || age < 5) {
+      setState(() {
+        _bmi = null;
+        _bmr = null;
+        _tdee = null;
+      });
+      return;
+    }
+
+    final heightM = height / 100;
+    final bmi = weight / (heightM * heightM);
+
+    String category;
+    Color color;
+    if (bmi < 18.5) {
+      category = 'کم‌وزن';
+      color = const Color(0xff3b82f6);
+    } else if (bmi < 25) {
+      category = 'وزن نرمال';
+      color = kSuccess;
+    } else if (bmi < 30) {
+      category = 'اضافه وزن';
+      color = kWarning;
+    } else if (bmi < 35) {
+      category = 'چاقی درجه ۱';
+      color = const Color(0xffea580c);
+    } else if (bmi < 40) {
+      category = 'چاقی درجه ۲';
+      color = kUrgent;
+    } else {
+      category = 'چاقی مفرط';
+      color = kUrgentDark;
+    }
+
+    int bmr;
+    if (_gender == 'male') {
+      bmr = (10 * weight + 6.25 * height - 5 * age + 5).round();
+    } else {
+      bmr = (10 * weight + 6.25 * height - 5 * age - 161).round();
+    }
+
+    final mult = _activityLevels.firstWhere(
+      (a) => a['key'] == _activityLevel,
+      orElse: () => _activityLevels[2],
+    )['mult'] as double;
+    final tdee = (bmr * mult).round();
+
+    final idealMin = (18.5 * heightM * heightM).round();
+    final idealMax = (24.9 * heightM * heightM).round();
+
+    setState(() {
+      _bmi = bmi;
+      _bmiCategory = category;
+      _bmiColor = color;
+      _bmr = bmr;
+      _tdee = tdee;
+      _idealWeightMin = idealMin;
+      _idealWeightMax = idealMax;
+    });
+
+    _save();
+  }
+
+  @override
+  void dispose() {
+    _heightCtrl.dispose();
+    _weightCtrl.dispose();
+    _ageCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Scaffold(
+        backgroundColor: bgC,
+        appBar: AppBar(
+          title: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [kTabShop, kAccentGold],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: kTabShop.withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.calculate_rounded,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'ماشین‌حساب تناسب اندام',
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: bgC,
+          foregroundColor: txtC,
+          elevation: 0,
+        ),
+        body: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildInputSection(),
+              const SizedBox(height: 16),
+              if (_bmi != null) ...[
+                _buildBMIResult(),
+                const SizedBox(height: 14),
+                _buildCalorieResult(),
+                const SizedBox(height: 14),
+                _buildIdealWeight(),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputSection() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: pnl,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: lineC),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _sectionHeader('اطلاعات شما', Icons.person_rounded),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _genderBtn(
+                  label: 'آقا',
+                  icon: Icons.male_rounded,
+                  value: 'male',
+                  color: const Color(0xff2563eb),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _genderBtn(
+                  label: 'خانم',
+                  icon: Icons.female_rounded,
+                  value: 'female',
+                  color: const Color(0xffec4899),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _inputField(
+                  controller: _heightCtrl,
+                  label: 'قد',
+                  suffix: 'cm',
+                  icon: Icons.straighten_rounded,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _inputField(
+                  controller: _weightCtrl,
+                  label: 'وزن',
+                  suffix: 'kg',
+                  icon: Icons.monitor_weight_rounded,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _inputField(
+            controller: _ageCtrl,
+            label: 'سن',
+            suffix: 'سال',
+            icon: Icons.cake_rounded,
+          ),
+          const SizedBox(height: 18),
+          Text(
+            'سطح فعالیت',
+            style: TextStyle(
+              color: txtC,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'Vazirmatn',
+            ),
+          ),
+          const SizedBox(height: 10),
+          ..._activityLevels.map((level) => _activityOption(level)).toList(),
+          const SizedBox(height: 18),
+          SizedBox(
+            height: 52,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                _calculate();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kTabShop,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              icon: const Icon(Icons.calculate_rounded, size: 20),
+              label: const Text(
+                'محاسبه',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 18,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [kTabShop, kAccentGold],
+            ),
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Icon(icon, color: kTabShop, size: 18),
+        const SizedBox(width: 6),
+        Text(
+          title,
+          style: TextStyle(
+            color: txtC,
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+            fontFamily: 'Vazirmatn',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _genderBtn({
+    required String label,
+    required IconData icon,
+    required String value,
+    required Color color,
+  }) {
+    final selected = _gender == value;
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _gender = value);
+        _calculate();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          gradient: selected
+              ? LinearGradient(
+                  colors: [color, color.withOpacity(0.7)],
+                )
+              : null,
+          color: selected ? null : pnl2,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected ? color : lineC,
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: selected ? Colors.white : color,
+              size: 22,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected ? Colors.white : txtC,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _inputField({
+    required TextEditingController controller,
+    required String label,
+    required String suffix,
+    required IconData icon,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: pnl2,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: lineC),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, color: kTabShop, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.right,
+              textDirection: TextDirection.rtl,
+              onChanged: (_) => _calculate(),
+              style: TextStyle(
+                color: txtC,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Vazirmatn',
+              ),
+              decoration: InputDecoration(
+                labelText: label,
+                labelStyle: TextStyle(
+                  color: mutC,
+                  fontSize: 12,
+                  fontFamily: 'Vazirmatn',
+                ),
+                suffixText: suffix,
+                suffixStyle: TextStyle(
+                  color: mutC,
+                  fontSize: 11,
+                  fontFamily: 'Vazirmatn',
+                ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _activityOption(Map<String, dynamic> level) {
+    final selected = _activityLevel == level['key'];
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          setState(() => _activityLevel = level['key'] as String);
+          _calculate();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: selected
+                ? LinearGradient(
+                    colors: [
+                      kTabShop.withOpacity(0.15),
+                      kTabShop.withOpacity(0.05),
+                    ],
+                  )
+                : null,
+            color: selected ? null : pnl2,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected ? kTabShop : lineC,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: selected ? kTabShop : Colors.transparent,
+                  border: Border.all(
+                    color: selected ? kTabShop : mutC,
+                    width: 2,
+                  ),
+                ),
+                child: selected
+                    ? const Icon(Icons.check_rounded,
+                        color: Colors.white, size: 14)
+                    : null,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      level['label'] as String,
+                      style: TextStyle(
+                        color: txtC,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                    Text(
+                      level['desc'] as String,
+                      style: TextStyle(
+                        color: mutC,
+                        fontSize: 10.5,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                '×${level['mult']}',
+                style: TextStyle(
+                  color: selected ? kTabShop : mutC,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBMIResult() {
+    final bmiValue = _bmi!.toStringAsFixed(1);
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: [
+            _bmiColor.withOpacity(0.15),
+            _bmiColor.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: _bmiColor.withOpacity(0.4),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: _bmiColor.withOpacity(0.15),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [_bmiColor, _bmiColor.withOpacity(0.7)],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _bmiColor.withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.monitor_weight_rounded,
+                    color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'شاخص توده بدنی (BMI)',
+                      style: TextStyle(
+                        color: txtC,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _bmiCategory,
+                      style: TextStyle(
+                        color: _bmiColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                bmiValue,
+                style: TextStyle(
+                  color: _bmiColor,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildBMIScale(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBMIScale() {
+    return Column(
+      children: [
+        Container(
+          height: 10,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xff3b82f6),
+                Color(0xff059669),
+                Color(0xffd97706),
+                Color(0xffea580c),
+                Color(0xffc1121f),
+                Color(0xff9a0e17),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('کم‌وزن', style: _scaleTextStyle()),
+            Text('نرمال', style: _scaleTextStyle()),
+            Text('اضافه', style: _scaleTextStyle()),
+            Text('چاق', style: _scaleTextStyle()),
+          ],
+        ),
+      ],
+    );
+  }
+
+  TextStyle _scaleTextStyle() {
+    return TextStyle(
+      color: mutC,
+      fontSize: 9.5,
+      fontWeight: FontWeight.w700,
+      fontFamily: 'Vazirmatn',
+    );
+  }
+
+  Widget _buildCalorieResult() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: [
+            kTabShop.withOpacity(0.15),
+            kTabShop.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: kTabShop.withOpacity(0.4),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [kTabShop, kTabShop.withOpacity(0.7)],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.local_fire_department_rounded,
+                    color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'کالری مورد نیاز روزانه',
+                      style: TextStyle(
+                        color: txtC,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                    Text(
+                      'بر اساس سطح فعالیت شما',
+                      style: TextStyle(
+                        color: mutC,
+                        fontSize: 10.5,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                '$_tdee',
+                style: TextStyle(
+                  color: kTabShop,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'کالری',
+                style: TextStyle(
+                  color: kTabShop,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: pnl2,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.bolt_rounded, color: kTabShop, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  'BMR (سوخت‌وساز پایه):',
+                  style: TextStyle(
+                    color: mutC,
+                    fontSize: 11,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '$_bmr کالری',
+                  style: TextStyle(
+                    color: txtC,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _calorieGoal(
+                  label: 'کاهش وزن',
+                  value: _tdee! - 500,
+                  color: kSuccess,
+                  icon: Icons.trending_down_rounded,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _calorieGoal(
+                  label: 'تثبیت',
+                  value: _tdee!,
+                  color: kTabShop,
+                  icon: Icons.balance_rounded,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _calorieGoal(
+                  label: 'افزایش',
+                  value: _tdee! + 500,
+                  color: const Color(0xff2563eb),
+                  icon: Icons.trending_up_rounded,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _calorieGoal({
+    required String label,
+    required int value,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              fontFamily: 'Vazirmatn',
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '$value',
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'Vazirmatn',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIdealWeight() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: pnl,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: lineC),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [kSuccess, kSuccess.withOpacity(0.7)],
+              ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.favorite_rounded,
+                color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'وزن ایده‌آل شما',
+                  style: TextStyle(
+                    color: txtC,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'بر اساس BMI نرمال (18.5 - 24.9)',
+                  style: TextStyle(
+                    color: mutC,
+                    fontSize: 10.5,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            '$_idealWeightMin - $_idealWeightMax',
+            style: TextStyle(
+              color: kSuccess,
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'Vazirmatn',
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'kg',
+            style: TextStyle(
+              color: kSuccess,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Vazirmatn',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/* ==================== READING STATS PAGE ==================== */
+
+class ReadingStatsPage extends StatelessWidget {
+  const ReadingStatsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => ValueListenableBuilder<Map<String, dynamic>>(
+        valueListenable: readingStatsNotifier,
+        builder: (context, stats, ___) {
+          final totalRead = stats['totalRead'] ?? 0;
+          final weekCount = stats['weekCount'] ?? 0;
+          final monthCount = stats['monthCount'] ?? 0;
+          final totalReadTime = stats['totalReadTime'] ?? 0;
+          final streak = stats['streak'] ?? 0;
+          final categoryCount =
+              (stats['categoryCount'] as Map<String, int>?) ?? {};
+          final dailyCount =
+              (stats['dailyCount'] as Map<String, int>?) ?? {};
+
+          return Scaffold(
+            backgroundColor: bgC,
+            appBar: AppBar(
+              title: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [kSuccess, kSuccessLight],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: kSuccess.withOpacity(0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.insights_rounded,
+                        color: Colors.white, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'آمار مطالعه',
+                    style: TextStyle(
+                      color: txtC,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: bgC,
+              foregroundColor: txtC,
+              elevation: 0,
+              actions: [
+                if (totalRead > 0)
+                  IconButton(
+                    tooltip: 'پاک کردن آمار',
+                    onPressed: () => _confirmClear(context),
+                    icon: Icon(Icons.delete_sweep_rounded,
+                        color: rose, size: 22),
+                  ),
+              ],
+            ),
+            body: totalRead == 0
+                ? _buildEmpty()
+                : SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildStreakCard(streak),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                icon: Icons.article_rounded,
+                                label: 'کل مقالات',
+                                value: '$totalRead',
+                                color: kPrimaryNavyLight,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _buildStatCard(
+                                icon: Icons.calendar_today_rounded,
+                                label: 'این هفته',
+                                value: '$weekCount',
+                                color: kTabShop,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                icon: Icons.date_range_rounded,
+                                label: 'این ماه',
+                                value: '$monthCount',
+                                color: kTabArticles,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _buildStatCard(
+                                icon: Icons.access_time_rounded,
+                                label: 'زمان کل (دقیقه)',
+                                value: '$totalReadTime',
+                                color: kSuccess,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        _buildWeeklyChart(dailyCount),
+                        const SizedBox(height: 14),
+                        if (categoryCount.isNotEmpty)
+                          _buildTopCategories(categoryCount),
+                        const SizedBox(height: 14),
+                        _buildRecentArticles(),
+                      ],
+                    ),
+                  ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildStreakCard(int streak) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: [
+            kTabShop.withOpacity(0.15),
+            kTabShop.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: kTabShop.withOpacity(0.4),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [kTabShop, kAccentGold],
+              ),
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: kTabShop.withOpacity(0.4),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Text(
+                '🔥',
+                style: TextStyle(fontSize: 28),
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'روزهای پیوسته',
+                  style: TextStyle(
+                    color: mutC,
+                    fontSize: 12,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '$streak',
+                      style: TextStyle(
+                        color: kTabShop,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6, right: 4),
+                      child: Text(
+                        'روز',
+                        style: TextStyle(
+                          color: kTabShop,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: pnl,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: lineC),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: TextStyle(
+              color: txtC,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'Vazirmatn',
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              color: mutC,
+              fontSize: 11,
+              fontFamily: 'Vazirmatn',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeeklyChart(Map<String, int> dailyCount) {
+    final now = DateTime.now();
+    final days = <Map<String, dynamic>>[];
+    int maxCount = 1;
+
+    for (int i = 6; i >= 0; i--) {
+      final day = now.subtract(Duration(days: i));
+      final key = '${day.year}-${day.month}-${day.day}';
+      final count = dailyCount[key] ?? 0;
+      if (count > maxCount) maxCount = count;
+      days.add({
+        'label': _getDayLabel(day.weekday),
+        'count': count,
+        'isToday': i == 0,
+      });
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: pnl,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: lineC),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 18,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [kSuccess, kSuccessLight],
+                  ),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.bar_chart_rounded, color: kSuccess, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                'مطالعه هفته گذشته',
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            height: 140,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: days.map((d) {
+                final count = d['count'] as int;
+                final isToday = d['isToday'] as bool;
+                final heightPercent = maxCount > 0
+                    ? (count / maxCount).clamp(0.1, 1.0)
+                    : 0.1;
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      '$count',
+                      style: TextStyle(
+                        color: count > 0 ? kSuccess : mutC,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 500),
+                      width: 28,
+                      height: 100 * heightPercent,
+                      decoration: BoxDecoration(
+                        gradient: count > 0
+                            ? LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: isToday
+                                    ? [kTabShop, kAccentGold]
+                                    : [kSuccess, kSuccessLight],
+                              )
+                            : null,
+                        color:
+                            count == 0 ? lineC.withOpacity(0.5) : null,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: count > 0
+                            ? [
+                                BoxShadow(
+                                  color: (isToday ? kTabShop : kSuccess)
+                                      .withOpacity(0.3),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ]
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      d['label'] as String,
+                      style: TextStyle(
+                        color: isToday ? kTabShop : mutC,
+                        fontSize: 10.5,
+                        fontWeight: isToday
+                            ? FontWeight.w900
+                            : FontWeight.w700,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getDayLabel(int weekday) {
+    const days = ['د', 'س', 'چ', 'پ', 'ج', 'ش', 'ی'];
+    return days[(weekday - 1) % 7];
+  }
+
+  Widget _buildTopCategories(Map<String, int> categoryCount) {
+    final sorted = categoryCount.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final top = sorted.take(5).toList();
+    final maxVal = top.isNotEmpty ? top.first.value : 1;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: pnl,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: lineC),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 18,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [kTabArticles, kPrimaryNavyLight],
+                  ),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.trending_up_rounded,
+                  color: kTabArticles, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                'دسته‌های موردعلاقه شما',
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...top.map((entry) {
+            final percent = maxVal > 0 ? entry.value / maxVal : 0.0;
+            final cat = cats.firstWhere(
+              (c) => c.n == entry.key,
+              orElse: () => const Cat('سایر', 'other',
+                  Icons.category_rounded, Color(0xff6b7280)),
+            );
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: cat.c.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: Icon(cat.i, color: cat.c, size: 16),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          entry.key,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: txtC,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${entry.value}',
+                        style: TextStyle(
+                          color: cat.c,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: Container(
+                      height: 6,
+                      color: lineC,
+                      child: FractionallySizedBox(
+                        alignment: Alignment.centerRight,
+                        widthFactor: percent,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [cat.c, cat.c.withOpacity(0.7)],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentArticles() {
+    return ValueListenableBuilder<List<Map<String, dynamic>>>(
+      valueListenable: readArticlesNotifier,
+      builder: (context, articles, _) {
+        if (articles.isEmpty) return const SizedBox.shrink();
+        final recent = articles.take(5).toList();
+
+        return Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: pnl,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: lineC),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [kSuccess, kSuccessLight],
+                      ),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(Icons.history_rounded,
+                      color: kSuccess, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    'آخرین مقالات خوانده‌شده',
+                    style: TextStyle(
+                      color: txtC,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              ...recent.map((article) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: pnl2,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: lineC, width: 0.8),
+                    ),
+                    child: Row(
+                      children: [
+                        if ((article['image'] ?? '').toString().isNotEmpty)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: SizedBox(
+                              width: 50,
+                              height: 50,
+                              child: CachedNetworkImage(
+                                imageUrl: article['image'].toString(),
+                                fit: BoxFit.cover,
+                                memCacheWidth: 150,
+                                placeholder: (_, __) =>
+                                    Container(color: pnl),
+                                errorWidget: (_, __, ___) => Container(
+                                  color: pnl,
+                                  child: Icon(Icons.article_rounded,
+                                      color: mutC, size: 20),
+                                ),
+                              ),
+                            ),
+                          )
+                        else
+                          Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: pnl,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(Icons.article_rounded,
+                                color: mutC, size: 20),
+                          ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                article['title']?.toString() ?? '',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                  color: txtC,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.5,
+                                  fontFamily: 'Vazirmatn',
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                '${article['readTime']} دقیقه مطالعه',
+                                style: TextStyle(
+                                  color: mutC,
+                                  fontSize: 10,
+                                  fontFamily: 'Vazirmatn',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    kSuccess.withOpacity(0.15),
+                    kSuccess.withOpacity(0.05),
+                  ],
+                ),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: kSuccess.withOpacity(0.3),
+                  width: 1.5,
+                ),
+              ),
+              child: const Icon(
+                Icons.insights_rounded,
+                color: kSuccess,
+                size: 48,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'هنوز آماری وجود ندارد',
+              style: TextStyle(
+                color: txtC,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'با خواندن مقالات، آمار مطالعه شما اینجا نمایش داده می‌شود',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: mutC,
+                fontSize: 12,
+                height: 1.7,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmClear(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: pnl,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Text(
+          'پاک کردن آمار',
+          style: TextStyle(
+            color: txtC,
+            fontWeight: FontWeight.w900,
+            fontFamily: 'Vazirmatn',
+          ),
+        ),
+        content: Text(
+          'آیا می‌خواهید همه آمار مطالعه را پاک کنید؟',
+          style: TextStyle(
+            color: mutC,
+            fontFamily: 'Vazirmatn',
+            height: 1.7,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('انصراف',
+                style: TextStyle(
+                    color: mutC, fontFamily: 'Vazirmatn')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('پاک کن',
+                style: TextStyle(
+                    color: rose,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn')),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      await clearReadingStats();
+      if (context.mounted) showSnack(context, 'آمار پاک شد');
+    }
+  }
+}
+
 /* ==================== SKELETON: ARTICLES ==================== */
 
 class ArticlesSkeleton extends StatelessWidget {
@@ -12407,22 +15306,19 @@ class ArticlesSkeleton extends StatelessWidget {
             ),
             child: Row(
               children: const [
-                ShimmerBox(
-                    height: 108, width: 108, radius: 14),
+                ShimmerBox(height: 108, width: 108, radius: 14),
                 SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ShimmerBox(
-                          height: 14, width: 90, radius: 7),
+                      ShimmerBox(height: 14, width: 90, radius: 7),
                       SizedBox(height: 10),
                       ShimmerBox(height: 14),
                       SizedBox(height: 6),
                       ShimmerBox(height: 14, width: 160),
                       SizedBox(height: 12),
-                      ShimmerBox(
-                          height: 12, width: 70, radius: 6),
+                      ShimmerBox(height: 12, width: 70, radius: 6),
                     ],
                   ),
                 ),
@@ -12468,8 +15364,7 @@ class NewsSkeleton extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: const [
-                      ShimmerBox(
-                          height: 12, width: 80, radius: 6),
+                      ShimmerBox(height: 12, width: 80, radius: 6),
                       SizedBox(height: 10),
                       ShimmerBox(height: 15),
                       SizedBox(height: 6),
@@ -12477,8 +15372,7 @@ class NewsSkeleton extends StatelessWidget {
                       SizedBox(height: 10),
                       ShimmerBox(height: 12),
                       SizedBox(height: 12),
-                      ShimmerBox(
-                          height: 30, width: 120, radius: 8),
+                      ShimmerBox(height: 30, width: 120, radius: 8),
                     ],
                   ),
                 ),
@@ -12513,8 +15407,7 @@ class ShopSkeleton extends StatelessWidget {
             ),
             child: Row(
               children: const [
-                ShimmerBox(
-                    height: 130, width: 110, radius: 14),
+                ShimmerBox(height: 130, width: 110, radius: 14),
                 SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -12524,11 +15417,9 @@ class ShopSkeleton extends StatelessWidget {
                       SizedBox(height: 6),
                       ShimmerBox(height: 14, width: 140),
                       SizedBox(height: 12),
-                      ShimmerBox(
-                          height: 16, width: 100, radius: 8),
+                      ShimmerBox(height: 16, width: 100, radius: 8),
                       SizedBox(height: 10),
-                      ShimmerBox(
-                          height: 26, width: 90, radius: 8),
+                      ShimmerBox(height: 26, width: 90, radius: 8),
                     ],
                   ),
                 ),
@@ -12563,15 +15454,13 @@ class SearchSkeleton extends StatelessWidget {
             ),
             child: Row(
               children: const [
-                ShimmerBox(
-                    height: 100, width: 100, radius: 14),
+                ShimmerBox(height: 100, width: 100, radius: 14),
                 SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ShimmerBox(
-                          height: 12, width: 70, radius: 6),
+                      ShimmerBox(height: 12, width: 70, radius: 6),
                       SizedBox(height: 10),
                       ShimmerBox(height: 14),
                       SizedBox(height: 6),
