@@ -29,85 +29,115 @@ final themeModeNotifier = ValueNotifier<String>('auto');
 final bookmarkNotifier = ValueNotifier<Set<String>>({});
 final newsBookmarkNotifier = ValueNotifier<Set<String>>({});
 final productBookmarkNotifier = ValueNotifier<Set<String>>({});
-final offlineArticlesNotifier = ValueNotifier<Set<String>>({});
 final followedCategoriesNotifier = ValueNotifier<Set<String>>({});
-final inAppNotificationsNotifier = ValueNotifier<List<Map<String, dynamic>>>([]);
+final inAppNotificationsNotifier =
+    ValueNotifier<List<Map<String, dynamic>>>([]);
 final lastNewsCheckNotifier = ValueNotifier<String>('');
-final accentNotifier = ValueNotifier<Color>(const Color(0xff1e3a5f));
+final accentNotifier = ValueNotifier<Color>(const Color(0xff1a2b47));
 
-/* ==================== ACADEMIC UNIVERSITY COLORS ==================== */
+/* ==================== REFINED COLOR SYSTEM ==================== */
 
-const Color kAcademicNavy = Color(0xff1e3a5f);
-const Color kAcademicNavyDark = Color(0xff152a47);
-const Color kAcademicNavyLight = Color(0xff2d5080);
-const Color kAcademicGold = Color(0xffc9a961);
-const Color kAcademicGoldDark = Color(0xffa88840);
-const Color kAcademicGoldLight = Color(0xffe0c987);
-const Color kAcademicBurgundy = Color(0xff7b2d26);
-const Color kAcademicCream = Color(0xfff5f0e6);
-const Color kAcademicCream2 = Color(0xfffaf7f0);
-const Color kAcademicLeather = Color(0xff5c4033);
-const Color kAcademicInk = Color(0xff1a1a1a);
-const Color kAcademicParchment = Color(0xfff0e8d8);
+/// 🎨 رنگ‌های اصلی برند (Navy & Gold)
+const Color kPrimaryNavy = Color(0xff1a2b47);
+const Color kPrimaryNavyLight = Color(0xff2c4470);
+const Color kPrimaryNavyDark = Color(0xff0f1a2e);
+const Color kPrimaryNavySoft = Color(0xff4a6fa5);
 
-const Color kDarkBg = Color(0xff0f1b2d);
-const Color kDarkCard = Color(0xff1a2a42);
-const Color kDarkCard2 = Color(0xff243651);
-const Color kDarkLine = Color(0xff2d4260);
+const Color kAccentGold = Color(0xffc9a961);
+const Color kAccentGoldLight = Color(0xffe0c987);
+const Color kAccentGoldDark = Color(0xffa88840);
+const Color kAccentGoldSoft = Color(0xfff0e4c0);
 
-const Color kLightBg = Color(0xfff8f5ed);
+/// 🎨 رنگ‌های معنایی (Semantic)
+const Color kUrgent = Color(0xffdc2626);
+const Color kUrgentDark = Color(0xff991b1b);
+const Color kSuccess = Color(0xff059669);
+const Color kSuccessLight = Color(0xff34d399);
+const Color kWarning = Color(0xffd97706);
+const Color kInfo = Color(0xff2563eb);
+const Color kInfoLight = Color(0xff60a5fa);
+
+/// 🌙 سطوح تیره (Deep, Layered)
+const Color kDarkBg = Color(0xff0a0e14);
+const Color kDarkCard = Color(0xff141a22);
+const Color kDarkCard2 = Color(0xff1c242e);
+const Color kDarkCard3 = Color(0xff232b36);
+const Color kDarkBorder = Color(0xff232b36);
+const Color kDarkText = Color(0xffe8e8e8);
+const Color kDarkTextMuted = Color(0xff8b949e);
+
+/// ☀️ سطوح روشن (Warm, Paper-like)
+const Color kLightBg = Color(0xfff8f7f4);
 const Color kLightCard = Color(0xffffffff);
-const Color kLightCard2 = Color(0xfff5f0e6);
-const Color kLightLine = Color(0xffe5dcc8);
+const Color kLightCard2 = Color(0xfff1efea);
+const Color kLightCard3 = Color(0xffe8e6e0);
+const Color kLightBorder = Color(0xffe5e3dd);
+const Color kLightText = Color(0xff0f1419);
+const Color kLightTextMuted = Color(0xff5c6370);
 
+/// 🎨 پالت Accent (۸ رنگ حرفه‌ای)
 const List<Color> accentPalette = [
-  Color(0xff1e3a5f),
+  Color(0xff1a2b47),
+  Color(0xff2c4470),
   Color(0xff046a38),
   Color(0xff7b2d26),
-  Color(0xff003d7a),
-  Color(0xff5c4033),
-  Color(0xff00695c),
   Color(0xff4a148c),
+  Color(0xff00695c),
   Color(0xff8b6914),
+  Color(0xff0f1a2e),
 ];
 /* ==================== THEME COLORS ==================== */
 
+/// 🎨 پس‌زمینه‌ها
 Color get bgC => darkModeNotifier.value ? kDarkBg : kLightBg;
 Color get bgGrad1 => darkModeNotifier.value ? kDarkBg : kLightBg;
-Color get bgGrad2 =>
-    darkModeNotifier.value ? const Color(0xff152a47) : kAcademicCream;
+Color get bgGrad2 => darkModeNotifier.value
+    ? const Color(0xff10161f)
+    : const Color(0xfff0ede6);
 
+/// 🎨 کارت‌ها (سه لایه)
 Color get pnl => darkModeNotifier.value ? kDarkCard : kLightCard;
 Color get pnl2 => darkModeNotifier.value ? kDarkCard2 : kLightCard2;
-Color get pnl3 =>
-    darkModeNotifier.value ? const Color(0xff2e4265) : kAcademicParchment;
+Color get pnl3 => darkModeNotifier.value ? kDarkCard3 : kLightCard3;
 
-Color get txtC =>
-    darkModeNotifier.value ? const Color(0xfff0e8d8) : kAcademicInk;
+/// 🎨 متن‌ها
+Color get txtC => darkModeNotifier.value ? kDarkText : kLightText;
 Color get mutC =>
-    darkModeNotifier.value ? const Color(0xff8794ac) : const Color(0xff6b6b6b);
+    darkModeNotifier.value ? kDarkTextMuted : kLightTextMuted;
+Color get inkSoft => darkModeNotifier.value
+    ? const Color(0xffa0aec0)
+    : const Color(0xff4a5568);
 
+/// 🎨 رنگ‌های اصلی
 Color get accentGreen => accentNotifier.value;
-Color get accentGreen2 => kAcademicGold;
-Color get accentBlue => kAcademicNavyLight;
-Color get accentBlue2 => kAcademicNavyDark;
-Color get gold => kAcademicGold;
-Color get rose => kAcademicBurgundy;
-Color get purple => const Color(0xff4a148c);
-Color get lineC => darkModeNotifier.value ? kDarkLine : kLightLine;
+Color get accentGreen2 => kAccentGold;
+Color get accentBlue => kPrimaryNavySoft;
+Color get accentBlue2 => kPrimaryNavyDark;
+Color get gold => kAccentGold;
+Color get rose => kUrgent;
+Color get purple => const Color(0xff6d28d9);
+
+/// 🎨 مرزها و خطوط
+Color get lineC => darkModeNotifier.value ? kDarkBorder : kLightBorder;
+Color get softLine => darkModeNotifier.value
+    ? const Color(0xff1c242e)
+    : const Color(0xffefece5);
+
+/// 🎨 نوار پایین
 Color get navBg => darkModeNotifier.value ? kDarkCard : kLightCard;
+
+/// 🎨 Skeleton
 Color get skeletonBase =>
-    darkModeNotifier.value ? kDarkCard : const Color(0xffefeae0);
+    darkModeNotifier.value ? kDarkCard : const Color(0xffeae7e0);
 Color get skeletonHi =>
-    darkModeNotifier.value ? kDarkCard2 : kAcademicCream;
-Color get inkSoft =>
-    darkModeNotifier.value ? const Color(0xff9db0ca) : const Color(0xff6b6b6b);
-Color get softLine => darkModeNotifier.value ? kDarkLine : kLightLine;
+    darkModeNotifier.value ? kDarkCard2 : const Color(0xfff5f3ed);
+
+/// 🎨 چیپ‌ها
 Color get chipBg => darkModeNotifier.value
-    ? kAcademicNavy.withOpacity(0.25)
-    : kAcademicGold.withOpacity(0.15);
+    ? kPrimaryNavy.withOpacity(0.35)
+    : kAccentGold.withOpacity(0.18);
 Color get chipFg =>
-    darkModeNotifier.value ? kAcademicGold : kAcademicNavy;
+    darkModeNotifier.value ? kAccentGold : kPrimaryNavy;
 
 /* ==================== MODELS ==================== */
 
@@ -120,20 +150,37 @@ class Cat {
 }
 
 const cats = <Cat>[
-  Cat('رشته تربیت بدنی و علوم ورزشی', 'physical-education-sport-sciences', Icons.sports_soccer_rounded, Color(0xff1e3a5f)),
-  Cat('علوم ورزشی', 'sports-science', Icons.science_rounded, Color(0xff4a148c)),
-  Cat('منابع آزمون‌ها', 'sports-science-exam-resources', Icons.menu_book_rounded, Color(0xffc9a961)),
-  Cat('تغذیه ورزشی', 'sports-nutrition', Icons.restaurant_rounded, Color(0xff046a38)),
-  Cat('اخبار و رویدادها', 'sports-news-and-events', Icons.newspaper_rounded, Color(0xff7b2d26)),
-  Cat('ورزش همگانی', 'public-exercise-health-and-wellness', Icons.favorite_rounded, Color(0xff00695c)),
-  Cat('پژوهش در تربیت بدنی', 'research-in-physical-education', Icons.search_rounded, Color(0xff003d7a)),
-  Cat('تربیت بدنی و آموزش', 'physical-education-and-training', Icons.school_rounded, Color(0xff2d5080)),
-  Cat('منابع و کتب مرجع', 'introduction-to-sources-and-reference-books', Icons.library_books_rounded, Color(0xff5c4033)),
-  Cat('اصول ورزش', 'principles-of-exercise-and-physical-activity', Icons.fitness_center_rounded, Color(0xff8b6914)),
-  Cat('آزمون‌های استخدامی', 'employment-tests', Icons.assignment_rounded, Color(0xff8b2d26)),
-  Cat('معرفی رشته‌ها', 'introduction-to-sports-disciplines', Icons.sports_handball_rounded, Color(0xff1d4ed8)),
-  Cat('ورزش گروه‌های ویژه', 'exercise-for-special-groups-and-needs', Icons.accessibility_new_rounded, Color(0xff6d28d9)),
-  Cat('تکنولوژی در ورزش', 'technology-and-innovation-in-sports', Icons.memory_rounded, Color(0xff0f766e)),
+  Cat('رشته تربیت بدنی و علوم ورزشی', 'physical-education-sport-sciences',
+      Icons.sports_soccer_rounded, kPrimaryNavy),
+  Cat('علوم ورزشی', 'sports-science', Icons.science_rounded,
+      Color(0xff4a148c)),
+  Cat('منابع آزمون‌ها', 'sports-science-exam-resources',
+      Icons.menu_book_rounded, kAccentGold),
+  Cat('تغذیه ورزشی', 'sports-nutrition', Icons.restaurant_rounded,
+      Color(0xff046a38)),
+  Cat('اخبار و رویدادها', 'sports-news-and-events',
+      Icons.newspaper_rounded, Color(0xff7b2d26)),
+  Cat('ورزش همگانی', 'public-exercise-health-and-wellness',
+      Icons.favorite_rounded, Color(0xff00695c)),
+  Cat('پژوهش در تربیت بدنی', 'research-in-physical-education',
+      Icons.search_rounded, Color(0xff003d7a)),
+  Cat('تربیت بدنی و آموزش', 'physical-education-and-training',
+      Icons.school_rounded, kPrimaryNavyLight),
+  Cat('منابع و کتب مرجع',
+      'introduction-to-sources-and-reference-books',
+      Icons.library_books_rounded, Color(0xff5c4033)),
+  Cat('اصول ورزش',
+      'principles-of-exercise-and-physical-activity',
+      Icons.fitness_center_rounded, Color(0xff8b6914)),
+  Cat('آزمون‌های استخدامی', 'employment-tests',
+      Icons.assignment_rounded, Color(0xff8b2d26)),
+  Cat('معرفی رشته‌ها', 'introduction-to-sports-disciplines',
+      Icons.sports_handball_rounded, Color(0xff1d4ed8)),
+  Cat('ورزش گروه‌های ویژه',
+      'exercise-for-special-groups-and-needs',
+      Icons.accessibility_new_rounded, Color(0xff6d28d9)),
+  Cat('تکنولوژی در ورزش', 'technology-and-innovation-in-sports',
+      Icons.memory_rounded, Color(0xff0f766e)),
 ];
 /* ==================== THEME MODE ==================== */
 
@@ -272,90 +319,6 @@ Future<void> clearAllBookmarks() async {
     await _storage.delete(key: 'bookmarks_news');
     await _storage.delete(key: 'bookmarks_products');
   } catch (_) {}
-}
-
-/* ==================== OFFLINE ARTICLES ==================== */
-
-Future<void> loadOfflineArticles() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final list = prefs.getStringList('offline_articles_list') ?? [];
-    offlineArticlesNotifier.value = list.toSet();
-  } catch (_) {}
-}
-
-Future<void> saveOfflineArticle(dynamic post) async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final id = pId(post);
-    final article = {
-      'id': id,
-      'title': pTitle(post),
-      'content': clean(post['content']?['rendered'] ?? ''),
-      'excerpt': pExcerpt(post, maxChars: 500),
-      'image': pImg(post),
-      'category': pCategory(post),
-      'author': pAuthor(post),
-      'date': post['date'] ?? '',
-      'savedAt': DateTime.now().toIso8601String(),
-    };
-    await prefs.setString('offline_article_$id', json.encode(article));
-    final list = prefs.getStringList('offline_articles_list') ?? [];
-    if (!list.contains(id)) {
-      list.add(id);
-      await prefs.setStringList('offline_articles_list', list);
-    }
-    offlineArticlesNotifier.value = list.toSet();
-  } catch (e) {
-    rethrow;
-  }
-}
-
-Future<void> removeOfflineArticle(String id) async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('offline_article_$id');
-    final list = prefs.getStringList('offline_articles_list') ?? [];
-    list.remove(id);
-    await prefs.setStringList('offline_articles_list', list);
-    offlineArticlesNotifier.value = list.toSet();
-  } catch (_) {}
-}
-
-bool isOfflineSaved(String id) =>
-    offlineArticlesNotifier.value.contains(id);
-
-Future<Map<String, dynamic>?> getOfflineArticle(String id) async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString('offline_article_$id');
-    if (data == null) return null;
-    return json.decode(data) as Map<String, dynamic>;
-  } catch (_) {
-    return null;
-  }
-}
-
-Future<List<Map<String, dynamic>>> getAllOfflineArticles() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final list = prefs.getStringList('offline_articles_list') ?? [];
-    final articles = <Map<String, dynamic>>[];
-    for (final id in list) {
-      final data = prefs.getString('offline_article_$id');
-      if (data != null) {
-        articles.add(json.decode(data) as Map<String, dynamic>);
-      }
-    }
-    articles.sort((a, b) {
-      final da = a['savedAt'] ?? '';
-      final db = b['savedAt'] ?? '';
-      return db.compareTo(da);
-    });
-    return articles;
-  } catch (_) {
-    return [];
-  }
 }
 
 /* ==================== FOLLOWED CATEGORIES ==================== */
@@ -621,8 +584,7 @@ void showSnack(BuildContext context, String msg, {bool error = false}) {
           ),
         ],
       ),
-      backgroundColor:
-          error ? const Color(0xffe10600) : kAcademicNavy,
+      backgroundColor: error ? kUrgent : kPrimaryNavy,
       behavior: SnackBarBehavior.floating,
       shape:
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -855,7 +817,8 @@ Future<List> getPostsPaged({
   }
 }
 
-Future<List> getProductsPaged({int perPage = perPageSize, int page = 1}) async {
+Future<List> getProductsPaged(
+    {int perPage = perPageSize, int page = 1}) async {
   final u =
       '$site/wp-json/wc/v3/products?per_page=$perPage&page=$page&consumer_key=$wcKey&consumer_secret=$wcSecret';
 
@@ -1142,7 +1105,6 @@ void main() async {
     await loadBookmarks();
     await loadAccentColor();
     await loadThemeMode();
-    await loadOfflineArticles();
     await loadFollowedCategories();
     await loadInAppNotifications();
     Future.delayed(const Duration(seconds: 2), () {
@@ -1285,13 +1247,13 @@ class _SplashScreenState extends State<SplashScreen>
             colors: isDark
                 ? [
                     kDarkBg,
-                    const Color(0xff152a47),
-                    kAcademicNavyDark,
+                    const Color(0xff10161f),
+                    kPrimaryNavyDark,
                   ]
                 : [
                     kLightBg,
-                    kAcademicCream,
-                    kAcademicParchment,
+                    const Color(0xfff0ede6),
+                    kAccentGoldSoft,
                   ],
           ),
         ),
@@ -1316,7 +1278,7 @@ class _SplashScreenState extends State<SplashScreen>
                             end: Alignment.bottomLeft,
                             colors: [
                               accentNotifier.value,
-                              kAcademicGold,
+                              kAccentGold,
                               accentNotifier.value,
                             ],
                           ),
@@ -1328,7 +1290,7 @@ class _SplashScreenState extends State<SplashScreen>
                               spreadRadius: 4,
                             ),
                             BoxShadow(
-                              color: kAcademicGold.withOpacity(0.3),
+                              color: kAccentGold.withOpacity(0.3),
                               blurRadius: 60,
                               spreadRadius: 8,
                             ),
@@ -1374,16 +1336,6 @@ class _SplashScreenState extends State<SplashScreen>
                               fontWeight: FontWeight.w900,
                               fontFamily: 'Vazirmatn',
                               letterSpacing: 0.3,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'مرجع تخصصی تربیت بدنی و علوم ورزشی',
-                            style: TextStyle(
-                              color: mutC,
-                              fontSize: 13,
-                              fontFamily: 'Vazirmatn',
-                              letterSpacing: 0.5,
                             ),
                           ),
                           const SizedBox(height: 40),
@@ -1474,7 +1426,7 @@ class _DotsLoaderState extends State<_DotsLoader>
               height: 10,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: kAcademicGold.withOpacity(0.3 + scale * 0.7),
+                color: kAccentGold.withOpacity(0.3 + scale * 0.7),
               ),
             );
           }),
@@ -1538,7 +1490,7 @@ class _ModernNavBar extends StatelessWidget {
           color: navBg,
           borderRadius: BorderRadius.circular(28),
           border: Border.all(
-            color: isDark ? kDarkLine : kLightLine,
+            color: isDark ? kDarkBorder : kLightBorder,
             width: 1.5,
           ),
           boxShadow: [
@@ -1550,7 +1502,7 @@ class _ModernNavBar extends StatelessWidget {
               offset: const Offset(0, 12),
             ),
             BoxShadow(
-              color: kAcademicGold.withOpacity(0.08),
+              color: kAccentGold.withOpacity(0.08),
               blurRadius: 20,
               offset: const Offset(0, 4),
             ),
@@ -1591,31 +1543,31 @@ class _ModernNavBar extends StatelessWidget {
       icon: Icons.home_outlined,
       activeIcon: Icons.home_rounded,
       label: 'خانه',
-      color: kAcademicNavy,
+      color: kPrimaryNavy,
     ),
     _NavItem(
       icon: Icons.article_outlined,
       activeIcon: Icons.article_rounded,
       label: 'مقالات',
-      color: kAcademicNavyLight,
+      color: kPrimaryNavyLight,
     ),
     _NavItem(
       icon: Icons.newspaper_outlined,
       activeIcon: Icons.newspaper_rounded,
       label: 'اخبار',
-      color: kAcademicBurgundy,
+      color: kUrgent,
     ),
     _NavItem(
       icon: Icons.shopping_bag_outlined,
       activeIcon: Icons.shopping_bag_rounded,
       label: 'فروشگاه',
-      color: kAcademicGold,
+      color: kAccentGold,
     ),
     _NavItem(
       icon: Icons.person_outline_rounded,
       activeIcon: Icons.person_rounded,
       label: 'حساب من',
-      color: Color(0xff4a148c),
+      color: Color(0xff6d28d9),
     ),
   ];
 }
@@ -1719,7 +1671,7 @@ class _PremiumNavItemState extends State<_PremiumNavItem>
                 borderRadius: BorderRadius.circular(15),
                 border: selected
                     ? Border.all(
-                        color: kAcademicGold.withOpacity(0.4),
+                        color: kAccentGold.withOpacity(0.4),
                         width: 1.5,
                       )
                     : null,
@@ -1731,7 +1683,7 @@ class _PremiumNavItemState extends State<_PremiumNavItem>
                           offset: const Offset(0, 4),
                         ),
                         BoxShadow(
-                          color: kAcademicGold.withOpacity(0.25),
+                          color: kAccentGold.withOpacity(0.25),
                           blurRadius: 24,
                           spreadRadius: 2,
                         ),
@@ -1769,11 +1721,11 @@ class _PremiumNavItemState extends State<_PremiumNavItem>
                         width: 6,
                         height: 6,
                         decoration: BoxDecoration(
-                          color: kAcademicGold,
+                          color: kAccentGold,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: kAcademicGold.withOpacity(0.8),
+                              color: kAccentGold.withOpacity(0.8),
                               blurRadius: 6,
                             ),
                           ],
@@ -1872,7 +1824,7 @@ class _HomeState extends State<Home> {
               top: 200,
               left: -120,
               child: _AnimatedBlob(
-                color: kAcademicGold,
+                color: kAccentGold,
                 size: 250,
                 duration: const Duration(seconds: 10),
               ),
@@ -1881,7 +1833,7 @@ class _HomeState extends State<Home> {
               bottom: 100,
               right: -100,
               child: _AnimatedBlob(
-                color: kAcademicNavyLight,
+                color: kPrimaryNavySoft,
                 size: 220,
                 duration: const Duration(seconds: 12),
               ),
@@ -2004,7 +1956,7 @@ class _AnimatedBlobState extends State<_AnimatedBlob>
   }
 }
 
-/* ==================== MODERN HEADER ==================== */
+/* ==================== MODERN HEADER (بدون آفلاین) ==================== */
 
 Widget ModernHeader(BuildContext context, [String? t]) {
   return SafeArea(
@@ -2021,7 +1973,7 @@ Widget ModernHeader(BuildContext context, [String? t]) {
               gradient: LinearGradient(
                 colors: [
                   accentNotifier.value,
-                  kAcademicGold,
+                  kAccentGold,
                   accentNotifier.value.withOpacity(0.5),
                 ],
               ),
@@ -2062,7 +2014,7 @@ Widget ModernHeader(BuildContext context, [String? t]) {
               children: [
                 ShaderMask(
                   shaderCallback: (bounds) => LinearGradient(
-                    colors: [txtC, kAcademicGold],
+                    colors: [txtC, kAccentGold],
                   ).createShader(bounds),
                   child: Text(
                     t ?? 'تربیت بدنی و علوم ورزشی',
@@ -2085,11 +2037,11 @@ Widget ModernHeader(BuildContext context, [String? t]) {
                       width: 6,
                       height: 6,
                       decoration: BoxDecoration(
-                        color: kAcademicGold,
+                        color: kAccentGold,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: kAcademicGold.withOpacity(0.6),
+                            color: kAccentGold.withOpacity(0.6),
                             blurRadius: 6,
                           ),
                         ],
@@ -2110,7 +2062,7 @@ Widget ModernHeader(BuildContext context, [String? t]) {
               ],
             ),
           ),
-          // 🔔 اعلان‌ها با Badge
+          // 🔔 اعلان‌ها
           ValueListenableBuilder<List<Map<String, dynamic>>>(
             valueListenable: inAppNotificationsNotifier,
             builder: (c, list, __) {
@@ -2139,18 +2091,17 @@ Widget ModernHeader(BuildContext context, [String? t]) {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 5, vertical: 1),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
+                          gradient: LinearGradient(
                             colors: [
-                              Color(0xffe10600),
-                              Color(0xffbe123c),
+                              kUrgent,
+                              kUrgentDark,
                             ],
                           ),
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(color: pnl, width: 1.5),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xffe10600)
-                                  .withOpacity(0.5),
+                              color: kUrgent.withOpacity(0.5),
                               blurRadius: 8,
                             ),
                           ],
@@ -2173,46 +2124,6 @@ Widget ModernHeader(BuildContext context, [String? t]) {
             },
           ),
           const SizedBox(width: 4),
-          // 📥 ذخیره آفلاین
-          ValueListenableBuilder<Set<String>>(
-            valueListenable: offlineArticlesNotifier,
-            builder: (c, set, __) => Stack(
-              children: [
-                _HeaderIconButton(
-                  icon: Icons.download_done_rounded,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const OfflineArticlesPage()),
-                  ),
-                ),
-                if (set.isNotEmpty)
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: kAcademicGold,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: pnl, width: 1.5),
-                      ),
-                      child: Text(
-                        '${set.length}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 8,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 4),
           // 🔖 نشان‌شده‌ها
           _HeaderIconButton(
             icon: Icons.bookmark_outline_rounded,
@@ -2222,11 +2133,13 @@ Widget ModernHeader(BuildContext context, [String? t]) {
             ),
           ),
           const SizedBox(width: 4),
+          // 🌗 تغییر تم
           _HeaderIconButton(
             icon: Icons.brightness_6_rounded,
             onTap: () => _showThemeModePicker(context),
           ),
           const SizedBox(width: 4),
+          // 🔍 جستجو
           _HeaderIconButton(
             icon: Icons.search_rounded,
             onTap: () => Navigator.push(
@@ -2347,21 +2260,21 @@ class _LiveNewsTickerState extends State<LiveNewsTicker> {
         gradient: LinearGradient(
           colors: isDark
               ? [
-                  kAcademicBurgundy.withOpacity(0.3),
-                  kAcademicNavyDark.withOpacity(0.3),
+                  kUrgent.withOpacity(0.15),
+                  kPrimaryNavyDark.withOpacity(0.3),
                 ]
               : [
-                  kAcademicCream,
-                  kAcademicParchment,
+                  const Color(0xfffff5f5),
+                  const Color(0xfff5f0e6),
                 ],
         ),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: kAcademicBurgundy.withOpacity(0.4),
+          color: kUrgent.withOpacity(0.4),
         ),
         boxShadow: [
           BoxShadow(
-            color: kAcademicBurgundy.withOpacity(0.12),
+            color: kUrgent.withOpacity(0.12),
             blurRadius: 12,
             offset: const Offset(0, 3),
           ),
@@ -2375,14 +2288,14 @@ class _LiveNewsTickerState extends State<LiveNewsTicker> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  kAcademicBurgundy,
-                  kAcademicBurgundy.withOpacity(0.8),
+                  kUrgent,
+                  kUrgentDark,
                 ],
               ),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: kAcademicBurgundy.withOpacity(0.4),
+                  color: kUrgent.withOpacity(0.4),
                   blurRadius: 10,
                 ),
               ],
@@ -2443,10 +2356,11 @@ class _LiveNewsTickerState extends State<LiveNewsTicker> {
   }
 }
 
-/* ==================== WHITE LIVE DOT SMALL ==================== */
+/* ==================== WHITE LIVE DOT SMALL (با پارامتر رنگ) ==================== */
 
 class _WhiteLiveDotSmall extends StatefulWidget {
-  const _WhiteLiveDotSmall();
+  final Color? color;
+  const _WhiteLiveDotSmall({this.color});
 
   @override
   State<_WhiteLiveDotSmall> createState() => _WhiteLiveDotSmallState();
@@ -2473,6 +2387,7 @@ class _WhiteLiveDotSmallState extends State<_WhiteLiveDotSmall>
 
   @override
   Widget build(BuildContext context) {
+    final dotColor = widget.color ?? Colors.white;
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (context, _) {
@@ -2490,15 +2405,15 @@ class _WhiteLiveDotSmallState extends State<_WhiteLiveDotSmall>
                 height: 12 * scale,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(opacity * 0.6),
+                  color: dotColor.withOpacity(opacity * 0.6),
                 ),
               ),
               Container(
                 width: 7,
                 height: 7,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white,
+                  color: dotColor,
                 ),
               ),
             ],
@@ -2544,12 +2459,12 @@ void _showThemeModePicker(BuildContext context) {
                 height: 40,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [kAcademicNavy, kAcademicGold],
+                    colors: [kPrimaryNavy, kAccentGold],
                   ),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: kAcademicNavy.withOpacity(0.4),
+                      color: kPrimaryNavy.withOpacity(0.4),
                       blurRadius: 12,
                       offset: const Offset(0, 3),
                     ),
@@ -2575,7 +2490,7 @@ void _showThemeModePicker(BuildContext context) {
             icon: Icons.light_mode_rounded,
             label: 'روشن',
             subtitle: 'همیشه در حالت روشن',
-            color: kAcademicGold,
+            color: kAccentGold,
             value: 'light',
             ctx: ctx,
           ),
@@ -2584,7 +2499,7 @@ void _showThemeModePicker(BuildContext context) {
             icon: Icons.dark_mode_rounded,
             label: 'تاریک',
             subtitle: 'همیشه در حالت تاریک',
-            color: kAcademicNavy,
+            color: kPrimaryNavy,
             value: 'dark',
             ctx: ctx,
           ),
@@ -2752,22 +2667,22 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          kAcademicNavy
+                          kPrimaryNavy
                               .withOpacity(count > 0 ? 1 : 0.15),
-                          kAcademicGold
+                          kAccentGold
                               .withOpacity(count > 0 ? 1 : 0.15),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(
-                        color: kAcademicNavy
+                        color: kPrimaryNavy
                             .withOpacity(count > 0 ? 1 : 0.3),
                         width: 1.2,
                       ),
                       boxShadow: count > 0
                           ? [
                               BoxShadow(
-                                color: kAcademicGold
+                                color: kAccentGold
                                     .withOpacity(0.4),
                                 blurRadius: 12,
                                 offset: const Offset(0, 3),
@@ -2782,7 +2697,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
                           Icons.favorite_rounded,
                           color: count > 0
                               ? Colors.white
-                              : kAcademicNavy,
+                              : kPrimaryNavy,
                           size: 15,
                         ),
                         const SizedBox(width: 6),
@@ -2791,7 +2706,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
                           style: TextStyle(
                             color: count > 0
                                 ? Colors.white
-                                : kAcademicNavy,
+                                : kPrimaryNavy,
                             fontSize: 12,
                             fontWeight: FontWeight.w900,
                             fontFamily: 'Vazirmatn',
@@ -3072,13 +2987,13 @@ class _HeroCarouselState extends State<HeroCarousel> {
           height: 8,
           decoration: BoxDecoration(
             color: active
-                ? kAcademicGold
+                ? kAccentGold
                 : mutC.withOpacity(0.3),
             borderRadius: BorderRadius.circular(999),
             boxShadow: active
                 ? [
                     BoxShadow(
-                      color: kAcademicGold.withOpacity(0.5),
+                      color: kAccentGold.withOpacity(0.5),
                       blurRadius: 8,
                     ),
                   ]
@@ -3210,14 +3125,14 @@ class _CarouselCardState extends State<_CarouselCard>
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  kAcademicGold,
-                                  kAcademicGoldDark,
+                                  kAccentGold,
+                                  kAccentGoldDark,
                                 ],
                               ),
                               borderRadius: BorderRadius.circular(8),
                               boxShadow: [
                                 BoxShadow(
-                                  color: kAcademicGold
+                                  color: kAccentGold
                                       .withOpacity(0.5),
                                   blurRadius: 12,
                                 ),
@@ -3409,7 +3324,7 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [kAcademicNavy, kAcademicGold],
+                          colors: [kPrimaryNavy, kAccentGold],
                         ),
                         borderRadius: BorderRadius.circular(3),
                       ),
@@ -3448,22 +3363,22 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 22, vertical: 12),
                         decoration: BoxDecoration(
-                          color: kAcademicNavy.withOpacity(.1),
+                          color: kPrimaryNavy.withOpacity(.1),
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(
-                            color: kAcademicNavy.withOpacity(.3),
+                            color: kPrimaryNavy.withOpacity(.3),
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.list_alt_rounded,
-                                color: kAcademicNavy, size: 18),
+                                color: kPrimaryNavy, size: 18),
                             const SizedBox(width: 6),
                             Text(
                               'مشاهده همه اخبار فوری',
                               style: TextStyle(
-                                color: kAcademicNavy,
+                                color: kPrimaryNavy,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
                                 fontFamily: 'Vazirmatn',
@@ -3471,7 +3386,7 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
                             ),
                             const SizedBox(width: 4),
                             Icon(Icons.arrow_back_ios_new_rounded,
-                                color: kAcademicNavy, size: 12),
+                                color: kPrimaryNavy, size: 12),
                           ],
                         ),
                       ),
@@ -3503,7 +3418,7 @@ class _ModernServicesSectionState extends State<ModernServicesSection> {
     {
       'title': 'معرفی رشته',
       'icon': Icons.info_outline_rounded,
-      'color': kAcademicNavy,
+      'color': kPrimaryNavy,
       'url':
           '$site/introduction-to-the-field-of-physical-education-and-sports-sciences/',
     },
@@ -3529,19 +3444,19 @@ class _ModernServicesSectionState extends State<ModernServicesSection> {
     {
       'title': 'منابع دکتری',
       'icon': Icons.auto_stories_rounded,
-      'color': kAcademicGold,
+      'color': kAccentGold,
       'url': '$site/manabe-konkur-doctori-tarbiat-badani/',
     },
     {
       'title': 'منابع استخدامی',
       'icon': Icons.assignment_rounded,
-      'color': kAcademicBurgundy,
+      'color': kUrgent,
       'url': '$site/employment-tests/',
     },
     {
       'title': 'دانشگاه‌های برتر',
       'icon': Icons.account_balance_rounded,
-      'color': kAcademicNavyLight,
+      'color': kPrimaryNavySoft,
       'url': '$site/physical-education-sports-science/',
     },
     {
@@ -3561,7 +3476,7 @@ class _ModernServicesSectionState extends State<ModernServicesSection> {
     {
       'title': 'پاورپوینت',
       'icon': Icons.file_present_rounded,
-      'color': kAcademicLeather,
+      'color': const Color(0xff5c4033),
       'url': '$site/product-category/powerpoint/',
     },
   ];
@@ -3589,14 +3504,14 @@ class _ModernServicesSectionState extends State<ModernServicesSection> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [kAcademicNavy, kAcademicGold],
+                      colors: [kPrimaryNavy, kAccentGold],
                     ),
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Icon(Icons.auto_awesome_rounded,
-                    color: kAcademicGold, size: 20),
+                    color: kAccentGold, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -3692,7 +3607,7 @@ class _ModernServicesSectionState extends State<ModernServicesSection> {
   }
 }
 
-/* ==================== PREMIUM POST CARD ==================== */
+/* ==================== PREMIUM POST CARD (بدون آفلاین) ==================== */
 
 class ModernPostCard extends StatefulWidget {
   final dynamic post;
@@ -3764,19 +3679,19 @@ class _ModernPostCardState extends State<ModernPostCard>
               end: Alignment.bottomLeft,
               colors: isDark
                   ? [kDarkCard, kDarkBg]
-                  : [Colors.white, kAcademicCream2],
+                  : [Colors.white, kLightCard2],
             ),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: _pressed
-                  ? kAcademicGold.withOpacity(0.5)
+                  ? kAccentGold.withOpacity(0.5)
                   : lineC,
               width: _pressed ? 1.5 : 1,
             ),
             boxShadow: [
               BoxShadow(
                 color: _pressed
-                    ? kAcademicGold.withOpacity(0.2)
+                    ? kAccentGold.withOpacity(0.2)
                     : Colors.black.withOpacity(isDark ? 0.3 : 0.06),
                 blurRadius: _pressed ? 20 : 14,
                 offset: const Offset(0, 4),
@@ -3797,7 +3712,7 @@ class _ModernPostCardState extends State<ModernPostCard>
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          kAcademicGold.withOpacity(
+                          kAccentGold.withOpacity(
                               isDark ? 0.15 : 0.08),
                           Colors.transparent,
                         ],
@@ -3987,51 +3902,6 @@ class _ModernPostCardState extends State<ModernPostCard>
                                   ),
                                 ),
                                 const SizedBox(width: 4),
-                                // 📥 Offline
-                                GestureDetector(
-                                  onTap: () async {
-                                    HapticFeedback.lightImpact();
-                                    if (isOfflineSaved(id)) {
-                                      await removeOfflineArticle(id);
-                                      if (context.mounted) {
-                                        showSnack(context,
-                                            'از آفلاین حذف شد');
-                                      }
-                                    } else {
-                                      await saveOfflineArticle(post);
-                                      if (context.mounted) {
-                                        showSnack(context,
-                                            'برای مطالعه آفلاین ذخیره شد ✅');
-                                      }
-                                    }
-                                  },
-                                  child: ValueListenableBuilder<
-                                      Set<String>>(
-                                    valueListenable:
-                                        offlineArticlesNotifier,
-                                    builder: (c, set, __) => Container(
-                                      padding: const EdgeInsets.all(3),
-                                      decoration: BoxDecoration(
-                                        color: set.contains(id)
-                                            ? kAcademicGold
-                                                .withOpacity(0.15)
-                                            : Colors.transparent,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        set.contains(id)
-                                            ? Icons
-                                                .download_done_rounded
-                                            : Icons.download_outlined,
-                                        color: set.contains(id)
-                                            ? kAcademicGold
-                                            : mutC,
-                                        size: 16,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
                                 // 🔖 Bookmark
                                 if (widget.showBookmark)
                                   GestureDetector(
@@ -4052,7 +3922,7 @@ class _ModernPostCardState extends State<ModernPostCard>
                                         padding: const EdgeInsets.all(3),
                                         decoration: BoxDecoration(
                                           color: set.contains(id)
-                                              ? kAcademicGold
+                                              ? kAccentGold
                                                   .withOpacity(0.15)
                                               : Colors.transparent,
                                           shape: BoxShape.circle,
@@ -4063,7 +3933,7 @@ class _ModernPostCardState extends State<ModernPostCard>
                                               : Icons
                                                   .bookmark_border_rounded,
                                           color: set.contains(id)
-                                              ? kAcademicGold
+                                              ? kAccentGold
                                               : mutC,
                                           size: 16,
                                         ),
@@ -4229,7 +4099,7 @@ class FeaturedPostCard extends StatelessWidget {
                                     ? Icons.bookmark_rounded
                                     : Icons.bookmark_border_rounded,
                                 color: set.contains(id)
-                                    ? kAcademicGold
+                                    ? kAccentGold
                                     : Colors.white,
                                 size: 20,
                               ),
@@ -4381,7 +4251,7 @@ class FeaturedPostCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 7),
                         decoration: BoxDecoration(
-                          color: kAcademicGold.withOpacity(0.12),
+                          color: kAccentGold.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Row(
@@ -4390,7 +4260,7 @@ class FeaturedPostCard extends StatelessWidget {
                             Text(
                               'مطالعه',
                               style: TextStyle(
-                                color: kAcademicGoldDark,
+                                color: kAccentGoldDark,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w900,
                                 fontFamily: 'Vazirmatn',
@@ -4398,7 +4268,7 @@ class FeaturedPostCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Icon(Icons.arrow_back_rounded,
-                                color: kAcademicGoldDark, size: 12),
+                                color: kAccentGoldDark, size: 12),
                           ],
                         ),
                       ),
@@ -4528,7 +4398,7 @@ class SidePostCard extends StatelessWidget {
                               padding: const EdgeInsets.all(3),
                               decoration: BoxDecoration(
                                 color: set.contains(id)
-                                    ? kAcademicGold.withOpacity(0.15)
+                                    ? kAccentGold.withOpacity(0.15)
                                     : Colors.transparent,
                                 shape: BoxShape.circle,
                               ),
@@ -4537,7 +4407,7 @@ class SidePostCard extends StatelessWidget {
                                     ? Icons.bookmark_rounded
                                     : Icons.bookmark_border_rounded,
                                 color: set.contains(id)
-                                    ? kAcademicGold
+                                    ? kAccentGold
                                     : mutC,
                                 size: 15,
                               ),
@@ -4710,15 +4580,14 @@ class ModernProductCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                kAcademicBurgundy,
-                                kAcademicBurgundy.withOpacity(0.8),
+                                kUrgent,
+                                kUrgentDark,
                               ],
                             ),
                             borderRadius: BorderRadius.circular(7),
                             boxShadow: [
                               BoxShadow(
-                                color: kAcademicBurgundy
-                                    .withOpacity(0.5),
+                                color: kUrgent.withOpacity(0.5),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -4743,7 +4612,7 @@ class ModernProductCard extends StatelessWidget {
                             horizontal: 7, vertical: 3),
                         decoration: BoxDecoration(
                           color: inStock
-                              ? const Color(0xff046a38)
+                              ? kSuccess
                               : const Color(0xff6b7280),
                           borderRadius: BorderRadius.circular(6),
                         ),
@@ -4785,7 +4654,6 @@ class ModernProductCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      // 📤 Share
                       GestureDetector(
                         onTap: () {
                           HapticFeedback.lightImpact();
@@ -4805,7 +4673,6 @@ class ModernProductCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      // 🔖 Bookmark
                       GestureDetector(
                         onTap: () {
                           HapticFeedback.lightImpact();
@@ -4823,7 +4690,7 @@ class ModernProductCard extends StatelessWidget {
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
                               color: set.contains(pId(p))
-                                  ? kAcademicGold.withOpacity(0.15)
+                                  ? kAccentGold.withOpacity(0.15)
                                   : Colors.transparent,
                               shape: BoxShape.circle,
                             ),
@@ -4832,7 +4699,7 @@ class ModernProductCard extends StatelessWidget {
                                   ? Icons.bookmark_rounded
                                   : Icons.bookmark_border_rounded,
                               color: set.contains(pId(p))
-                                  ? kAcademicGold
+                                  ? kAccentGold
                                   : mutC,
                               size: 17,
                             ),
@@ -4846,7 +4713,7 @@ class ModernProductCard extends StatelessWidget {
                     Text(
                       formatPrice(salePrice),
                       style: const TextStyle(
-                        color: Color(0xff046a38),
+                        color: kSuccess,
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
                         fontFamily: 'Vazirmatn',
@@ -4882,10 +4749,11 @@ class ModernProductCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: kAcademicGold.withOpacity(inStock ? 0.15 : 0.08),
+                      color: kAccentGold
+                          .withOpacity(inStock ? 0.15 : 0.08),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: kAcademicGold
+                        color: kAccentGold
                             .withOpacity(inStock ? 0.3 : 0.15),
                         width: 0.8,
                       ),
@@ -4897,7 +4765,7 @@ class ModernProductCard extends StatelessWidget {
                           inStock
                               ? Icons.shopping_bag_rounded
                               : Icons.visibility_rounded,
-                          color: kAcademicGold
+                          color: kAccentGold
                               .withOpacity(inStock ? 1 : 0.5),
                           size: 13,
                         ),
@@ -4905,7 +4773,7 @@ class ModernProductCard extends StatelessWidget {
                         Text(
                           inStock ? 'خرید' : 'مشاهده',
                           style: TextStyle(
-                            color: kAcademicGold
+                            color: kAccentGold
                                 .withOpacity(inStock ? 1 : 0.6),
                             fontSize: 10.5,
                             fontWeight: FontWeight.w900,
@@ -5013,7 +4881,8 @@ class ModernCatGrid extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: cat.c,
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: pnl, width: 1.5),
+                                  border:
+                                      Border.all(color: pnl, width: 1.5),
                                 ),
                                 child: const Icon(Icons.check_rounded,
                                     color: Colors.white, size: 9),
@@ -5081,7 +4950,7 @@ class ModernSocial extends StatelessWidget {
         'فروشگاه',
         Icons.shopping_cart_rounded,
         '$site/shop/',
-        kAcademicGold
+        kAccentGold
       ],
     ];
     return Column(
@@ -5097,7 +4966,7 @@ class ModernSocial extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [kAcademicNavy, kAcademicGold],
+                    colors: [kPrimaryNavy, kAccentGold],
                   ),
                   borderRadius: BorderRadius.circular(3),
                 ),
@@ -5198,7 +5067,7 @@ class ModernSectionTitle extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [kAcademicNavy, kAcademicGold],
+                  colors: [kPrimaryNavy, kAccentGold],
                 ),
                 borderRadius: BorderRadius.circular(3),
               ),
@@ -5271,7 +5140,7 @@ class _ModernLiveDotState extends State<ModernLiveDot>
                 height: 16 * scale,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: kAcademicBurgundy.withOpacity(opacity * 0.5),
+                  color: kUrgent.withOpacity(opacity * 0.5),
                 ),
               ),
               Container(
@@ -5279,7 +5148,7 @@ class _ModernLiveDotState extends State<ModernLiveDot>
                 height: 8,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
-                  color: kAcademicBurgundy,
+                  color: kUrgent,
                 ),
               ),
             ],
@@ -5290,7 +5159,7 @@ class _ModernLiveDotState extends State<ModernLiveDot>
   }
 }
 
-/* ==================== MODERN URGENT NEWS CARD ==================== */
+/* ==================== MODERN URGENT NEWS CARD (با دایره قرمز) ==================== */
 
 class ModernUrgentNewsCard extends StatefulWidget {
   final dynamic news;
@@ -5522,6 +5391,7 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                           ),
                         ),
                         const SizedBox(width: 8),
+                        // 🎯 بج «خبر فوری» آبی با دایره قرمز
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 5),
@@ -5541,7 +5411,7 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              _WhiteLiveDotSmall(),
+                              _WhiteLiveDotSmall(color: kUrgent),
                               SizedBox(width: 6),
                               Text(
                                 'خبر فوری',
@@ -5557,7 +5427,6 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                           ),
                         ),
                         const Spacer(),
-                        // 📤 Share
                         GestureDetector(
                           onTap: () {
                             HapticFeedback.lightImpact();
@@ -5581,7 +5450,6 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                           ),
                         ),
                         const SizedBox(width: 4),
-                        // 🔖 Bookmark
                         GestureDetector(
                           onTap: () {
                             HapticFeedback.lightImpact();
@@ -5599,7 +5467,7 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                               padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(
                                 color: set.contains(id)
-                                    ? kAcademicGold.withOpacity(0.2)
+                                    ? kAccentGold.withOpacity(0.2)
                                     : Colors.transparent,
                                 shape: BoxShape.circle,
                               ),
@@ -5608,7 +5476,7 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                                     ? Icons.bookmark_rounded
                                     : Icons.bookmark_border_rounded,
                                 color: set.contains(id)
-                                    ? kAcademicGold
+                                    ? kAccentGold
                                     : mutC,
                                 size: 15,
                               ),
@@ -5816,8 +5684,8 @@ class _FollowedCategoriesSectionState
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
                               colors: [
-                                kAcademicNavy,
-                                kAcademicGold,
+                                kPrimaryNavy,
+                                kAccentGold,
                               ],
                             ),
                             borderRadius: BorderRadius.circular(3),
@@ -5825,7 +5693,7 @@ class _FollowedCategoriesSectionState
                         ),
                         const SizedBox(width: 10),
                         Icon(Icons.favorite_rounded,
-                            color: kAcademicBurgundy,
+                            color: kUrgent,
                             size: 20),
                         const SizedBox(width: 8),
                         Text(
@@ -5853,7 +5721,7 @@ class _FollowedCategoriesSectionState
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
-                              color: kAcademicNavy
+                              color: kPrimaryNavy
                                   .withOpacity(0.12),
                               borderRadius:
                                   BorderRadius.circular(8),
@@ -5861,7 +5729,7 @@ class _FollowedCategoriesSectionState
                             child: const Text(
                               'مدیریت',
                               style: TextStyle(
-                                color: kAcademicNavy,
+                                color: kPrimaryNavy,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w900,
                                 fontFamily: 'Vazirmatn',
@@ -5979,7 +5847,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
                       : _posts.isEmpty
                           ? const EmptyWidget(text: 'مقاله‌ای پیدا نشد.')
                           : RefreshIndicator(
-                              color: kAcademicNavyLight,
+                              color: kPrimaryNavyLight,
                               backgroundColor: pnl,
                               strokeWidth: 3,
                               onRefresh: _refresh,
@@ -5997,7 +5865,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
                                       padding: const EdgeInsets.all(20),
                                       child: Center(
                                         child: CircularProgressIndicator(
-                                          color: kAcademicNavyLight,
+                                          color: kPrimaryNavyLight,
                                         ),
                                       ),
                                     );
@@ -6030,12 +5898,12 @@ class _ArticlesPageState extends State<ArticlesPage> {
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [kAcademicNavy, kAcademicNavyLight],
+                  colors: [kPrimaryNavy, kPrimaryNavyLight],
                 ),
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: kAcademicNavy.withOpacity(0.4),
+                    color: kPrimaryNavy.withOpacity(0.4),
                     blurRadius: 14,
                     offset: const Offset(0, 4),
                   ),
@@ -6049,36 +5917,21 @@ class _ArticlesPageState extends State<ArticlesPage> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [kAcademicNavy, kAcademicGold],
-                    ).createShader(bounds),
-                    child: Text(
-                      'مقالات تخصصی',
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        color: txtC,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        fontFamily: 'Vazirmatn',
-                        letterSpacing: 0.2,
-                      ),
-                    ),
+              child: ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [kPrimaryNavy, kAccentGold],
+                ).createShader(bounds),
+                child: Text(
+                  'مقالات تخصصی',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: txtC,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                    letterSpacing: 0.2,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'مطالب علمی و آموزشی',
-                    style: TextStyle(
-                      color: mutC,
-                      fontSize: 11,
-                      fontFamily: 'Vazirmatn',
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
             GestureDetector(
@@ -6477,19 +6330,19 @@ class _NewsPageState extends State<NewsPage> {
       'key': 'today',
       'label': 'امروز',
       'icon': Icons.today_rounded,
-      'color': Color(0xff046a38),
+      'color': kSuccess,
     },
     {
       'key': 'week',
       'label': 'این هفته',
       'icon': Icons.date_range_rounded,
-      'color': kAcademicNavyLight,
+      'color': kPrimaryNavyLight,
     },
     {
       'key': 'month',
       'label': 'این ماه',
       'icon': Icons.calendar_month_rounded,
-      'color': Color(0xff4a148c),
+      'color': Color(0xff6d28d9),
     },
   ];
 
@@ -6611,7 +6464,7 @@ class _NewsPageState extends State<NewsPage> {
                               : const EmptyWidget(
                                   text: 'خبری پیدا نشد.')
                           : RefreshIndicator(
-                              color: kAcademicBurgundy,
+                              color: kUrgent,
                               backgroundColor: pnl,
                               strokeWidth: 3,
                               onRefresh: _refresh,
@@ -6629,7 +6482,7 @@ class _NewsPageState extends State<NewsPage> {
                                       padding: const EdgeInsets.all(20),
                                       child: Center(
                                         child: CircularProgressIndicator(
-                                            color: kAcademicBurgundy),
+                                            color: kUrgent),
                                       ),
                                     );
                                   }
@@ -6660,14 +6513,14 @@ class _NewsPageState extends State<NewsPage> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    kAcademicBurgundy,
-                    kAcademicBurgundy.withOpacity(0.7),
+                    kUrgent,
+                    kUrgent.withOpacity(0.7),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: kAcademicBurgundy.withOpacity(0.4),
+                    color: kUrgent.withOpacity(0.4),
                     blurRadius: 14,
                     offset: const Offset(0, 4),
                   ),
@@ -6681,57 +6534,41 @@ class _NewsPageState extends State<NewsPage> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      ShaderMask(
-                        shaderCallback: (bounds) => LinearGradient(
-                          colors: [
-                            kAcademicBurgundy,
-                            kAcademicGold,
-                          ],
-                        ).createShader(bounds),
-                        child: Text(
-                          'اخبار و رویدادها',
-                          textAlign: TextAlign.right,
-                          style: TextStyle(
-                            color: txtC,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'Vazirmatn',
-                            letterSpacing: 0.2,
-                          ),
-                        ),
+                  ShaderMask(
+                    shaderCallback: (bounds) => LinearGradient(
+                      colors: [
+                        kUrgent,
+                        kAccentGold,
+                      ],
+                    ).createShader(bounds),
+                    child: Text(
+                      'اخبار و رویدادها',
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: txtC,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn',
+                        letterSpacing: 0.2,
                       ),
-                      const SizedBox(width: 6),
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: kAcademicBurgundy,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: kAcademicBurgundy
-                                  .withOpacity(0.7),
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'آخرین اخبار ورزشی ایران و جهان',
-                    style: TextStyle(
-                      color: mutC,
-                      fontSize: 10.5,
-                      fontFamily: 'Vazirmatn',
-                      fontWeight: FontWeight.w600,
+                  const SizedBox(width: 6),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: kUrgent,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: kUrgent.withOpacity(0.7),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -6925,14 +6762,14 @@ class _NewsPageState extends State<NewsPage> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      kAcademicNavy,
-                      kAcademicNavy.withOpacity(0.7),
+                      kPrimaryNavy,
+                      kPrimaryNavy.withOpacity(0.7),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(999),
                   boxShadow: [
                     BoxShadow(
-                      color: kAcademicNavy.withOpacity(0.4),
+                      color: kPrimaryNavy.withOpacity(0.4),
                       blurRadius: 12,
                       offset: const Offset(0, 3),
                     ),
@@ -7002,7 +6839,7 @@ class _PremiumNewsCardState extends State<_PremiumNewsCard> {
             end: Alignment.bottomLeft,
             colors: isDark
                 ? [
-                    kAcademicBurgundy.withOpacity(0.15),
+                    kUrgent.withOpacity(0.15),
                     kDarkCard,
                   ]
                 : [
@@ -7013,14 +6850,14 @@ class _PremiumNewsCardState extends State<_PremiumNewsCard> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: _pressed
-                ? kAcademicBurgundy.withOpacity(0.6)
+                ? kUrgent.withOpacity(0.6)
                 : lineC,
             width: _pressed ? 1.5 : 1,
           ),
           boxShadow: [
             BoxShadow(
               color: _pressed
-                  ? kAcademicBurgundy.withOpacity(0.2)
+                  ? kUrgent.withOpacity(0.2)
                   : Colors.black.withOpacity(isDark ? 0.3 : 0.05),
               blurRadius: _pressed ? 20 : 12,
               offset: const Offset(0, 4),
@@ -7059,8 +6896,7 @@ class _PremiumNewsCardState extends State<_PremiumNewsCard> {
                               height: 24,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: kAcademicBurgundy
-                                    .withOpacity(0.5),
+                                color: kUrgent.withOpacity(0.5),
                               ),
                             ),
                           ),
@@ -7068,7 +6904,7 @@ class _PremiumNewsCardState extends State<_PremiumNewsCard> {
                         errorWidget: (_, __, ___) => Container(
                           color: pnl2,
                           child: Icon(Icons.newspaper_rounded,
-                              color: kAcademicBurgundy,
+                              color: kUrgent,
                               size: 48),
                         ),
                       ),
@@ -7100,15 +6936,14 @@ class _PremiumNewsCardState extends State<_PremiumNewsCard> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  kAcademicBurgundy,
-                                  kAcademicBurgundy.withOpacity(0.8),
+                                  kUrgent,
+                                  kUrgent.withOpacity(0.8),
                                 ],
                               ),
                               borderRadius: BorderRadius.circular(8),
                               boxShadow: [
                                 BoxShadow(
-                                  color: kAcademicBurgundy
-                                      .withOpacity(0.5),
+                                  color: kUrgent.withOpacity(0.5),
                                   blurRadius: 12,
                                   offset: const Offset(0, 2),
                                 ),
@@ -7189,8 +7024,8 @@ class _PremiumNewsCardState extends State<_PremiumNewsCard> {
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                kAcademicBurgundy,
-                                kAcademicBurgundy.withOpacity(0.8),
+                                kUrgent,
+                                kUrgent.withOpacity(0.8),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(6),
@@ -7207,7 +7042,7 @@ class _PremiumNewsCardState extends State<_PremiumNewsCard> {
                         ),
                       if (img.isEmpty) const Spacer(),
                       Icon(Icons.newspaper_rounded,
-                          color: kAcademicBurgundy.withOpacity(0.6),
+                          color: kUrgent.withOpacity(0.6),
                           size: 16),
                     ],
                   ),
@@ -7246,18 +7081,18 @@ class _PremiumNewsCardState extends State<_PremiumNewsCard> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: kAcademicBurgundy.withOpacity(0.08),
+                      color: kUrgent.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       children: [
                         const Icon(Icons.circle,
-                            size: 6, color: kAcademicBurgundy),
+                            size: 6, color: kUrgent),
                         const SizedBox(width: 6),
                         Text(
                           'مشاهده خبر',
                           style: TextStyle(
-                            color: kAcademicBurgundy,
+                            color: kUrgent,
                             fontSize: 11,
                             fontWeight: FontWeight.w900,
                             fontFamily: 'Vazirmatn',
@@ -7265,7 +7100,7 @@ class _PremiumNewsCardState extends State<_PremiumNewsCard> {
                         ),
                         const Spacer(),
                         const Icon(Icons.arrow_back_ios_new_rounded,
-                            color: kAcademicBurgundy, size: 10),
+                            color: kUrgent, size: 10),
                       ],
                     ),
                   ),
@@ -7366,7 +7201,7 @@ class _ShopPageState extends State<ShopPage> {
                       : _products.isEmpty
                           ? const EmptyWidget(text: 'محصولی پیدا نشد.')
                           : RefreshIndicator(
-                              color: kAcademicGold,
+                              color: kAccentGold,
                               backgroundColor: pnl,
                               strokeWidth: 3,
                               onRefresh: _refresh,
@@ -7384,7 +7219,7 @@ class _ShopPageState extends State<ShopPage> {
                                       padding: const EdgeInsets.all(20),
                                       child: Center(
                                         child: CircularProgressIndicator(
-                                            color: kAcademicGold),
+                                            color: kAccentGold),
                                       ),
                                     );
                                   }
@@ -7415,14 +7250,14 @@ class _ShopPageState extends State<ShopPage> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    kAcademicGold,
-                    kAcademicGoldDark,
+                    kAccentGold,
+                    kAccentGoldDark,
                   ],
                 ),
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: kAcademicGold.withOpacity(0.4),
+                    color: kAccentGold.withOpacity(0.4),
                     blurRadius: 14,
                     offset: const Offset(0, 4),
                   ),
@@ -7436,39 +7271,24 @@ class _ShopPageState extends State<ShopPage> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [
-                        kAcademicGold,
-                        kAcademicNavy,
-                      ],
-                    ).createShader(bounds),
-                    child: Text(
-                      'فروشگاه تخصصی',
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        color: txtC,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                        fontFamily: 'Vazirmatn',
-                        letterSpacing: 0.2,
-                      ),
-                    ),
+              child: ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [
+                    kAccentGold,
+                    kPrimaryNavy,
+                  ],
+                ).createShader(bounds),
+                child: Text(
+                  'فروشگاه تخصصی',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: txtC,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                    letterSpacing: 0.2,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'منابع، کتب و محصولات ورزشی',
-                    style: TextStyle(
-                      color: mutC,
-                      fontSize: 10.5,
-                      fontFamily: 'Vazirmatn',
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
             GestureDetector(
@@ -7480,17 +7300,17 @@ class _ShopPageState extends State<ShopPage> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      kAcademicGold.withOpacity(0.15),
-                      kAcademicGold.withOpacity(0.05),
+                      kAccentGold.withOpacity(0.15),
+                      kAccentGold.withOpacity(0.05),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: kAcademicGold.withOpacity(0.3),
+                    color: kAccentGold.withOpacity(0.3),
                   ),
                 ),
                 child: const Icon(Icons.shopping_cart_rounded,
-                    color: kAcademicGold, size: 20),
+                    color: kAccentGold, size: 20),
               ),
             ),
           ],
@@ -7567,14 +7387,14 @@ class _BookmarksPageState extends State<BookmarksPage>
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        kAcademicGold,
-                        kAcademicGoldDark,
+                        kAccentGold,
+                        kAccentGoldDark,
                       ],
                     ),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: kAcademicGold.withOpacity(0.4),
+                        color: kAccentGold.withOpacity(0.4),
                         blurRadius: 12,
                         offset: const Offset(0, 3),
                       ),
@@ -7648,14 +7468,14 @@ class _BookmarksPageState extends State<BookmarksPage>
                   indicator: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        kAcademicNavy,
-                        kAcademicNavy.withOpacity(0.7),
+                        kPrimaryNavy,
+                        kPrimaryNavy.withOpacity(0.7),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(11),
                     boxShadow: [
                       BoxShadow(
-                        color: kAcademicNavy.withOpacity(0.4),
+                        color: kPrimaryNavy.withOpacity(0.4),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -7759,14 +7579,14 @@ class _BookmarksPageState extends State<BookmarksPage>
         if (saved.isEmpty) {
           return _emptyTab(
             icon: Icons.article_outlined,
-            color: kAcademicNavy,
+            color: kPrimaryNavy,
             title: 'هنوز مقاله‌ای نشان نکرده‌اید',
             subtitle:
                 'با زدن آیکون نشان روی کارت مقالات، اینجا ذخیره می‌شوند',
           );
         }
         return RefreshIndicator(
-          color: kAcademicNavy,
+          color: kPrimaryNavy,
           backgroundColor: pnl,
           strokeWidth: 3,
           onRefresh: _loadAll,
@@ -7827,14 +7647,14 @@ class _BookmarksPageState extends State<BookmarksPage>
         if (saved.isEmpty) {
           return _emptyTab(
             icon: Icons.shopping_bag_outlined,
-            color: kAcademicGold,
+            color: kAccentGold,
             title: 'هنوز محصولی نشان نکرده‌اید',
             subtitle:
                 'با زدن آیکون نشان روی کارت محصولات، اینجا ذخیره می‌شوند',
           );
         }
         return RefreshIndicator(
-          color: kAcademicGold,
+          color: kAccentGold,
           backgroundColor: pnl,
           strokeWidth: 3,
           onRefresh: _loadAll,
@@ -8284,8 +8104,8 @@ class _SearchPageState extends State<SearchPage> {
                       gradient: selected
                           ? LinearGradient(
                               colors: [
-                                kAcademicNavy,
-                                kAcademicNavy.withOpacity(0.7),
+                                kPrimaryNavy,
+                                kPrimaryNavy.withOpacity(0.7),
                               ],
                             )
                           : null,
@@ -8293,14 +8113,14 @@ class _SearchPageState extends State<SearchPage> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: selected
-                            ? kAcademicNavy
+                            ? kPrimaryNavy
                             : lineC,
                         width: 1,
                       ),
                       boxShadow: selected
                           ? [
                               BoxShadow(
-                                color: kAcademicNavy
+                                color: kPrimaryNavy
                                     .withOpacity(0.3),
                                 blurRadius: 10,
                                 offset: const Offset(0, 3),
@@ -8343,8 +8163,8 @@ class _SearchPageState extends State<SearchPage> {
                   gradient: _selectedCategory != null
                       ? LinearGradient(
                           colors: [
-                            kAcademicGold,
-                            kAcademicGoldDark,
+                            kAccentGold,
+                            kAccentGoldDark,
                           ],
                         )
                       : null,
@@ -8352,14 +8172,14 @@ class _SearchPageState extends State<SearchPage> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: _selectedCategory != null
-                        ? kAcademicGold
+                        ? kAccentGold
                         : lineC,
                     width: 1,
                   ),
                   boxShadow: _selectedCategory != null
                       ? [
                           BoxShadow(
-                            color: kAcademicGold
+                            color: kAccentGold
                                 .withOpacity(0.3),
                             blurRadius: 10,
                             offset: const Offset(0, 3),
@@ -8405,7 +8225,7 @@ class _SearchPageState extends State<SearchPage> {
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.close_rounded,
-                              size: 10, color: kAcademicGold),
+                              size: 10, color: kAccentGold),
                         ),
                       ),
                     ],
@@ -8588,12 +8408,12 @@ class _SearchPageState extends State<SearchPage> {
                 height: 32,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [kAcademicGold, kAcademicGoldDark],
+                    colors: [kAccentGold, kAccentGoldDark],
                   ),
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: [
                     BoxShadow(
-                      color: kAcademicGold.withOpacity(0.3),
+                      color: kAccentGold.withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -8719,8 +8539,8 @@ class _SearchPageState extends State<SearchPage> {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          kAcademicGold,
-                          kAcademicGoldDark,
+                          kAccentGold,
+                          kAccentGoldDark,
                         ],
                       ),
                       borderRadius: BorderRadius.circular(10),
@@ -8754,7 +8574,7 @@ class _SearchPageState extends State<SearchPage> {
                     return _categoryItem(
                       icon: Icons.apps_rounded,
                       label: 'همه دسته‌ها',
-                      color: kAcademicNavy,
+                      color: kPrimaryNavy,
                       selected: _selectedCategory == null,
                       onTap: () {
                         setState(() => _selectedCategory = null);
@@ -8859,7 +8679,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 }
 
-/* ==================== PREMIUM ACCOUNT PAGE ==================== */
+/* ==================== PREMIUM ACCOUNT PAGE (بدون دکمه‌های میان‌بر) ==================== */
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -8874,7 +8694,6 @@ class _AccountPageState extends State<AccountPage>
   double _progress = 0;
   late AnimationController _entryCtrl;
   late Animation<double> _fadeAnim;
-  late Animation<Offset> _slideAnim;
 
   @override
   void initState() {
@@ -8887,13 +8706,6 @@ class _AccountPageState extends State<AccountPage>
       parent: _entryCtrl,
       curve: Curves.easeOutCubic,
     );
-    _slideAnim = Tween<Offset>(
-      begin: const Offset(0, 0.05),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _entryCtrl,
-      curve: Curves.easeOutCubic,
-    ));
     _entryCtrl.forward();
     _restore();
   }
@@ -8993,7 +8805,7 @@ class _AccountPageState extends State<AccountPage>
                   child: LinearProgressIndicator(
                     value: _progress,
                     backgroundColor: lineC,
-                    color: const Color(0xff4a148c),
+                    color: const Color(0xff6d28d9),
                     minHeight: 4,
                   ),
                 ),
@@ -9088,14 +8900,14 @@ class _AccountPageState extends State<AccountPage>
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                     colors: [
-                                      Color(0xff4a148c),
-                                      kAcademicNavy,
+                                      Color(0xff6d28d9),
+                                      kPrimaryNavy,
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xff4a148c)
+                                      color: const Color(0xff6d28d9)
                                           .withOpacity(0.4),
                                       blurRadius: 24,
                                       offset: const Offset(0, 8),
@@ -9133,7 +8945,7 @@ class _AccountPageState extends State<AccountPage>
                                 height: 30,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 3,
-                                  color: Color(0xff4a148c),
+                                  color: Color(0xff6d28d9),
                                 ),
                               ),
                             ],
@@ -9154,212 +8966,88 @@ class _AccountPageState extends State<AccountPage>
     return SafeArea(
       bottom: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
-        child: Column(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+        child: Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xff4a148c),
-                        kAcademicNavy,
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xff4a148c)
-                            .withOpacity(0.4),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.person_rounded,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xff6d28d9),
+                    kPrimaryNavy,
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ShaderMask(
-                        shaderCallback: (bounds) => LinearGradient(
-                          colors: [
-                            const Color(0xff4a148c),
-                            kAcademicNavy,
-                          ],
-                        ).createShader(bounds),
-                        child: Text(
-                          'حساب کاربری',
-                          textAlign: TextAlign.right,
-                          style: TextStyle(
-                            color: txtC,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'Vazirmatn',
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'سفارش‌ها، اطلاعات و پنل ادمین',
-                        style: TextStyle(
-                          color: mutC,
-                          fontSize: 10.5,
-                          fontFamily: 'Vazirmatn',
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xff6d28d9)
+                        .withOpacity(0.4),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
                   ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const AdminLoginPage()),
-                    );
-                  },
-                  child: Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          kAcademicGold.withOpacity(0.15),
-                          kAcademicGold.withOpacity(0.05),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: kAcademicGold.withOpacity(0.3),
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.admin_panel_settings_rounded,
-                      color: kAcademicGold,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
+              child: const Icon(
+                Icons.person_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
             ),
-            const SizedBox(height: 14),
-            FadeTransition(
-              opacity: _fadeAnim,
-              child: SlideTransition(
-                position: _slideAnim,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  child: Row(
-                    children: [
-                      _quickActionBtn(
-                        context,
-                        icon: Icons.receipt_long_rounded,
-                        label: 'سفارش‌ها',
-                        color: const Color(0xff4a148c),
-                        url: '$site/my-account/orders/',
-                      ),
-                      const SizedBox(width: 8),
-                      _quickActionBtn(
-                        context,
-                        icon: Icons.location_on_rounded,
-                        label: 'آدرس‌ها',
-                        color: kAcademicNavyLight,
-                        url: '$site/my-account/edit-address/',
-                      ),
-                      const SizedBox(width: 8),
-                      _quickActionBtn(
-                        context,
-                        icon: Icons.favorite_rounded,
-                        label: 'علاقه‌مندی‌ها',
-                        color: kAcademicBurgundy,
-                        url: '$site/my-account/wishlist/',
-                      ),
-                      const SizedBox(width: 8),
-                      _quickActionBtn(
-                        context,
-                        icon: Icons.settings_rounded,
-                        label: 'تنظیمات',
-                        color: const Color(0xff046a38),
-                        url: '$site/my-account/edit-account/',
-                      ),
-                      const SizedBox(width: 8),
-                      _quickActionBtn(
-                        context,
-                        icon: Icons.headset_mic_rounded,
-                        label: 'پشتیبانی',
-                        color: kAcademicGold,
-                        url: '$site/contact/',
-                      ),
-                    ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: ShaderMask(
+                shaderCallback: (bounds) => LinearGradient(
+                  colors: [
+                    const Color(0xff6d28d9),
+                    kPrimaryNavy,
+                  ],
+                ).createShader(bounds),
+                child: Text(
+                  'حساب کاربری',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: txtC,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                    letterSpacing: 0.2,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 6),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _quickActionBtn(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required Color color,
-    required String url,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        if (_controller != null) {
-          _controller!.loadUrl(
-              urlRequest: URLRequest(url: WebUri(url)));
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              color.withOpacity(0.15),
-              color.withOpacity(0.05),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: color.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 16),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                fontFamily: 'Vazirmatn',
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const AdminLoginPage()),
+                );
+              },
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      kAccentGold.withOpacity(0.15),
+                      kAccentGold.withOpacity(0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: kAccentGold.withOpacity(0.3),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.admin_panel_settings_rounded,
+                  color: kAccentGold,
+                  size: 20,
+                ),
               ),
             ),
           ],
@@ -9950,6 +9638,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                       ),
                     ),
                     const SizedBox(width: 12),
+                    // 🎯 بج «خبر فوری» با دایره قرمز
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 7),
@@ -9973,7 +9662,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          _WhiteLiveDotSmall(),
+                          _WhiteLiveDotSmall(color: kUrgent),
                           SizedBox(width: 6),
                           Text(
                             'خبر فوری',
@@ -10202,8 +9891,8 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [
-                      kAcademicNavy,
-                      kAcademicNavyLight,
+                      kPrimaryNavy,
+                      kPrimaryNavyLight,
                     ],
                   ),
                   borderRadius: BorderRadius.circular(3),
@@ -11004,16 +10693,16 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      kAcademicGold.withOpacity(0.2),
-                      kAcademicGold.withOpacity(0.05),
+                      kAccentGold.withOpacity(0.2),
+                      kAccentGold.withOpacity(0.05),
                     ],
                   ),
                   shape: BoxShape.circle,
                   border: Border.all(
-                      color: kAcademicGold.withOpacity(0.3)),
+                      color: kAccentGold.withOpacity(0.3)),
                 ),
                 child: Icon(Icons.lock_rounded,
-                    color: kAcademicGold, size: 42),
+                    color: kAccentGold, size: 42),
               ),
               const SizedBox(height: 22),
               Text(
@@ -11182,15 +10871,15 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: kAcademicNavy.withOpacity(0.08),
+                  color: kPrimaryNavy.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                      color: kAcademicNavy.withOpacity(0.15)),
+                      color: kPrimaryNavy.withOpacity(0.15)),
                 ),
                 child: Row(
                   children: [
                     Icon(Icons.shield_rounded,
-                        color: kAcademicNavy, size: 18),
+                        color: kPrimaryNavy, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -11404,7 +11093,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
           if (['mp3', 'wav'].contains(ext)) icon = '🎵';
 
           finalContent +=
-              '\n\n<p style="margin-top:20px; padding:12px; background:#f5f0e6; border-radius:10px; text-align:center;"><a href="$_uploadedFileUrl" target="_blank" style="color:#1e3a5f; font-weight:bold; text-decoration:none; font-size:15px;">$icon دانلود فایل: $_uploadedFileName</a></p>';
+              '\n\n<p style="margin-top:20px; padding:12px; background:#f5f0e6; border-radius:10px; text-align:center;"><a href="$_uploadedFileUrl" target="_blank" style="color:#1a2b47; font-weight:bold; text-decoration:none; font-size:15px;">$icon دانلود فایل: $_uploadedFileName</a></p>';
         }
       }
 
@@ -11470,12 +11159,12 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                             width: 36,
                             height: 36,
                             decoration: BoxDecoration(
-                              color: kAcademicNavyLight
+                              color: kPrimaryNavyLight
                                   .withOpacity(0.15),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(Icons.edit_rounded,
-                                color: kAcademicNavyLight, size: 20),
+                                color: kPrimaryNavyLight, size: 20),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
@@ -11652,7 +11341,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                                       }
                                     },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: kAcademicNavyLight,
+                                backgroundColor: kPrimaryNavyLight,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 padding: const EdgeInsets.symmetric(
@@ -11784,17 +11473,17 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
 
   Color _fileColor(String ext) {
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].contains(ext)) {
-      return const Color(0xff046a38);
+      return kSuccess;
     }
-    if (ext == 'pdf') return const Color(0xffe10600);
+    if (ext == 'pdf') return kUrgent;
     if (['doc', 'docx'].contains(ext)) return const Color(0xff2b579a);
     if (['xls', 'xlsx'].contains(ext)) return const Color(0xff217346);
     if (['ppt', 'pptx'].contains(ext)) return const Color(0xffd24726);
     if (['zip', 'rar', '7z'].contains(ext)) {
-      return kAcademicGold;
+      return kAccentGold;
     }
     if (['mp4', 'avi', 'mov', 'mkv'].contains(ext)) {
-      return const Color(0xff4a148c);
+      return const Color(0xff6d28d9);
     }
     if (['mp3', 'wav', 'm4a'].contains(ext)) {
       return const Color(0xffec4899);
@@ -11837,15 +11526,15 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: kAcademicNavy.withOpacity(0.1),
+                  color: kPrimaryNavy.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                      color: kAcademicNavy.withOpacity(0.3)),
+                      color: kPrimaryNavy.withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
                     Icon(Icons.info_outline_rounded,
-                        color: kAcademicNavy, size: 22),
+                        color: kPrimaryNavy, size: 22),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -11962,7 +11651,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                   onPressed:
                       (_sending || _uploadingFile) ? null : _publish,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: kAcademicNavyLight,
+                    backgroundColor: kPrimaryNavyLight,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -12089,7 +11778,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                               onPressed: () => _showEditDialog(p),
                               icon: Icon(
                                 Icons.edit_rounded,
-                                color: kAcademicNavyLight,
+                                color: kPrimaryNavyLight,
                                 size: 22,
                               ),
                               tooltip: 'ویرایش',
@@ -12127,12 +11816,12 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
           gradient: LinearGradient(
             colors: isDark
                 ? [
-                    kAcademicNavy.withOpacity(0.25),
-                    kAcademicNavy.withOpacity(0.1),
+                    kPrimaryNavy.withOpacity(0.25),
+                    kPrimaryNavy.withOpacity(0.1),
                   ]
                 : [
-                    kAcademicGold.withOpacity(0.15),
-                    kAcademicGold.withOpacity(0.05),
+                    kAccentGold.withOpacity(0.15),
+                    kAccentGold.withOpacity(0.05),
                   ],
           ),
           borderRadius: BorderRadius.circular(16),
@@ -12287,20 +11976,19 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xff046a38)
-                              .withOpacity(0.15),
+                          color: kSuccess.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(5),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.check_circle_rounded,
-                                color: Color(0xff046a38), size: 10),
+                                color: kSuccess, size: 10),
                             SizedBox(width: 3),
                             Text(
                               'آپلود شده',
                               style: TextStyle(
-                                color: Color(0xff046a38),
+                                color: kSuccess,
                                 fontSize: 9,
                                 fontWeight: FontWeight.w900,
                                 fontFamily: 'Vazirmatn',
@@ -12337,816 +12025,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     );
   }
 }
-/* ==================== OFFLINE ARTICLES PAGE ==================== */
-
-class OfflineArticlesPage extends StatefulWidget {
-  const OfflineArticlesPage({super.key});
-  @override
-  State<OfflineArticlesPage> createState() => _OfflineArticlesPageState();
-}
-
-class _OfflineArticlesPageState extends State<OfflineArticlesPage> {
-  List<Map<String, dynamic>> _articles = [];
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() => _loading = true);
-    final articles = await getAllOfflineArticles();
-    if (mounted) {
-      setState(() {
-        _articles = articles;
-        _loading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => Scaffold(
-        backgroundColor: bgC,
-        appBar: AppBar(
-          title: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xff046a38),
-                      Color(0xff00b140),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xff046a38)
-                          .withOpacity(0.4),
-                      blurRadius: 12,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.download_done_rounded,
-                    color: Colors.white, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'مطالعه آفلاین',
-                style: TextStyle(
-                  color: txtC,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'Vazirmatn',
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: bgC,
-          foregroundColor: txtC,
-          elevation: 0,
-        ),
-        body: _loading
-            ? const ArticlesSkeleton()
-            : _articles.isEmpty
-                ? _buildEmpty()
-                : RefreshIndicator(
-                    color: const Color(0xff046a38),
-                    backgroundColor: pnl,
-                    strokeWidth: 3,
-                    onRefresh: _load,
-                    child: ListView.builder(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(
-                          14, 14, 14, 100),
-                      itemCount: _articles.length,
-                      itemBuilder: (c, i) =>
-                          _offlineCard(_articles[i]),
-                    ),
-                  ),
-      ),
-    );
-  }
-
-  Widget _offlineCard(Map<String, dynamic> article) {
-    final id = article['id']?.toString() ?? '';
-    final title = article['title']?.toString() ?? '';
-    final excerpt = article['excerpt']?.toString() ?? '';
-    final image = article['image']?.toString() ?? '';
-    final category = article['category']?.toString() ?? '';
-
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => OfflineReaderPage(article: article),
-        ),
-      ).then((_) => _load()),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: pnl,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: lineC),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(
-                  width: 90,
-                  height: 90,
-                  child: image.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: image,
-                          fit: BoxFit.cover,
-                          memCacheWidth: 400,
-                          placeholder: (_, __) =>
-                              Container(color: pnl2),
-                          errorWidget: (_, __, ___) => Container(
-                            color: pnl2,
-                            child: Icon(Icons.article_rounded,
-                                color: mutC, size: 28),
-                          ),
-                        )
-                      : Container(
-                          color: pnl2,
-                          child: Icon(Icons.article_rounded,
-                              color: mutC, size: 28),
-                        ),
-                ),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 12, 12, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xff046a38)
-                                .withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.download_done_rounded,
-                                  color: Color(0xff046a38),
-                                  size: 10),
-                              SizedBox(width: 3),
-                              Text(
-                                'آفلاین',
-                                style: TextStyle(
-                                  color: Color(0xff046a38),
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w900,
-                                  fontFamily: 'Vazirmatn',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Spacer(),
-                        GestureDetector(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            _remove(id);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: BoxDecoration(
-                              color: rose.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(Icons.delete_outline_rounded,
-                                color: rose, size: 16),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        color: txtC,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        height: 1.5,
-                        fontFamily: 'Vazirmatn',
-                      ),
-                    ),
-                    if (excerpt.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        excerpt,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          color: mutC,
-                          fontSize: 10.5,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-                    ],
-                    if (category.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        category,
-                        style: TextStyle(
-                          color: accentNotifier.value,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _remove(String id) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: pnl,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: Text(
-          'حذف از آفلاین',
-          style: TextStyle(
-            color: txtC,
-            fontWeight: FontWeight.w900,
-            fontFamily: 'Vazirmatn',
-          ),
-        ),
-        content: Text(
-          'آیا می‌خواهید این مقاله را از ذخیره آفلاین حذف کنید؟',
-          style: TextStyle(
-            color: mutC,
-            fontFamily: 'Vazirmatn',
-            height: 1.7,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('انصراف',
-                style: TextStyle(
-                    color: mutC, fontFamily: 'Vazirmatn')),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text('حذف',
-                style: TextStyle(
-                    color: rose,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn')),
-          ),
-        ],
-      ),
-    );
-    if (confirm == true) {
-      await removeOfflineArticle(id);
-      _load();
-      if (mounted) showSnack(context, 'مقاله حذف شد');
-    }
-  }
-
-  Widget _buildEmpty() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    const Color(0xff046a38).withOpacity(0.15),
-                    const Color(0xff046a38).withOpacity(0.05),
-                  ],
-                ),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xff046a38).withOpacity(0.3),
-                  width: 1.5,
-                ),
-              ),
-              child: const Icon(
-                Icons.download_outlined,
-                color: Color(0xff046a38),
-                size: 48,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'هنوز مقاله‌ای ذخیره نکرده‌اید',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: txtC,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'با زدن آیکون دانلود روی کارت مقالات،\nمی‌توانید آن‌ها را برای مطالعه آفلاین ذخیره کنید.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: mutC,
-                fontSize: 12,
-                height: 1.7,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/* ==================== OFFLINE READER PAGE ==================== */
-
-class OfflineReaderPage extends StatefulWidget {
-  final Map<String, dynamic> article;
-  const OfflineReaderPage({super.key, required this.article});
-
-  @override
-  State<OfflineReaderPage> createState() => _OfflineReaderPageState();
-}
-
-class _OfflineReaderPageState extends State<OfflineReaderPage> {
-  double _fontSize = 16;
-  double _lineHeight = 2.1;
-  String _fontFamily = 'Vazirmatn';
-  bool _isSepia = false;
-  final _scroll = ScrollController();
-  double _readingProgress = 0;
-  bool _showToolbar = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPrefs();
-    _scroll.addListener(() {
-      if (_scroll.hasClients) {
-        final max = _scroll.position.maxScrollExtent;
-        if (max > 0) {
-          final p = (_scroll.offset / max).clamp(0.0, 1.0);
-          if ((p - _readingProgress).abs() > 0.01) {
-            setState(() => _readingProgress = p);
-          }
-        }
-      }
-    });
-  }
-
-  Future<void> _loadPrefs() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      setState(() {
-        _fontSize = prefs.getDouble('reader_font_size') ?? 16;
-        _lineHeight = prefs.getDouble('reader_line_height') ?? 2.1;
-        _fontFamily = prefs.getString('reader_font') ?? 'Vazirmatn';
-        _isSepia = prefs.getBool('reader_sepia') ?? false;
-      });
-    } catch (_) {}
-  }
-
-  Future<void> _savePrefs() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setDouble('reader_font_size', _fontSize);
-      await prefs.setDouble('reader_line_height', _lineHeight);
-      await prefs.setString('reader_font', _fontFamily);
-      await prefs.setBool('reader_sepia', _isSepia);
-    } catch (_) {}
-  }
-
-  @override
-  void dispose() {
-    _scroll.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final article = widget.article;
-    final title = article['title']?.toString() ?? '';
-    final content = article['content']?.toString() ?? '';
-    final category = article['category']?.toString() ?? '';
-    final author = article['author']?.toString() ?? '';
-    final date = article['date']?.toString() ?? '';
-
-    final paragraphs = content
-        .split(RegExp(r'\n+'))
-        .map((p) => p.trim())
-        .where((p) => p.isNotEmpty)
-        .toList();
-
-    Color bgReader;
-    Color txtReader;
-    if (_isSepia) {
-      bgReader = darkModeNotifier.value
-          ? const Color(0xff2a1f0f)
-          : const Color(0xfff4ecd8);
-      txtReader = darkModeNotifier.value
-          ? const Color(0xfff0e8d8)
-          : const Color(0xff3a2f1f);
-    } else {
-      bgReader = bgC;
-      txtReader = txtC;
-    }
-
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: bgReader,
-        body: Stack(
-          children: [
-            CustomScrollView(
-              controller: _scroll,
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: MediaQuery.of(context).padding.top + 60,
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (category.isNotEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: accentNotifier.value
-                                  .withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              category,
-                              style: TextStyle(
-                                color: accentNotifier.value,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w900,
-                                fontFamily: 'Vazirmatn',
-                              ),
-                            ),
-                          ),
-                        const SizedBox(height: 12),
-                        Text(
-                          title,
-                          textAlign: TextAlign.right,
-                          style: TextStyle(
-                            color: txtReader,
-                            fontSize: _fontSize + 4,
-                            fontWeight: FontWeight.w900,
-                            height: 1.6,
-                            fontFamily: _fontFamily,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            if (author.isNotEmpty) ...[
-                              Icon(Icons.person_rounded,
-                                  color: mutC, size: 14),
-                              const SizedBox(width: 4),
-                              Text(
-                                author,
-                                style: TextStyle(
-                                  color: mutC,
-                                  fontSize: 11,
-                                  fontFamily: 'Vazirmatn',
-                                ),
-                              ),
-                            ],
-                            if (author.isNotEmpty && date.isNotEmpty)
-                              const SizedBox(width: 12),
-                            if (date.isNotEmpty) ...[
-                              Icon(Icons.calendar_today_rounded,
-                                  color: mutC, size: 12),
-                              const SizedBox(width: 4),
-                              Text(
-                                pDate({'date': date}),
-                                style: TextStyle(
-                                  color: mutC,
-                                  fontSize: 11,
-                                  fontFamily: 'Vazirmatn',
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        Container(
-                          height: 2,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                accentNotifier.value,
-                                accentNotifier.value.withOpacity(0.2),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: paragraphs.map((p) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Text(
-                            p,
-                            textAlign: TextAlign.right,
-                            style: TextStyle(
-                              color: txtReader,
-                              fontSize: _fontSize,
-                              height: _lineHeight,
-                              fontWeight: FontWeight.w500,
-                              fontFamily: _fontFamily,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: SafeArea(
-                bottom: false,
-                child: Container(
-                  height: 3,
-                  color: Colors.transparent,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: FractionallySizedBox(
-                      widthFactor: _readingProgress,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              accentNotifier.value,
-                              accentNotifier.value.withOpacity(0.5),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            _buildGlassAppBar(bgReader),
-            if (_showToolbar) _buildSettingsSheet(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGlassAppBar(Color bgReader) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      height: MediaQuery.of(context).padding.top + 56,
-      decoration: BoxDecoration(
-        color: bgReader.withOpacity(0.9),
-        border: Border(
-          bottom: BorderSide(
-            color: lineC.withOpacity(0.5),
-            width: 0.5,
-          ),
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Row(
-            children: [
-              _glassBtn(
-                icon: Icons.arrow_forward_rounded,
-                onTap: () => Navigator.pop(context),
-              ),
-              const Spacer(),
-              _glassBtn(
-                icon: Icons.text_fields_rounded,
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _showToolbar = !_showToolbar);
-                },
-              ),
-              const SizedBox(width: 4),
-              _glassBtn(
-                icon: _isSepia
-                    ? Icons.brightness_1_rounded
-                    : Icons.brightness_2_outlined,
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  setState(() => _isSepia = !_isSepia);
-                  _savePrefs();
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _glassBtn({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          color: pnl,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: lineC),
-        ),
-        child: Icon(icon, color: txtC, size: 20),
-      ),
-    );
-  }
-
-  Widget _buildSettingsSheet() {
-    return Positioned(
-      left: 0,
-      right: 0,
-      bottom: 0,
-      child: Container(
-        decoration: BoxDecoration(
-          color: pnl,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(28),
-          ),
-          border: Border.all(color: lineC),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 44,
-              height: 4,
-              decoration: BoxDecoration(
-                color: mutC.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(999),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Icon(Icons.text_fields_rounded,
-                    color: accentNotifier.value, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  'اندازه فونت',
-                  style: TextStyle(
-                    color: txtC,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '${_fontSize.toStringAsFixed(0)}',
-                  style: TextStyle(
-                    color: accentNotifier.value,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Slider(
-              value: _fontSize,
-              min: 12,
-              max: 24,
-              divisions: 12,
-              activeColor: accentNotifier.value,
-              inactiveColor: lineC,
-              onChanged: (v) {
-                setState(() => _fontSize = v);
-              },
-              onChangeEnd: (_) => _savePrefs(),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(Icons.format_line_spacing_rounded,
-                    color: accentNotifier.value, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  'فاصله خطوط',
-                  style: TextStyle(
-                    color: txtC,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '${_lineHeight.toStringAsFixed(1)}',
-                  style: TextStyle(
-                    color: accentNotifier.value,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Slider(
-              value: _lineHeight,
-              min: 1.5,
-              max: 3.0,
-              divisions: 15,
-              activeColor: accentNotifier.value,
-              inactiveColor: lineC,
-              onChanged: (v) {
-                setState(() => _lineHeight = v);
-              },
-              onChangeEnd: (_) => _savePrefs(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /* ==================== NOTIFICATIONS PAGE ==================== */
 
 class NotificationsPage extends StatefulWidget {
@@ -13194,15 +12072,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [
-                          Color(0xff046a38),
-                          Color(0xff00b140),
+                          kSuccess,
+                          kSuccessLight,
                         ],
                       ),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xff046a38)
-                              .withOpacity(0.4),
+                          color: kSuccess.withOpacity(0.4),
                           blurRadius: 12,
                           offset: const Offset(0, 3),
                         ),
@@ -13230,7 +12107,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         Text(
                           '$unread جدید',
                           style: TextStyle(
-                            color: kAcademicBurgundy,
+                            color: kUrgent,
                             fontSize: 10.5,
                             fontWeight: FontWeight.w700,
                             fontFamily: 'Vazirmatn',
@@ -13272,7 +12149,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 : notifications.isEmpty
                     ? _buildEmpty()
                     : RefreshIndicator(
-                        color: const Color(0xff046a38),
+                        color: kSuccess,
                         backgroundColor: pnl,
                         strokeWidth: 3,
                         onRefresh: _check,
@@ -13343,8 +12220,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   begin: Alignment.topRight,
                   end: Alignment.bottomLeft,
                   colors: [
-                    const Color(0xff046a38).withOpacity(0.10),
-                    const Color(0xff046a38).withOpacity(0.02),
+                    kSuccess.withOpacity(0.10),
+                    kSuccess.withOpacity(0.02),
                   ],
                 )
               : null,
@@ -13352,15 +12229,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: !isRead
-                ? const Color(0xff046a38).withOpacity(0.35)
+                ? kSuccess.withOpacity(0.35)
                 : lineC,
             width: !isRead ? 1.5 : 1,
           ),
           boxShadow: !isRead
               ? [
                   BoxShadow(
-                    color: const Color(0xff046a38)
-                        .withOpacity(0.15),
+                    color: kSuccess.withOpacity(0.15),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -13408,13 +12284,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       width: 10,
                       height: 10,
                       decoration: BoxDecoration(
-                        color: kAcademicBurgundy,
+                        color: kUrgent,
                         shape: BoxShape.circle,
                         border: Border.all(color: bgC, width: 2),
                         boxShadow: [
                           BoxShadow(
-                            color: kAcademicBurgundy
-                                .withOpacity(0.6),
+                            color: kUrgent.withOpacity(0.6),
                             blurRadius: 6,
                           ),
                         ],
@@ -13495,19 +12370,19 @@ class _NotificationsPageState extends State<NotificationsPage> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xff046a38).withOpacity(0.15),
-                    const Color(0xff046a38).withOpacity(0.05),
+                    kSuccess.withOpacity(0.15),
+                    kSuccess.withOpacity(0.05),
                   ],
                 ),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(0xff046a38).withOpacity(0.3),
+                  color: kSuccess.withOpacity(0.3),
                   width: 1.5,
                 ),
               ),
               child: const Icon(
                 Icons.notifications_off_rounded,
-                color: Color(0xff046a38),
+                color: kSuccess,
                 size: 48,
               ),
             ),
@@ -13618,14 +12493,14 @@ class _FollowedCategoriesPageState
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [
-                          kAcademicNavy,
-                          kAcademicGold,
+                          kPrimaryNavy,
+                          kAccentGold,
                         ],
                       ),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: kAcademicNavy.withOpacity(0.4),
+                          color: kPrimaryNavy.withOpacity(0.4),
                           blurRadius: 12,
                           offset: const Offset(0, 3),
                         ),
@@ -13667,13 +12542,13 @@ class _FollowedCategoriesPageState
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        kAcademicNavy.withOpacity(0.12),
-                        kAcademicGold.withOpacity(0.05),
+                        kPrimaryNavy.withOpacity(0.12),
+                        kAccentGold.withOpacity(0.05),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: kAcademicNavy.withOpacity(0.25),
+                      color: kPrimaryNavy.withOpacity(0.25),
                     ),
                   ),
                   child: Row(
@@ -13684,8 +12559,8 @@ class _FollowedCategoriesPageState
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              kAcademicNavy,
-                              kAcademicGold,
+                              kPrimaryNavy,
+                              kAccentGold,
                             ],
                           ),
                           borderRadius: BorderRadius.circular(12),
