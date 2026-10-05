@@ -30,14 +30,10 @@ final bookmarkNotifier = ValueNotifier<Set<String>>({});
 final newsBookmarkNotifier = ValueNotifier<Set<String>>({});
 final productBookmarkNotifier = ValueNotifier<Set<String>>({});
 final followedCategoriesNotifier = ValueNotifier<Set<String>>({});
-final inAppNotificationsNotifier =
-    ValueNotifier<List<Map<String, dynamic>>>([]);
-final lastNewsCheckNotifier = ValueNotifier<String>('');
 final accentNotifier = ValueNotifier<Color>(const Color(0xff1a2b47));
 
 /* ==================== REFINED COLOR SYSTEM ==================== */
 
-/// 🎨 رنگ‌های اصلی برند (Navy & Gold)
 const Color kPrimaryNavy = Color(0xff1a2b47);
 const Color kPrimaryNavyLight = Color(0xff2c4470);
 const Color kPrimaryNavyDark = Color(0xff0f1a2e);
@@ -48,7 +44,6 @@ const Color kAccentGoldLight = Color(0xffe0c987);
 const Color kAccentGoldDark = Color(0xffa88840);
 const Color kAccentGoldSoft = Color(0xfff0e4c0);
 
-/// 🎨 رنگ‌های معنایی (Semantic)
 const Color kUrgent = Color(0xffdc2626);
 const Color kUrgentDark = Color(0xff991b1b);
 const Color kSuccess = Color(0xff059669);
@@ -57,7 +52,6 @@ const Color kWarning = Color(0xffd97706);
 const Color kInfo = Color(0xff2563eb);
 const Color kInfoLight = Color(0xff60a5fa);
 
-/// 🌙 سطوح تیره (Deep, Layered)
 const Color kDarkBg = Color(0xff0a0e14);
 const Color kDarkCard = Color(0xff141a22);
 const Color kDarkCard2 = Color(0xff1c242e);
@@ -66,7 +60,6 @@ const Color kDarkBorder = Color(0xff232b36);
 const Color kDarkText = Color(0xffe8e8e8);
 const Color kDarkTextMuted = Color(0xff8b949e);
 
-/// ☀️ سطوح روشن (Warm, Paper-like)
 const Color kLightBg = Color(0xfff8f7f4);
 const Color kLightCard = Color(0xffffffff);
 const Color kLightCard2 = Color(0xfff1efea);
@@ -75,7 +68,6 @@ const Color kLightBorder = Color(0xffe5e3dd);
 const Color kLightText = Color(0xff0f1419);
 const Color kLightTextMuted = Color(0xff5c6370);
 
-/// 🎨 پالت Accent (۸ رنگ حرفه‌ای)
 const List<Color> accentPalette = [
   Color(0xff1a2b47),
   Color(0xff2c4470),
@@ -355,130 +347,6 @@ Future<void> clearFollowedCategories() async {
     await prefs.remove('followed_categories');
   } catch (_) {}
 }
-
-/* ==================== IN-APP NOTIFICATIONS ==================== */
-
-Future<void> loadInAppNotifications() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString('in_app_notifications');
-    if (data != null && data.isNotEmpty) {
-      final list = (json.decode(data) as List)
-          .map((e) => Map<String, dynamic>.from(e as Map))
-          .toList();
-      if (list.length > 50) {
-        list.removeRange(50, list.length);
-      }
-      inAppNotificationsNotifier.value = list;
-    }
-    lastNewsCheckNotifier.value =
-        prefs.getString('last_news_check') ?? '';
-  } catch (_) {}
-}
-
-Future<void> _saveInAppNotifications() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      'in_app_notifications',
-      json.encode(inAppNotificationsNotifier.value),
-    );
-  } catch (_) {}
-}
-
-Future<void> _saveLastNewsCheck(DateTime time) async {
-  try {
-    final iso = time.toIso8601String();
-    lastNewsCheckNotifier.value = iso;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('last_news_check', iso);
-  } catch (_) {}
-}
-
-Future<void> checkForNewNotifications() async {
-  try {
-    final list = await getNewNewsList();
-    if (list.isEmpty) return;
-
-    final lastCheck = lastNewsCheckNotifier.value.isNotEmpty
-        ? DateTime.tryParse(lastNewsCheckNotifier.value)
-        : null;
-
-    final now = DateTime.now();
-    final existing = List<Map<String, dynamic>>.from(
-        inAppNotificationsNotifier.value);
-    final existingIds = existing.map((e) => e['id'].toString()).toSet();
-
-    final newOnes = <Map<String, dynamic>>[];
-
-    for (final news in list) {
-      final id = pId(news);
-      if (id.isEmpty || existingIds.contains(id)) continue;
-      if (lastCheck != null) {
-        try {
-          final newsDate = DateTime.parse(news['date']).toLocal();
-          if (newsDate.isBefore(lastCheck)) continue;
-        } catch (_) {
-          continue;
-        }
-      }
-      newOnes.add({
-        'id': id,
-        'title': pTitle(news),
-        'excerpt': pExcerpt(news, maxChars: 100),
-        'link': pLink(news),
-        'image': pImg(news),
-        'date': news['date'] ?? '',
-        'read': false,
-        'createdAt': now.toIso8601String(),
-      });
-    }
-
-    if (newOnes.isNotEmpty) {
-      final updated = [...newOnes, ...existing];
-      if (updated.length > 50) {
-        updated.removeRange(50, updated.length);
-      }
-      inAppNotificationsNotifier.value = updated;
-      await _saveInAppNotifications();
-    }
-
-    await _saveLastNewsCheck(now);
-  } catch (_) {}
-}
-
-int getUnreadNotificationsCount() {
-  return inAppNotificationsNotifier.value
-      .where((e) => e['read'] != true)
-      .length;
-}
-
-Future<void> markNotificationRead(String id) async {
-  final list = List<Map<String, dynamic>>.from(
-      inAppNotificationsNotifier.value);
-  final index = list.indexWhere((e) => e['id'].toString() == id);
-  if (index != -1) {
-    list[index] = {...list[index], 'read': true};
-    inAppNotificationsNotifier.value = list;
-    await _saveInAppNotifications();
-  }
-}
-
-Future<void> markAllNotificationsRead() async {
-  final list = inAppNotificationsNotifier.value
-      .map((e) => {...e, 'read': true})
-      .toList();
-  inAppNotificationsNotifier.value = list;
-  await _saveInAppNotifications();
-}
-
-Future<void> clearAllNotifications() async {
-  inAppNotificationsNotifier.value = [];
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('in_app_notifications');
-  } catch (_) {}
-}
 /* ==================== NAVIGATION ==================== */
 
 Future<void> openUrl(BuildContext context, String url,
@@ -512,7 +380,6 @@ Future<void> sharePost(String url, String title) async {
   }
 }
 
-/// اشتراک‌گذاری خبر همراه با تصویر
 Future<void> sharePostWithImage(
   String url,
   String title, {
@@ -768,6 +635,73 @@ List<int> _toJalali(int gy, int gm, int gd) {
   }
   return [jy, jm, jd];
 }
+
+/* ==================== PERSIAN TO FINGLISH (SLUG) ==================== */
+
+/// تبدیل متن فارسی به Finglish (برای ساخت slug انگلیسی)
+String persianToFinglish(String input) {
+  if (input.isEmpty) return '';
+
+  // حذف نیم‌فاصله و اعداد فارسی
+  String text = input
+      .replaceAll('\u200c', ' ') // نیم‌فاصله
+      .replaceAll('‌', ' ')
+      .replaceAll('ي', 'ی')
+      .replaceAll('ك', 'ک');
+
+  // تبدیل اعداد فارسی به انگلیسی
+  const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+  for (int i = 0; i < persianDigits.length; i++) {
+    text = text.replaceAll(persianDigits[i], i.toString());
+  }
+
+  // دیکشنری تبدیل حروف
+  const replacements = {
+    'آ': 'a', 'ا': 'a', 'ب': 'b', 'پ': 'p', 'ت': 't', 'ث': 's',
+    'ج': 'j', 'چ': 'ch', 'ح': 'h', 'خ': 'kh', 'د': 'd', 'ذ': 'z',
+    'ر': 'r', 'ز': 'z', 'ژ': 'zh', 'س': 's', 'ش': 'sh', 'ص': 's',
+    'ض': 'z', 'ط': 't', 'ظ': 'z', 'ع': 'a', 'غ': 'gh', 'ف': 'f',
+    'ق': 'gh', 'ک': 'k', 'گ': 'g', 'ل': 'l', 'م': 'm', 'ن': 'n',
+    'و': 'v', 'ه': 'h', 'ی': 'y', 'ء': '', 'ئ': 'y', 'أ': 'a',
+    'إ': 'e', 'ؤ': 'o', 'ة': 'h',
+  };
+
+  final buffer = StringBuffer();
+  for (int i = 0; i < text.length; i++) {
+    final ch = text[i];
+    if (replacements.containsKey(ch)) {
+      buffer.write(replacements[ch]);
+    } else {
+      buffer.write(ch);
+    }
+  }
+
+  // پاکسازی نهایی
+  String result = buffer.toString().toLowerCase();
+  result = result.replaceAll(RegExp(r'[^a-z0-9\s-]'), '');
+  result = result.replaceAll(RegExp(r'\s+'), '-');
+  result = result.replaceAll(RegExp(r'-+'), '-');
+  result = result.trim().replaceAll(RegExp(r'^-|-$'), '');
+
+  // محدودیت طول
+  if (result.length > 80) {
+    result = result.substring(0, 80);
+    if (result.endsWith('-')) {
+      result = result.substring(0, result.length - 1);
+    }
+  }
+
+  return result;
+}
+
+/// ساخت Slug یکتا با timestamp
+String generateSlug(String title) {
+  final slug = persianToFinglish(title);
+  if (slug.isEmpty) {
+    return 'news-${DateTime.now().millisecondsSinceEpoch}';
+  }
+  return slug;
+}
 /* ==================== API & CACHE ==================== */
 
 final Map<String, List> _postsCache = {};
@@ -944,6 +878,7 @@ String _basicAuth(String user, String pass) {
   return base64Encode(utf8.encode('$user:$clean'));
 }
 
+/// 📝 انتشار خبر فوری جدید (با Slug انگلیسی)
 Future<Map<String, dynamic>> postNewNews({
   required String username,
   required String appPassword,
@@ -952,6 +887,10 @@ Future<Map<String, dynamic>> postNewNews({
 }) async {
   final auth = _basicAuth(username, appPassword);
   final uri = Uri.parse('$api/new_news');
+  
+  // 🎯 ساخت Slug انگلیسی از عنوان فارسی
+  final slug = generateSlug(title);
+
   final r = await http.post(
     uri,
     headers: {
@@ -962,6 +901,7 @@ Future<Map<String, dynamic>> postNewNews({
     body: jsonEncode({
       'title': title,
       'content': content,
+      'slug': slug,  // ✅ Slug انگلیسی
       'status': 'publish',
     }),
   );
@@ -975,6 +915,7 @@ Future<Map<String, dynamic>> postNewNews({
   throw Exception('خطا در ارسال (${r.statusCode})');
 }
 
+/// 📝 ویرایش خبر فوری (با Slug انگلیسی)
 Future<Map<String, dynamic>> updateNews({
   required String username,
   required String appPassword,
@@ -984,6 +925,10 @@ Future<Map<String, dynamic>> updateNews({
 }) async {
   final auth = _basicAuth(username, appPassword);
   final uri = Uri.parse('$api/new_news/$postId');
+  
+  // 🎯 ساخت Slug انگلیسی از عنوان فارسی
+  final slug = generateSlug(title);
+
   final r = await http.put(
     uri,
     headers: {
@@ -994,6 +939,7 @@ Future<Map<String, dynamic>> updateNews({
     body: jsonEncode({
       'title': title,
       'content': content,
+      'slug': slug,  // ✅ Slug انگلیسی
     }),
   );
   if (r.statusCode == 200 || r.statusCode == 201) {
@@ -1106,10 +1052,6 @@ void main() async {
     await loadAccentColor();
     await loadThemeMode();
     await loadFollowedCategories();
-    await loadInAppNotifications();
-    Future.delayed(const Duration(seconds: 2), () {
-      checkForNewNotifications();
-    });
   } catch (_) {}
   runApp(const App());
 }
@@ -1543,31 +1485,31 @@ class _ModernNavBar extends StatelessWidget {
       icon: Icons.home_outlined,
       activeIcon: Icons.home_rounded,
       label: 'خانه',
-      color: kPrimaryNavy,
+      color: Color(0xff1a2b47),
     ),
     _NavItem(
       icon: Icons.article_outlined,
       activeIcon: Icons.article_rounded,
       label: 'مقالات',
-      color: kPrimaryNavyLight,
+      color: Color(0xff2563eb),
     ),
     _NavItem(
       icon: Icons.newspaper_outlined,
       activeIcon: Icons.newspaper_rounded,
       label: 'اخبار',
-      color: kUrgent,
+      color: Color(0xffdc2626),
     ),
     _NavItem(
       icon: Icons.shopping_bag_outlined,
       activeIcon: Icons.shopping_bag_rounded,
       label: 'فروشگاه',
-      color: kAccentGold,
+      color: Color(0xffea580c),
     ),
     _NavItem(
       icon: Icons.person_outline_rounded,
       activeIcon: Icons.person_rounded,
       label: 'حساب من',
-      color: Color(0xff6d28d9),
+      color: Color(0xff8b5cf6),
     ),
   ];
 }
@@ -1742,11 +1684,19 @@ class _PremiumNavItemState extends State<_PremiumNavItem>
                 fontFamily: 'Vazirmatn',
                 color: selected
                     ? item.color
-                    : (isDark ? txtC.withOpacity(0.6) : mutC),
-                fontSize: selected ? 11.5 : 10.5,
-                fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
+                    : (isDark ? txtC.withOpacity(0.7) : mutC),
+                fontSize: selected ? 12.5 : 11.5,
+                fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
               ),
-              child: Text(item.label),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  item.label,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.visible,
+                ),
+              ),
             ),
           ],
         );
@@ -1793,7 +1743,6 @@ class _HomeState extends State<Home> {
     });
     try {
       await _f;
-      await checkForNewNotifications();
     } catch (_) {}
   }
 
@@ -1870,13 +1819,6 @@ class _HomeState extends State<Home> {
                         key: _bannerKey, future: _newsFuture),
                   ),
                   SliverToBoxAdapter(child: ModernServicesSection()),
-                  SliverToBoxAdapter(
-                    child: ModernSectionTitle(
-                      title: 'دسته‌ها',
-                      icon: Icons.grid_view_rounded,
-                    ),
-                  ),
-                  SliverToBoxAdapter(child: ModernCatGrid()),
                   SliverToBoxAdapter(child: ModernSocial()),
                   const SliverToBoxAdapter(child: SizedBox(height: 140)),
                 ],
@@ -1956,7 +1898,7 @@ class _AnimatedBlobState extends State<_AnimatedBlob>
   }
 }
 
-/* ==================== MODERN HEADER (بدون آفلاین) ==================== */
+/* ==================== MODERN HEADER ==================== */
 
 Widget ModernHeader(BuildContext context, [String? t]) {
   return SafeArea(
@@ -2062,68 +2004,6 @@ Widget ModernHeader(BuildContext context, [String? t]) {
               ],
             ),
           ),
-          // 🔔 اعلان‌ها
-          ValueListenableBuilder<List<Map<String, dynamic>>>(
-            valueListenable: inAppNotificationsNotifier,
-            builder: (c, list, __) {
-              final unread =
-                  list.where((e) => e['read'] != true).length;
-              return Stack(
-                children: [
-                  _HeaderIconButton(
-                    icon: Icons.notifications_outlined,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) =>
-                              const NotificationsPage()),
-                    ),
-                  ),
-                  if (unread > 0)
-                    Positioned(
-                      top: 4,
-                      right: 4,
-                      child: Container(
-                        constraints: const BoxConstraints(
-                          minWidth: 18,
-                          minHeight: 18,
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 5, vertical: 1),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              kUrgent,
-                              kUrgentDark,
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: pnl, width: 1.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: kUrgent.withOpacity(0.5),
-                              blurRadius: 8,
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          unread > 9 ? '۹+' : '$unread',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'Vazirmatn',
-                            height: 1.1,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-          const SizedBox(width: 4),
           // 🔖 نشان‌شده‌ها
           _HeaderIconButton(
             icon: Icons.bookmark_outline_rounded,
@@ -2356,7 +2236,7 @@ class _LiveNewsTickerState extends State<LiveNewsTicker> {
   }
 }
 
-/* ==================== WHITE LIVE DOT SMALL (با پارامتر رنگ) ==================== */
+/* ==================== WHITE LIVE DOT SMALL ==================== */
 
 class _WhiteLiveDotSmall extends StatefulWidget {
   final Color? color;
@@ -2644,7 +2524,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 14),
-            itemCount: cats.length + 2,
+            itemCount: cats.length + 3,
             separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (c, i) {
               // 🎯 دکمه «دسته‌های من»
@@ -2749,6 +2629,50 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
                     HapticFeedback.selectionClick();
                     setState(() => _selected = -1);
                   },
+                );
+              }
+
+              // 🎯 دکمه «همه دسته‌ها» در انتها
+              if (i == cats.length + 2) {
+                return GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AllCategoriesPage(),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: pnl,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: lineC),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.grid_view_rounded,
+                            color: txtC, size: 15),
+                        const SizedBox(width: 6),
+                        Text(
+                          'همه دسته‌ها',
+                          style: TextStyle(
+                            color: txtC,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Icons.arrow_back_ios_new_rounded,
+                            color: txtC, size: 10),
+                      ],
+                    ),
+                  ),
                 );
               }
 
@@ -3607,7 +3531,7 @@ class _ModernServicesSectionState extends State<ModernServicesSection> {
   }
 }
 
-/* ==================== PREMIUM POST CARD (بدون آفلاین) ==================== */
+/* ==================== PREMIUM POST CARD ==================== */
 
 class ModernPostCard extends StatefulWidget {
   final dynamic post;
@@ -3881,7 +3805,6 @@ class _ModernPostCardState extends State<ModernPostCard>
                                     ),
                                   ),
                                 const Spacer(),
-                                // 📤 Share
                                 GestureDetector(
                                   onTap: () {
                                     HapticFeedback.lightImpact();
@@ -3902,7 +3825,6 @@ class _ModernPostCardState extends State<ModernPostCard>
                                   ),
                                 ),
                                 const SizedBox(width: 4),
-                                // 🔖 Bookmark
                                 if (widget.showBookmark)
                                   GestureDetector(
                                     onTap: () {
@@ -4366,7 +4288,6 @@ class SidePostCard extends StatelessWidget {
                           ),
                         ),
                       const Spacer(),
-                      // 📤 Share
                       GestureDetector(
                         onTap: () {
                           HapticFeedback.lightImpact();
@@ -4920,6 +4841,65 @@ class ModernCatGrid extends StatelessWidget {
   }
 }
 
+/* ==================== ALL CATEGORIES PAGE ==================== */
+
+class AllCategoriesPage extends StatelessWidget {
+  const AllCategoriesPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Scaffold(
+        backgroundColor: bgC,
+        appBar: AppBar(
+          title: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [kPrimaryNavy, kAccentGold],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: kPrimaryNavy.withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.grid_view_rounded,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'همه دسته‌بندی‌ها',
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: bgC,
+          foregroundColor: txtC,
+          elevation: 0,
+        ),
+        body: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
+          child: const ModernCatGrid(),
+        ),
+      ),
+    );
+  }
+}
+
 /* ==================== MODERN SOCIAL ==================== */
 
 class ModernSocial extends StatelessWidget {
@@ -5159,7 +5139,7 @@ class _ModernLiveDotState extends State<ModernLiveDot>
   }
 }
 
-/* ==================== MODERN URGENT NEWS CARD (با دایره قرمز) ==================== */
+/* ==================== MODERN URGENT NEWS CARD ==================== */
 
 class ModernUrgentNewsCard extends StatefulWidget {
   final dynamic news;
@@ -5391,7 +5371,6 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                           ),
                         ),
                         const SizedBox(width: 8),
-                        // 🎯 بج «خبر فوری» آبی با دایره قرمز
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 5),
@@ -8679,7 +8658,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 }
 
-/* ==================== PREMIUM ACCOUNT PAGE (بدون دکمه‌های میان‌بر) ==================== */
+/* ==================== PREMIUM ACCOUNT PAGE ==================== */
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -8805,7 +8784,7 @@ class _AccountPageState extends State<AccountPage>
                   child: LinearProgressIndicator(
                     value: _progress,
                     backgroundColor: lineC,
-                    color: const Color(0xff6d28d9),
+                    color: const Color(0xff8b5cf6),
                     minHeight: 4,
                   ),
                 ),
@@ -8900,14 +8879,14 @@ class _AccountPageState extends State<AccountPage>
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                     colors: [
-                                      Color(0xff6d28d9),
+                                      Color(0xff8b5cf6),
                                       kPrimaryNavy,
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xff6d28d9)
+                                      color: const Color(0xff8b5cf6)
                                           .withOpacity(0.4),
                                       blurRadius: 24,
                                       offset: const Offset(0, 8),
@@ -8945,7 +8924,7 @@ class _AccountPageState extends State<AccountPage>
                                 height: 30,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 3,
-                                  color: Color(0xff6d28d9),
+                                  color: Color(0xff8b5cf6),
                                 ),
                               ),
                             ],
@@ -8977,14 +8956,14 @@ class _AccountPageState extends State<AccountPage>
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xff6d28d9),
+                    Color(0xff8b5cf6),
                     kPrimaryNavy,
                   ],
                 ),
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xff6d28d9)
+                    color: const Color(0xff8b5cf6)
                         .withOpacity(0.4),
                     blurRadius: 14,
                     offset: const Offset(0, 4),
@@ -9002,7 +8981,7 @@ class _AccountPageState extends State<AccountPage>
               child: ShaderMask(
                 shaderCallback: (bounds) => LinearGradient(
                   colors: [
-                    const Color(0xff6d28d9),
+                    const Color(0xff8b5cf6),
                     kPrimaryNavy,
                   ],
                 ).createShader(bounds),
@@ -9638,7 +9617,6 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // 🎯 بج «خبر فوری» با دایره قرمز
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 7),
@@ -9731,20 +9709,21 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                   ),
                 ),
                 const SizedBox(height: 14),
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.end,
                   children: [
                     _infoChip(
                       icon: Icons.calendar_today_rounded,
                       label: date,
                       color: const Color(0xff0ea5e9),
                     ),
-                    const SizedBox(width: 8),
                     _infoChip(
                       icon: Icons.access_time_rounded,
                       label: '$readTime دقیقه',
                       color: const Color(0xff38bdf8),
                     ),
-                    const SizedBox(width: 8),
                     _infoChip(
                       icon: Icons.text_fields_rounded,
                       label: '$words کلمه',
@@ -9782,9 +9761,12 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
           const SizedBox(width: 5),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.visible,
+            softWrap: false,
             style: TextStyle(
               color: isDark ? color.withOpacity(0.95) : color,
-              fontSize: 10.5,
+              fontSize: 11,
               fontWeight: FontWeight.w800,
               fontFamily: 'Vazirmatn',
             ),
@@ -10976,6 +10958,13 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     });
   }
 
+  /// 📝 نمایش پیش‌نمایش لینک (slug) که ساخته می‌شود
+  String _getSlugPreview() {
+    final title = _titleCtrl.text.trim();
+    if (title.isEmpty) return '';
+    return generateSlug(title);
+  }
+
   Future<void> _pickFile() async {
     HapticFeedback.selectionClick();
     try {
@@ -11538,7 +11527,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'خبر فوری پس از انتشار، بالای صفحه اصلی اپ نمایش داده می‌شود. می‌توانید فایل ضمیمه (PDF، تصویر، ویدیو، ZIP و...) هم اضافه کنید.',
+                        'خبر فوری پس از انتشار، بالای صفحه اصلی اپ نمایش داده می‌شود. لینک خبر به‌صورت خودکار با حروف انگلیسی ساخته می‌شود.',
                         style: TextStyle(
                           color: txtC,
                           fontSize: 12,
@@ -11571,6 +11560,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                   controller: _titleCtrl,
                   textDirection: TextDirection.rtl,
                   textAlign: TextAlign.right,
+                  onChanged: (v) => setState(() {}),
                   style: TextStyle(
                       color: txtC, fontSize: 14, fontFamily: 'Vazirmatn'),
                   decoration: InputDecoration(
@@ -11587,6 +11577,42 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                   ),
                 ),
               ),
+              // 🔗 پیش‌نمایش لینک
+              if (_titleCtrl.text.trim().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: kPrimaryNavy.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: kPrimaryNavy.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.link_rounded,
+                          color: kPrimaryNavy, size: 14),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          '$site/new-news/${_getSlugPreview()}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textDirection: TextDirection.ltr,
+                          textAlign: TextAlign.left,
+                          style: TextStyle(
+                            color: kPrimaryNavy,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 18),
               Text(
                 'متن کامل خبر',
@@ -12025,445 +12051,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     );
   }
 }
-/* ==================== NOTIFICATIONS PAGE ==================== */
-
-class NotificationsPage extends StatefulWidget {
-  const NotificationsPage({super.key});
-  @override
-  State<NotificationsPage> createState() => _NotificationsPageState();
-}
-
-class _NotificationsPageState extends State<NotificationsPage> {
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _check();
-  }
-
-  Future<void> _check() async {
-    setState(() => _loading = true);
-    try {
-      await checkForNewNotifications();
-    } catch (_) {}
-    if (mounted) setState(() => _loading = false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => ValueListenableBuilder<
-          List<Map<String, dynamic>>>(
-        valueListenable: inAppNotificationsNotifier,
-        builder: (context, notifications, ___) {
-          final unread =
-              notifications.where((e) => e['read'] != true).length;
-
-          return Scaffold(
-            backgroundColor: bgC,
-            appBar: AppBar(
-              title: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          kSuccess,
-                          kSuccessLight,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: kSuccess.withOpacity(0.4),
-                          blurRadius: 12,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                        Icons.notifications_active_rounded,
-                        color: Colors.white,
-                        size: 20),
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'اعلان‌ها',
-                        style: TextStyle(
-                          color: txtC,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-                      if (unread > 0)
-                        Text(
-                          '$unread جدید',
-                          style: TextStyle(
-                            color: kUrgent,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
-                            fontFamily: 'Vazirmatn',
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-              backgroundColor: bgC,
-              foregroundColor: txtC,
-              elevation: 0,
-              actions: [
-                if (notifications.isNotEmpty) ...[
-                  IconButton(
-                    tooltip: 'خوانده‌شده کردن همه',
-                    onPressed: () async {
-                      HapticFeedback.lightImpact();
-                      await markAllNotificationsRead();
-                      if (context.mounted) {
-                        showSnack(context,
-                            'همه اعلان‌ها خوانده‌شده شد');
-                      }
-                    },
-                    icon: Icon(Icons.done_all_rounded,
-                        color: accentNotifier.value, size: 22),
-                  ),
-                  IconButton(
-                    tooltip: 'حذف همه',
-                    onPressed: () => _confirmClear(context),
-                    icon: Icon(Icons.delete_sweep_rounded,
-                        color: rose, size: 22),
-                  ),
-                ],
-              ],
-            ),
-            body: _loading
-                ? const SearchSkeleton()
-                : notifications.isEmpty
-                    ? _buildEmpty()
-                    : RefreshIndicator(
-                        color: kSuccess,
-                        backgroundColor: pnl,
-                        strokeWidth: 3,
-                        onRefresh: _check,
-                        child: ListView.builder(
-                          physics: const BouncingScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(
-                              14, 14, 14, 100),
-                          itemCount: notifications.length,
-                          itemBuilder: (c, i) =>
-                              _notificationCard(notifications[i]),
-                        ),
-                      ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _notificationCard(Map<String, dynamic> n) {
-    final isRead = n['read'] == true;
-    final id = n['id'].toString();
-    final title = n['title']?.toString() ?? '';
-    final excerpt = n['excerpt']?.toString() ?? '';
-    final image = n['image']?.toString() ?? '';
-    final dateStr = n['date']?.toString() ?? '';
-
-    DateTime? date;
-    try {
-      date = DateTime.parse(dateStr).toLocal();
-    } catch (_) {}
-
-    final timeAgo = date != null
-        ? pTimeAgo({'date': date.toIso8601String()})
-        : '';
-
-    return GestureDetector(
-      onTap: () async {
-        HapticFeedback.selectionClick();
-        await markNotificationRead(id);
-        if (!mounted) return;
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => UrgentNewsDetailPage(
-              news: {
-                'id': id,
-                'title': {'rendered': title},
-                'content': {'rendered': excerpt},
-                'link': n['link'],
-                'date': dateStr,
-                '_embedded': {
-                  'wp:featuredmedia': [
-                    {'source_url': image}
-                  ],
-                },
-              },
-            ),
-          ),
-        );
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          gradient: !isRead
-              ? LinearGradient(
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
-                  colors: [
-                    kSuccess.withOpacity(0.10),
-                    kSuccess.withOpacity(0.02),
-                  ],
-                )
-              : null,
-          color: isRead ? pnl : null,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: !isRead
-                ? kSuccess.withOpacity(0.35)
-                : lineC,
-            width: !isRead ? 1.5 : 1,
-          ),
-          boxShadow: !isRead
-              ? [
-                  BoxShadow(
-                    color: kSuccess.withOpacity(0.15),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          children: [
-            Stack(
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: pnl2,
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: image.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: image,
-                            fit: BoxFit.cover,
-                            memCacheWidth: 200,
-                            placeholder: (_, __) =>
-                                Container(color: pnl2),
-                            errorWidget: (_, __, ___) => Icon(
-                              Icons.newspaper_rounded,
-                              color: mutC,
-                              size: 24,
-                            ),
-                          )
-                        : Icon(
-                            Icons.newspaper_rounded,
-                            color: mutC,
-                            size: 24,
-                          ),
-                  ),
-                ),
-                if (!isRead)
-                  Positioned(
-                    top: 2,
-                    right: 2,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: kUrgent,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: bgC, width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: kUrgent.withOpacity(0.6),
-                            blurRadius: 6,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: txtC,
-                      fontSize: 13,
-                      fontWeight: isRead
-                          ? FontWeight.w700
-                          : FontWeight.w900,
-                      height: 1.5,
-                      fontFamily: 'Vazirmatn',
-                    ),
-                  ),
-                  if (excerpt.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      excerpt,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        color: mutC,
-                        fontSize: 11,
-                        fontFamily: 'Vazirmatn',
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(Icons.schedule_rounded,
-                          color: mutC, size: 11),
-                      const SizedBox(width: 3),
-                      Text(
-                        timeAgo,
-                        style: TextStyle(
-                          color: mutC,
-                          fontSize: 10,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmpty() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    kSuccess.withOpacity(0.15),
-                    kSuccess.withOpacity(0.05),
-                  ],
-                ),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: kSuccess.withOpacity(0.3),
-                  width: 1.5,
-                ),
-              ),
-              child: const Icon(
-                Icons.notifications_off_rounded,
-                color: kSuccess,
-                size: 48,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'اعلان جدیدی ندارید',
-              style: TextStyle(
-                color: txtC,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'خبرهای فوری جدید اپ در اینجا نمایش داده می‌شود',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: mutC,
-                fontSize: 12,
-                height: 1.7,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _confirmClear(BuildContext context) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: pnl,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: Text(
-          'حذف همه اعلان‌ها',
-          style: TextStyle(
-            color: txtC,
-            fontWeight: FontWeight.w900,
-            fontFamily: 'Vazirmatn',
-          ),
-        ),
-        content: Text(
-          'آیا می‌خواهید همه اعلان‌ها را حذف کنید؟',
-          style: TextStyle(
-            color: mutC,
-            fontFamily: 'Vazirmatn',
-            height: 1.7,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('انصراف',
-                style: TextStyle(
-                    color: mutC, fontFamily: 'Vazirmatn')),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text('حذف',
-                style: TextStyle(
-                    color: rose,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn')),
-          ),
-        ],
-      ),
-    );
-    if (confirm == true) {
-      await clearAllNotifications();
-      if (context.mounted) {
-        showSnack(context, 'همه اعلان‌ها حذف شد');
-      }
-    }
-  }
-}
-
 /* ==================== FOLLOWED CATEGORIES PAGE ==================== */
 
 class FollowedCategoriesPage extends StatefulWidget {
