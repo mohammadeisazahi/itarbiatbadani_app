@@ -1091,46 +1091,19 @@ Future<Map<String, dynamic>> uploadMedia({
   final auth = _basicAuth(username, appPassword);
   final uri = Uri.parse('$api/media');
 
-  final ext = fileName.toLowerCase().split('.').last;
-  String mimeType = 'application/octet-stream';
-  if (ext == 'jpg' || ext == 'jpeg') mimeType = 'image/jpeg';
-  if (ext == 'png') mimeType = 'image/png';
-  if (ext == 'gif') mimeType = 'image/gif';
-  if (ext == 'webp') mimeType = 'image/webp';
-  if (ext == 'pdf') mimeType = 'application/pdf';
-  if (ext == 'doc') mimeType = 'application/msword';
-  if (ext == 'docx') {
-    mimeType =
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-  }
-  if (ext == 'xls') mimeType = 'application/vnd.ms-excel';
-  if (ext == 'xlsx') {
-    mimeType =
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-  }
-  if (ext == 'ppt') mimeType = 'application/vnd.ms-powerpoint';
-  if (ext == 'pptx') {
-    mimeType =
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation';
-  }
-  if (ext == 'zip') mimeType = 'application/zip';
-  if (ext == 'rar') mimeType = 'application/x-rar-compressed';
-  if (ext == 'mp4') mimeType = 'video/mp4';
-  if (ext == 'mp3') mimeType = 'audio/mpeg';
-
   try {
     final bytes = await File(filePath).readAsBytes();
+
+    final multipartFile = http.MultipartFile.fromBytes(
+      'file',
+      bytes,
+      filename: fileName,
+    );
+
     final request = http.MultipartRequest('POST', uri);
     request.headers['Authorization'] = 'Basic $auth';
     request.headers['Accept'] = 'application/json';
-    request.files.add(
-      http.MultipartFile.fromBytes(
-        'file',
-        bytes,
-        filename: fileName,
-      ),
-    );
-    request.files.first.headers['Content-Type'] = mimeType;
+    request.files.add(multipartFile);
 
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
