@@ -62,6 +62,10 @@ const Color kWarning = Color(0xffd97706);
 const Color kInfo = Color(0xff2563eb);
 const Color kInfoLight = Color(0xff60a5fa);
 
+/// 🎨 رنگ اخبار فوری (Breaking News Red)
+const Color kNewsRed = Color(0xffdc2626);
+const Color kNewsRedDark = Color(0xff991b1b);
+
 /// 🎨 رنگ تب‌ها
 const Color kTabHome = Color(0xff1a2b47);
 const Color kTabArticles = Color(0xff1e40af);
@@ -105,6 +109,7 @@ const List<Color> accentPalette = [
 /* ==================== QUIZ MODEL ==================== */
 
 final quizNotifier = ValueNotifier<List<QuizQuestion>>([]);
+final answeredQuizNotifier = ValueNotifier<Map<String, int>>({});
 
 class QuizQuestion {
   final String id;
@@ -179,6 +184,48 @@ Future<void> clearAllQuiz() async {
   try {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('quiz_questions');
+  } catch (_) {}
+}
+
+/* ==================== QUIZ ANSWERS STORAGE ==================== */
+
+Future<void> loadQuizAnswers() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString('quiz_answers');
+    if (data != null && data.isNotEmpty) {
+      final map = <String, int>{};
+      final decoded = json.decode(data) as Map<String, dynamic>;
+      decoded.forEach((k, v) {
+        map[k] = (v as num).toInt();
+      });
+      answeredQuizNotifier.value = map;
+    }
+  } catch (_) {}
+}
+
+Future<void> saveQuizAnswers() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'quiz_answers',
+      json.encode(answeredQuizNotifier.value),
+    );
+  } catch (_) {}
+}
+
+Future<void> saveUserAnswer(String questionId, int selectedIndex) async {
+  final map = Map<String, int>.from(answeredQuizNotifier.value);
+  map[questionId] = selectedIndex;
+  answeredQuizNotifier.value = map;
+  await saveQuizAnswers();
+}
+
+Future<void> resetQuizAnswers() async {
+  answeredQuizNotifier.value = {};
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('quiz_answers');
   } catch (_) {}
 }
 /* ==================== THEME COLORS ==================== */
@@ -1428,6 +1475,7 @@ void main() async {
     await loadInAppNotifications();
     await loadReadingStats();
     await loadQuiz();
+    await loadQuizAnswers();
     Future.delayed(const Duration(seconds: 2), () {
       checkForNewNotifications();
     });
@@ -3115,7 +3163,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
             itemCount: 5 + followedCats.length,
             separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (c, i) {
-              // ❤️ دسته‌های دنبال‌شده ابتدا نمایش داده می‌شوند
+              // ❤️ دسته‌های دنبال‌شده ابتدا
               if (i < followedCats.length) {
                 final cat = followedCats[i];
                 return GestureDetector(
@@ -3172,7 +3220,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
 
               final actionIndex = i - followedCats.length;
 
-              // 🎯 کوئیز ورزشی (اول از همه ابزارها)
+              // 🎯 کوئیز ورزشی
               if (actionIndex == 0) {
                 return ValueListenableBuilder<List<QuizQuestion>>(
                   valueListenable: quizNotifier,
@@ -3197,7 +3245,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
                 );
               }
 
-              // 🏋️ ماشین‌حساب BMI
+              // 🏋️ تناسب اندام
               if (actionIndex == 1) {
                 return _actionChip(
                   icon: Icons.calculate_rounded,
@@ -3255,7 +3303,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
                 );
               }
 
-              // ❤️ دسته‌های من (آخر)
+              // ❤️ دسته‌های من
               final count = followed.length;
               final hasItems = count > 0;
               final isDark = darkModeNotifier.value;
@@ -3396,7 +3444,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
     );
   }
 }
-/* ==================== HERO CAROUSEL ==================== */
+/* ==================== PROFESSIONAL HERO CAROUSEL ==================== */
 
 class HeroCarousel extends StatefulWidget {
   final Future<List>? postsFuture;
@@ -3407,7 +3455,7 @@ class HeroCarousel extends StatefulWidget {
 }
 
 class _HeroCarouselState extends State<HeroCarousel> {
-  final _pageCtrl = PageController(viewportFraction: 0.9);
+  final _pageCtrl = PageController(viewportFraction: 0.88);
   Timer? _timer;
   Timer? _progressTimer;
   int _current = 0;
@@ -3443,7 +3491,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
       final next = (_current + 1) % count;
       _pageCtrl.animateToPage(
         next,
-        duration: const Duration(milliseconds: 700),
+        duration: const Duration(milliseconds: 800),
         curve: Curves.easeInOutCubic,
       );
       setState(() => _autoProgress = 0);
@@ -3457,20 +3505,20 @@ class _HeroCarouselState extends State<HeroCarousel> {
       builder: (c, s) {
         if (s.connectionState == ConnectionState.waiting) {
           return Container(
-            height: 260,
-            margin: const EdgeInsets.fromLTRB(14, 16, 14, 12),
+            height: 400,
+            margin: const EdgeInsets.fromLTRB(14, 20, 14, 12),
             decoration: BoxDecoration(
               color: pnl,
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(color: lineC),
             ),
-            child: const ShimmerBox(height: 260, radius: 28),
+            child: const ShimmerBox(height: 400, radius: 24),
           );
         }
         final posts = (s.data ?? []).take(5).toList();
         if (posts.isEmpty) {
           return Padding(
-            padding: const EdgeInsets.fromLTRB(14, 16, 14, 12),
+            padding: const EdgeInsets.fromLTRB(14, 20, 14, 12),
             child: ModernHeroBanner(),
           );
         }
@@ -3482,11 +3530,69 @@ class _HeroCarouselState extends State<HeroCarousel> {
         }
 
         return Container(
-          margin: const EdgeInsets.only(top: 16, bottom: 8),
+          margin: const EdgeInsets.only(top: 20, bottom: 8),
           child: Column(
             children: [
+              // Section Label
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [kPrimaryNavy, kAccentGold],
+                        ),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Icon(
+                      Icons.auto_stories_rounded,
+                      color: accentNotifier.value,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'مطالب برگزیده',
+                      style: TextStyle(
+                        color: txtC,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn',
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: darkModeNotifier.value
+                            ? Colors.white.withOpacity(0.06)
+                            : const Color(0xfff3f4f6),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${_current + 1} / $_count',
+                        style: TextStyle(
+                          color: mutC,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          fontFamily: 'Vazirmatn',
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Carousel
               SizedBox(
-                height: 260,
+                height: 400,
                 child: PageView.builder(
                   controller: _pageCtrl,
                   onPageChanged: (i) {
@@ -3497,7 +3603,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
                   },
                   itemCount: posts.length,
                   itemBuilder: (c, i) => Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 7),
                     child: _CarouselCard(
                       post: posts[i],
                       isActive: i == _current,
@@ -3505,7 +3611,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               _buildDots(posts.length),
             ],
           ),
@@ -3515,70 +3621,75 @@ class _HeroCarouselState extends State<HeroCarousel> {
   }
 
   Widget _buildDots(int count) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(count, (i) {
-        final active = i == _current;
-        return GestureDetector(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            _pageCtrl.animateToPage(
-              i,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(count, (i) {
+          final active = i == _current;
+          return GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              _pageCtrl.animateToPage(
+                i,
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.easeInOutCubic,
+              );
+            },
+            child: AnimatedContainer(
               duration: const Duration(milliseconds: 500),
-              curve: Curves.easeInOutCubic,
-            );
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 400),
-            curve: Curves.easeOutCubic,
-            margin: const EdgeInsets.symmetric(horizontal: 3),
-            width: active ? 32 : 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: active
-                  ? kAccentGold
-                  : mutC.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(999),
-              boxShadow: active
-                  ? [
-                      BoxShadow(
-                        color: kAccentGold.withOpacity(0.6),
-                        blurRadius: 10,
-                        spreadRadius: 1,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: active
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: Stack(
+              curve: Curves.easeOutCubic,
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: active ? 36 : 8,
+              height: 6,
+              decoration: BoxDecoration(
+                color: active
+                    ? kPrimaryNavy.withOpacity(0.15)
+                    : (darkModeNotifier.value
+                        ? Colors.white.withOpacity(0.15)
+                        : const Color(0xffe5e7eb)),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: active
+                  ? Stack(
                       children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: darkModeNotifier.value
+                                ? kAccentGold.withOpacity(0.15)
+                                : kPrimaryNavy.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
                         FractionallySizedBox(
                           widthFactor: _autoProgress,
                           child: Container(
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.white.withOpacity(0.9),
-                                  kAccentGoldLight,
-                                ],
+                              gradient: const LinearGradient(
+                                colors: [kPrimaryNavy, kAccentGold],
                               ),
+                              borderRadius: BorderRadius.circular(999),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: kAccentGold.withOpacity(0.5),
+                                  blurRadius: 6,
+                                ),
+                              ],
                             ),
                           ),
                         ),
                       ],
-                    ),
-                  )
-                : null,
-          ),
-        );
-      }),
+                    )
+                  : null,
+            ),
+          );
+        }),
+      ),
     );
   }
 }
 
-/* ==================== CAROUSEL CARD ==================== */
+/* ==================== PROFESSIONAL CAROUSEL CARD ==================== */
 
 class _CarouselCard extends StatefulWidget {
   final dynamic post;
@@ -3602,9 +3713,9 @@ class _CarouselCardState extends State<_CarouselCard>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 10),
+      duration: const Duration(seconds: 12),
     )..repeat(reverse: true);
-    _ken = Tween<double>(begin: 1.0, end: 1.15).animate(
+    _ken = Tween<double>(begin: 1.0, end: 1.12).animate(
       CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
     );
   }
@@ -3622,7 +3733,8 @@ class _CarouselCardState extends State<_CarouselCard>
     final cat = pCategory(widget.post);
     final link = pLink(widget.post);
     final date = pTimeAgo(widget.post);
-    final excerpt = pExcerpt(widget.post, maxChars: 80);
+    final excerpt = pExcerpt(widget.post, maxChars: 100);
+    final isDark = darkModeNotifier.value;
 
     return GestureDetector(
       onTap: () {
@@ -3630,34 +3742,36 @@ class _CarouselCardState extends State<_CarouselCard>
         openUrl(context, link, post: widget.post);
       },
       child: AnimatedScale(
-        duration: const Duration(milliseconds: 400),
-        scale: widget.isActive ? 1.0 : 0.95,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOutCubic,
+        scale: widget.isActive ? 1.0 : 0.94,
         child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 400),
-          opacity: widget.isActive ? 1.0 : 0.7,
+          duration: const Duration(milliseconds: 500),
+          opacity: widget.isActive ? 1.0 : 0.6,
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(
-                      widget.isActive ? 0.35 : 0.15),
-                  blurRadius: widget.isActive ? 35 : 20,
-                  offset: Offset(0, widget.isActive ? 15 : 8),
+                      widget.isActive ? 0.30 : 0.12),
+                  blurRadius: widget.isActive ? 30 : 18,
+                  offset: Offset(0, widget.isActive ? 12 : 6),
                 ),
-                BoxShadow(
-                  color: kAccentGold.withOpacity(
-                      widget.isActive ? 0.15 : 0.05),
-                  blurRadius: 40,
-                  spreadRadius: -5,
-                ),
+                if (widget.isActive)
+                  BoxShadow(
+                    color: kAccentGold.withOpacity(0.15),
+                    blurRadius: 40,
+                    spreadRadius: -8,
+                  ),
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(24),
               child: Stack(
                 fit: StackFit.expand,
                 children: [
+                  // Image with Ken-Burns
                   if (img.isNotEmpty)
                     AnimatedBuilder(
                       animation: _ken,
@@ -3667,20 +3781,29 @@ class _CarouselCardState extends State<_CarouselCard>
                           child: CachedNetworkImage(
                             imageUrl: img,
                             fit: BoxFit.cover,
-                            memCacheWidth: 1080,
-                            memCacheHeight: 720,
-                            maxWidthDiskCache: 1080,
-                            maxHeightDiskCache: 720,
+                            memCacheWidth: 1200,
+                            memCacheHeight: 800,
+                            maxWidthDiskCache: 1200,
+                            maxHeightDiskCache: 800,
                             fadeInDuration:
                                 const Duration(milliseconds: 500),
                             fadeOutDuration:
-                                const Duration(milliseconds: 250),
-                            placeholder: (_, __) =>
-                                Container(color: pnl2),
+                                const Duration(milliseconds: 300),
+                            placeholder: (_, __) => Container(
+                              color: isDark
+                                  ? kDarkCard2
+                                  : const Color(0xfff3f4f6),
+                            ),
                             errorWidget: (_, __, ___) => Container(
-                              color: pnl2,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [kPrimaryNavy, kPrimaryNavyDark],
+                                ),
+                              ),
                               child: Icon(Icons.article_rounded,
-                                  color: accentNotifier.value,
+                                  color: Colors.white.withOpacity(0.3),
                                   size: 60),
                             ),
                           ),
@@ -3693,10 +3816,7 @@ class _CarouselCardState extends State<_CarouselCard>
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [
-                            accentNotifier.value,
-                            kPrimaryNavy,
-                          ],
+                          colors: [kPrimaryNavy, kPrimaryNavyDark],
                         ),
                       ),
                       child: Icon(Icons.article_rounded,
@@ -3704,48 +3824,65 @@ class _CarouselCardState extends State<_CarouselCard>
                           size: 60),
                     ),
 
-                  // گرادیان سینمایی
+                  // Layer 1: subtle top gradient
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withOpacity(0.5),
+                          Colors.black.withOpacity(0.35),
+                          Colors.transparent,
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.3, 1.0],
+                      ),
+                    ),
+                  ),
+                  // Layer 2: heavy bottom gradient for text readability
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
                           Colors.transparent,
                           Colors.black.withOpacity(0.4),
+                          Colors.black.withOpacity(0.85),
                           Colors.black.withOpacity(0.95),
                         ],
-                        stops: const [0.0, 0.35, 0.6, 1.0],
+                        stops: const [0.0, 0.45, 0.75, 1.0],
                       ),
                     ),
                   ),
 
-                  // گرادیان تزئینی طلایی پایین
+                  // Gold accent line at top
                   Positioned(
-                    bottom: 0,
+                    top: 0,
                     left: 0,
                     right: 0,
                     child: Container(
-                      height: 4,
-                      decoration: const BoxDecoration(
+                      height: 3,
+                      decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            kTabArticles,
+                            kAccentGold.withOpacity(0.0),
                             kAccentGold,
-                            kAccentGoldLight,
+                            kAccentGold.withOpacity(0.0),
                           ],
+                          stops: const [0.0, 0.5, 1.0],
                         ),
                       ),
                     ),
                   ),
 
-                  // محتوای بالا
+                  // Top row: category + star
                   Positioned(
+                    top: 18,
                     left: 18,
                     right: 18,
-                    top: 16,
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (cat.isNotEmpty)
                           Flexible(
@@ -3753,41 +3890,28 @@ class _CarouselCardState extends State<_CarouselCard>
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    kAccentGold.withOpacity(0.95),
-                                    kAccentGoldDark.withOpacity(0.95),
-                                  ],
+                                color: Colors.black.withOpacity(0.55),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.15),
+                                  width: 0.8,
                                 ),
-                                borderRadius: BorderRadius.circular(10),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: kAccentGold.withOpacity(0.5),
-                                    blurRadius: 14,
-                                    offset: const Offset(0, 3),
+                                    color: Colors.black.withOpacity(0.3),
+                                    blurRadius: 12,
                                   ),
                                 ],
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.3),
-                                  width: 1,
-                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Container(
-                                    width: 6,
-                                    height: 6,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
+                                    width: 4,
+                                    height: 4,
+                                    decoration: const BoxDecoration(
+                                      color: kAccentGold,
                                       shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.white
-                                              .withOpacity(0.8),
-                                          blurRadius: 6,
-                                        ),
-                                      ],
                                     ),
                                   ),
                                   const SizedBox(width: 6),
@@ -3798,9 +3922,10 @@ class _CarouselCardState extends State<_CarouselCard>
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
                                         color: Colors.white,
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w900,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w800,
                                         fontFamily: 'Vazirmatn',
+                                        letterSpacing: 0.2,
                                       ),
                                     ),
                                   ),
@@ -3809,48 +3934,59 @@ class _CarouselCardState extends State<_CarouselCard>
                             ),
                           ),
                         const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.55),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.2),
-                              width: 1,
+                        if (widget.isActive)
+                          Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [kAccentGold, kAccentGoldDark],
+                              ),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: kAccentGold.withOpacity(0.5),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.star_rounded,
+                              color: Colors.white,
+                              size: 14,
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.schedule_rounded,
-                                  color: Colors.white70, size: 11),
-                              const SizedBox(width: 4),
-                              Text(
-                                date,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  fontFamily: 'Vazirmatn',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       ],
                     ),
                   ),
 
-                  // محتوای پایین
+                  // Bottom content
                   Positioned(
-                    left: 18,
-                    right: 18,
-                    bottom: 18,
+                    left: 22,
+                    right: 22,
+                    bottom: 20,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (excerpt.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Text(
+                              excerpt,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.65),
+                                fontSize: 11,
+                                height: 1.6,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Vazirmatn',
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
                         Text(
                           title,
                           maxLines: 2,
@@ -3858,57 +3994,58 @@ class _CarouselCardState extends State<_CarouselCard>
                           textAlign: TextAlign.right,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 17,
+                            fontSize: 18,
                             fontWeight: FontWeight.w900,
                             height: 1.5,
                             fontFamily: 'Vazirmatn',
+                            letterSpacing: -0.3,
                             shadows: [
                               Shadow(
                                 color: Colors.black87,
-                                blurRadius: 12,
+                                blurRadius: 14,
                                 offset: Offset(0, 2),
                               ),
                             ],
                           ),
                         ),
-                        if (excerpt.isNotEmpty) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            excerpt,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.right,
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.75),
-                              fontSize: 11.5,
-                              fontFamily: 'Vazirmatn',
-                              shadows: const [
-                                Shadow(
-                                  color: Colors.black54,
-                                  blurRadius: 6,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                        const SizedBox(height: 14),
+                        Container(
+                          height: 1,
+                          color: Colors.white.withOpacity(0.15),
+                        ),
                         const SizedBox(height: 12),
                         Row(
                           children: [
+                            Icon(
+                              Icons.schedule_rounded,
+                              color: Colors.white.withOpacity(0.6),
+                              size: 12,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              date,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Vazirmatn',
+                              ),
+                            ),
+                            const Spacer(),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 14, vertical: 8),
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
+                                gradient: const LinearGradient(
                                   colors: [
                                     kAccentGold,
                                     kAccentGoldDark,
                                   ],
                                 ),
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(10),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: kAccentGold
-                                        .withOpacity(0.5),
+                                    color: kAccentGold.withOpacity(0.4),
                                     blurRadius: 14,
                                     offset: const Offset(0, 4),
                                   ),
@@ -3918,19 +4055,20 @@ class _CarouselCardState extends State<_CarouselCard>
                                 mainAxisSize: MainAxisSize.min,
                                 children: const [
                                   Text(
-                                    'مطالعه کامل',
+                                    'مطالعه',
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 11.5,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.w900,
                                       fontFamily: 'Vazirmatn',
+                                      letterSpacing: 0.2,
                                     ),
                                   ),
                                   SizedBox(width: 6),
                                   Icon(
                                     Icons.arrow_back_rounded,
                                     color: Colors.white,
-                                    size: 14,
+                                    size: 13,
                                   ),
                                 ],
                               ),
@@ -3950,41 +4088,100 @@ class _CarouselCardState extends State<_CarouselCard>
   }
 }
 
+/* ==================== MODERN HERO BANNER (fallback) ==================== */
+
 class ModernHeroBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final isDark = darkModeNotifier.value;
     return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 0),
+      height: 240,
       decoration: BoxDecoration(
-        color: pnl,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: lineC),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.20),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
-        child: Image.network(
-          heroImg,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          filterQuality: FilterQuality.high,
-          cacheWidth: 1080,
-          loadingBuilder: (c, ch, pr) {
-            if (pr == null) return ch;
-            return Container(
-              height: 180,
-              color: pnl2,
-              child: Center(
-                child: CircularProgressIndicator(
-                  color: accentNotifier.value,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.network(
+              heroImg,
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.high,
+              cacheWidth: 1080,
+              loadingBuilder: (c, ch, pr) {
+                if (pr == null) return ch;
+                return Container(
+                  color: isDark ? kDarkCard2 : const Color(0xfff3f4f6),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: accentNotifier.value,
+                      strokeWidth: 3,
+                    ),
+                  ),
+                );
+              },
+              errorBuilder: (_, __, ___) => Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [kPrimaryNavy, kPrimaryNavyDark],
+                  ),
+                ),
+                child: Icon(Icons.sports_soccer_rounded,
+                    color: Colors.white.withOpacity(0.3), size: 60),
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.85),
+                  ],
                 ),
               ),
-            );
-          },
-          errorBuilder: (_, __, ___) => Container(
-            height: 180,
-            color: pnl2,
-            child: Icon(Icons.sports_soccer_rounded,
-                color: accentNotifier.value, size: 60),
-          ),
+            ),
+            Positioned(
+              left: 22,
+              right: 22,
+              bottom: 20,
+              child: Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: kAccentGold,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'تربیت بدنی و علوم ورزشی',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Vazirmatn',
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -4000,6 +4197,8 @@ class ModernNewsBanner extends StatefulWidget {
 }
 
 class _ModernNewsBannerState extends State<ModernNewsBanner> {
+  static const Color _newsRed = Color(0xffdc2626);
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List>(
@@ -4016,24 +4215,21 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
         final isDark = darkModeNotifier.value;
 
         return Container(
-          margin: const EdgeInsets.only(top: 22),
+          margin: const EdgeInsets.only(top: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Section Header
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Row(
                   children: [
                     Container(
                       width: 4,
-                      height: 24,
+                      height: 26,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [kPrimaryNavy, kAccentGold],
-                        ),
-                        borderRadius: BorderRadius.circular(3),
+                        color: _newsRed,
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -4046,18 +4242,66 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
                         fontFamily: 'Vazirmatn',
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _newsRed.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: _newsRed.withOpacity(0.3),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Text(
+                        'LIVE',
+                        style: TextStyle(
+                          color: _newsRed,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Vazirmatn',
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 9, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withOpacity(0.06)
+                            : const Color(0xfff3f4f6),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${list.length} خبر',
+                        style: TextStyle(
+                          color: mutC,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          fontFamily: 'Vazirmatn',
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 14),
+
+              // News Cards
               ...items
                   .map((news) => ModernUrgentNewsCard(news: news))
                   .toList(),
+
+              // View all button
               if (list.length > 3)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
                   child: Center(
                     child: GestureDetector(
                       onTap: () => Navigator.push(
@@ -4068,61 +4312,39 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
                       ),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 22, vertical: 12),
+                            horizontal: 20, vertical: 11),
                         decoration: BoxDecoration(
                           color: isDark
-                              ? kPrimaryNavyLight.withOpacity(0.4)
-                              : kPrimaryNavy.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(999),
+                              ? _newsRed.withOpacity(0.15)
+                              : _newsRed.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: isDark
-                                ? kAccentGold.withOpacity(0.7)
-                                : kPrimaryNavy.withOpacity(0.3),
-                            width: 1.5,
+                            color: _newsRed.withOpacity(0.25),
+                            width: 1.2,
                           ),
-                          boxShadow: isDark
-                              ? [
-                                  BoxShadow(
-                                    color: kAccentGold.withOpacity(0.3),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ]
-                              : null,
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.list_alt_rounded,
-                                color: isDark
-                                    ? kAccentGold
-                                    : kPrimaryNavy,
-                                size: 18),
-                            const SizedBox(width: 6),
                             Text(
                               'مشاهده همه اخبار فوری',
                               style: TextStyle(
-                                color: isDark
-                                    ? kAccentGold
-                                    : kPrimaryNavy,
-                                fontSize: 13,
+                                color: _newsRed,
+                                fontSize: 12.5,
                                 fontWeight: FontWeight.w900,
                                 fontFamily: 'Vazirmatn',
                               ),
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 6),
                             Icon(Icons.arrow_back_ios_new_rounded,
-                                color: isDark
-                                    ? kAccentGold
-                                    : kPrimaryNavy,
-                                size: 12),
+                                color: _newsRed, size: 11),
                           ],
                         ),
                       ),
                     ),
                   ),
                 ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
             ],
           ),
         );
@@ -5978,44 +6200,26 @@ class _ModernLiveDotState extends State<ModernLiveDot>
     );
   }
 }
-/* ==================== MODERN URGENT NEWS CARD ==================== */
+/* ==================== PROFESSIONAL URGENT NEWS CARD ==================== */
 
 class ModernUrgentNewsCard extends StatefulWidget {
   final dynamic news;
+  final bool compact;
   const ModernUrgentNewsCard({
     super.key,
     required this.news,
+    this.compact = false,
   });
 
   @override
   State<ModernUrgentNewsCard> createState() => _ModernUrgentNewsCardState();
 }
 
-class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _pulseCtrl;
+class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard> {
   bool _pressed = false;
 
-  // 🎨 رنگ‌های نارنجی-طلایی جدید
-  static const Color _c1 = Color(0xffc9a961);
-  static const Color _c2 = Color(0xffa88840);
-  static const Color _c3 = Color(0xff7b2d26);
-  static const Color _cSoft = Color(0xfff0e4c0);
-
-  @override
-  void initState() {
-    super.initState();
-    _pulseCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _pulseCtrl.dispose();
-    super.dispose();
-  }
+  static const Color _newsRed = Color(0xffdc2626);
+  static const Color _newsRedDark = Color(0xff991b1b);
 
   int _readTimeMinutes(dynamic news) {
     try {
@@ -6029,17 +6233,13 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
     }
   }
 
-  double _freshnessValue(dynamic news) {
+  bool _isFresh(dynamic news) {
     try {
       final d = DateTime.parse(news['date']).toLocal();
       final diff = DateTime.now().difference(d);
-      if (diff.inMinutes < 60) return 1.0;
-      if (diff.inHours < 6) return 0.75;
-      if (diff.inHours < 24) return 0.5;
-      if (diff.inDays < 3) return 0.3;
-      return 0.15;
+      return diff.inHours < 6;
     } catch (_) {
-      return 0.2;
+      return false;
     }
   }
 
@@ -6048,11 +6248,13 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
     final news = widget.news;
     final title = pTitle(news);
     final date = pTimeAgo(news);
-    final excerpt = pExcerpt(news, maxChars: 120);
+    final excerpt = pExcerpt(news, maxChars: 130);
     final readTime = _readTimeMinutes(news);
-    final freshness = _freshnessValue(news);
+    final isFresh = _isFresh(news);
     final isDark = darkModeNotifier.value;
     final id = pId(news);
+    final img = pImg(news);
+    final cat = pCategory(news);
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
@@ -6071,178 +6273,233 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: isDark
-                ? [
-                    const Color(0xff2b1d10),
-                    const Color(0xff3d2a15),
-                    kDarkCard,
-                  ]
-                : [
-                    const Color(0xfffff8eb),
-                    const Color(0xfffffcf5),
-                    Colors.white,
-                  ],
-          ),
-          borderRadius: BorderRadius.circular(20),
+          color: isDark ? kDarkCard : Colors.white,
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: _pressed
-                ? _c2
-                : _c1.withOpacity(isDark ? 0.45 : 0.35),
-            width: _pressed ? 1.8 : 1.2,
+                ? _newsRed.withOpacity(0.5)
+                : (isDark
+                    ? kDarkBorder.withOpacity(0.6)
+                    : const Color(0xffe5e7eb)),
+            width: _pressed ? 1.5 : 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: _c2.withOpacity(_pressed ? 0.35 : 0.18),
-              blurRadius: _pressed ? 28 : 18,
-              offset: const Offset(0, 6),
+              color: Colors.black.withOpacity(isDark ? 0.35 : 0.06),
+              blurRadius: _pressed ? 24 : 16,
+              offset: const Offset(0, 4),
             ),
-            BoxShadow(
-              color: _c1.withOpacity(_pressed ? 0.20 : 0.10),
-              blurRadius: _pressed ? 24 : 14,
-              spreadRadius: _pressed ? -3 : -5,
-            ),
+            if (isFresh)
+              BoxShadow(
+                color: _newsRed.withOpacity(0.10),
+                blurRadius: 12,
+                offset: const Offset(0, 2),
+              ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Stack(
+          borderRadius: BorderRadius.circular(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Positioned(
-                top: -40,
-                right: -40,
-                child: Container(
-                  width: 140,
-                  height: 140,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        _c2.withOpacity(isDark ? 0.35 : 0.20),
-                        Colors.transparent,
-                      ],
-                    ),
+              // Red breaking bar at top
+              Container(
+                height: 3,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [_newsRed, _newsRedDark],
                   ),
                 ),
               ),
-              Positioned(
-                bottom: -50,
-                left: -50,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        _c1.withOpacity(isDark ? 0.30 : 0.18),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 0,
-                bottom: 0,
-                right: 0,
-                child: AnimatedBuilder(
-                  animation: _pulseCtrl,
-                  builder: (context, _) {
-                    final t = _pulseCtrl.value;
-                    final glow = 0.7 + (t < 0.5 ? t : 1 - t) * 0.3;
-                    return Container(
-                      width: 5,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            _c2.withOpacity(glow),
-                            _c1,
-                            _cSoft,
-                            _c1,
-                            _c2.withOpacity(glow),
-                          ],
+
+              // Image
+              if (img.isNotEmpty)
+                AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      CachedNetworkImage(
+                        imageUrl: img,
+                        fit: BoxFit.cover,
+                        memCacheWidth: 1080,
+                        memCacheHeight: 620,
+                        maxWidthDiskCache: 1080,
+                        maxHeightDiskCache: 620,
+                        placeholder: (_, __) => Container(
+                          color: isDark ? kDarkCard2 : kLightCard2,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _c2.withOpacity(glow * 0.7),
-                            blurRadius: 14,
-                            spreadRadius: 1,
-                          ),
-                        ],
+                        errorWidget: (_, __, ___) => Container(
+                          color: isDark ? kDarkCard2 : kLightCard2,
+                          child: Icon(Icons.newspaper_rounded,
+                              color: mutC, size: 40),
+                        ),
                       ),
-                    );
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 20, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 34,
-                          height: 34,
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 70,
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              begin: Alignment.topRight,
-                              end: Alignment.bottomLeft,
-                              colors: [_c1, _c2, _c3],
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.75),
+                              ],
                             ),
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(
-                                color: _c2.withOpacity(0.55),
-                                blurRadius: 14,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.bolt_rounded,
-                            color: Colors.white,
-                            size: 20,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Container(
+                      ),
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
+                              horizontal: 9, vertical: 5),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [_c2, _c3],
-                            ),
-                            borderRadius: BorderRadius.circular(8),
+                            color: _newsRed,
+                            borderRadius: BorderRadius.circular(4),
                             boxShadow: [
                               BoxShadow(
-                                color: _c2.withOpacity(0.45),
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
+                                color: _newsRed.withOpacity(0.45),
+                                blurRadius: 12,
+                                offset: const Offset(0, 3),
                               ),
                             ],
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              _WhiteLiveDotSmall(color: kUrgent),
-                              SizedBox(width: 6),
+                              _WhiteLiveDotSmall(color: Colors.white),
+                              SizedBox(width: 5),
                               Text(
-                                'خبر فوری',
+                                'فوری',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 10.5,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w900,
                                   fontFamily: 'Vazirmatn',
-                                  letterSpacing: 0.3,
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                             ],
+                          ),
+                        ),
+                      ),
+                      if (cat.isNotEmpty)
+                        Positioned(
+                          top: 12,
+                          left: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.55),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.2),
+                              ),
+                            ),
+                            child: Text(
+                              cat,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w800,
+                                fontFamily: 'Vazirmatn',
+                              ),
+                            ),
+                          ),
+                        ),
+                      Positioned(
+                        bottom: 12,
+                        right: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.65),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.schedule_rounded,
+                                  color: Colors.white70, size: 10),
+                              const SizedBox(width: 4),
+                              Text(
+                                date,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  fontFamily: 'Vazirmatn',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // Content
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: txtC,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        height: 1.65,
+                        fontFamily: 'Vazirmatn',
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (excerpt.isNotEmpty)
+                      Text(
+                        excerpt,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          color: mutC,
+                          fontSize: 12,
+                          height: 1.7,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    const SizedBox(height: 12),
+                    Container(
+                      height: 1,
+                      color: isDark
+                          ? kDarkBorder.withOpacity(0.5)
+                          : const Color(0xfff1f5f9),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Icon(Icons.access_time_rounded,
+                            color: mutC, size: 13),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$readTime دقیقه مطالعه',
+                          style: TextStyle(
+                            color: mutC,
+                            fontSize: 10.5,
+                            fontFamily: 'Vazirmatn',
                           ),
                         ),
                         const Spacer(),
@@ -6256,19 +6513,18 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                             );
                           },
                           child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.transparent,
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withOpacity(0.08)
+                                  : const Color(0xfff3f4f6),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(
-                              Icons.ios_share_rounded,
-                              color: isDark ? Colors.white70 : mutC,
-                              size: 15,
-                            ),
+                            child: Icon(Icons.ios_share_rounded,
+                                color: mutC, size: 14),
                           ),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 6),
                         GestureDetector(
                           onTap: () {
                             HapticFeedback.lightImpact();
@@ -6282,160 +6538,27 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                           },
                           child: ValueListenableBuilder<Set<String>>(
                             valueListenable: newsBookmarkNotifier,
-                            builder: (c, set, __) => Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: set.contains(id)
-                                    ? kAccentGold.withOpacity(0.2)
-                                    : Colors.transparent,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                set.contains(id)
-                                    ? Icons.bookmark_rounded
-                                    : Icons.bookmark_border_rounded,
-                                color: set.contains(id)
-                                    ? kAccentGold
-                                    : (isDark ? Colors.white70 : mutC),
-                                size: 15,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Icon(Icons.schedule_rounded,
-                            size: 12,
-                            color: isDark ? Colors.white70 : mutC),
-                        const SizedBox(width: 4),
-                        Text(
-                          date,
-                          style: TextStyle(
-                            color: isDark ? Colors.white70 : mutC,
-                            fontSize: 10.5,
-                            fontFamily: 'Vazirmatn',
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        color: txtC,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                        height: 1.6,
-                        fontFamily: 'Vazirmatn',
-                        shadows: isDark
-                            ? [
-                                Shadow(
-                                  color: _c2.withOpacity(0.2),
-                                  blurRadius: 8,
+                            builder: (c, set, __) {
+                              final saved = set.contains(id);
+                              return Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: saved
+                                      ? kAccentGold.withOpacity(0.15)
+                                      : (isDark
+                                          ? Colors.white.withOpacity(0.08)
+                                          : const Color(0xfff3f4f6)),
+                                  shape: BoxShape.circle,
                                 ),
-                              ]
-                            : null,
-                      ),
-                    ),
-                    if (excerpt.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        excerpt,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          color: inkSoft,
-                          fontSize: 12,
-                          height: 1.8,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
-                      child: Container(
-                        height: 4,
-                        color: isDark
-                            ? const Color(0xff2b1d10)
-                            : _cSoft.withOpacity(0.5),
-                        child: FractionallySizedBox(
-                          alignment: Alignment.centerRight,
-                          widthFactor: freshness,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [_c1, _c2, _c3],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: _c2.withOpacity(0.5),
-                                  blurRadius: 6,
+                                child: Icon(
+                                  saved
+                                      ? Icons.bookmark_rounded
+                                      : Icons.bookmark_border_rounded,
+                                  color: saved ? kAccentGold : mutC,
+                                  size: 14,
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      height: 1,
-                      color: _c2.withOpacity(isDark ? 0.2 : 0.15),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        const Icon(Icons.access_time_rounded,
-                            size: 12, color: _c2),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$readTime دقیقه مطالعه',
-                          style: TextStyle(
-                            color: isDark ? Colors.white70 : mutC,
-                            fontSize: 10.5,
-                            fontFamily: 'Vazirmatn',
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [_c2, _c3],
-                            ),
-                            borderRadius: BorderRadius.circular(999),
-                            boxShadow: [
-                              BoxShadow(
-                                color: _c2.withOpacity(0.35),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'خواندن کامل',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w900,
-                                  fontFamily: 'Vazirmatn',
-                                ),
-                              ),
-                              SizedBox(width: 4),
-                              Icon(
-                                Icons.arrow_back_ios_new_rounded,
-                                color: Colors.white,
-                                size: 10,
-                              ),
-                            ],
+                              );
+                            },
                           ),
                         ),
                       ],
@@ -11292,6 +11415,7 @@ class UrgentNewsListPage extends StatefulWidget {
 
 class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
   late Future<List> _future;
+  static const Color _newsRed = Color(0xffdc2626);
 
   @override
   void initState() {
@@ -11310,34 +11434,71 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).padding.bottom;
+    final isDark = darkModeNotifier.value;
 
     return ValueListenableBuilder<bool>(
       valueListenable: darkModeNotifier,
       builder: (context, _, __) => Scaffold(
         backgroundColor: bgC,
         appBar: AppBar(
+          backgroundColor: bgC,
+          foregroundColor: txtC,
+          elevation: 0,
+          centerTitle: false,
+          titleSpacing: 0,
           title: Row(
             children: [
-              const ModernLiveDot(),
-              const SizedBox(width: 8),
+              const SizedBox(width: 14),
+              Container(
+                width: 4,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: _newsRed,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 10),
               Text(
                 'اخبار فوری',
                 style: TextStyle(
                   color: txtC,
-                  fontSize: 16,
+                  fontSize: 17,
                   fontWeight: FontWeight.w900,
                   fontFamily: 'Vazirmatn',
+                  letterSpacing: -0.3,
                 ),
               ),
+              const SizedBox(width: 8),
+              const ModernLiveDot(),
             ],
           ),
-          backgroundColor: bgC,
-          foregroundColor: txtC,
-          elevation: 0,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(left: 10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _newsRed.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'LIVE',
+                  style: TextStyle(
+                    color: _newsRed,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         body: RefreshIndicator(
-          color: const Color(0xffc9a961),
-          backgroundColor: pnl,
+          color: _newsRed,
+          backgroundColor: isDark ? kDarkCard : Colors.white,
           onRefresh: _refresh,
           child: FutureBuilder<List>(
             future: _future,
@@ -11353,7 +11514,8 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
               }
               final list = snapshot.data ?? [];
               if (list.isEmpty) {
-                return const EmptyWidget(text: 'هنوز خبری منتشر نشده است.');
+                return const EmptyWidget(
+                    text: 'هنوز خبری منتشر نشده است.');
               }
               return ListView.builder(
                 physics: const BouncingScrollPhysics(),
@@ -11364,7 +11526,9 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
                   bottomInset + 100,
                 ),
                 itemCount: list.length,
-                itemBuilder: (c, i) => ModernUrgentNewsCard(news: list[i]),
+                itemBuilder: (c, i) => ModernUrgentNewsCard(
+                  news: list[i],
+                ),
               );
             },
           ),
@@ -15259,7 +15423,7 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
   }
 }
 
-/* ==================== QUIZ PAGE (FOR USERS) ==================== */
+/* ==================== QUIZ PAGE (WITH PERSISTENT ANSWERS) ==================== */
 
 class QuizPage extends StatefulWidget {
   const QuizPage({super.key});
@@ -15269,49 +15433,7 @@ class QuizPage extends StatefulWidget {
 
 class _QuizPageState extends State<QuizPage> {
   int _currentIndex = 0;
-  int? _selectedOption;
-  bool _answered = false;
-  int _correctCount = 0;
-  int _wrongCount = 0;
-  bool _finished = false;
-
-  void _resetQuiz() {
-    setState(() {
-      _currentIndex = 0;
-      _selectedOption = null;
-      _answered = false;
-      _correctCount = 0;
-      _wrongCount = 0;
-      _finished = false;
-    });
-  }
-
-  void _selectOption(int index, List<QuizQuestion> questions) {
-    if (_answered) return;
-    HapticFeedback.lightImpact();
-    setState(() {
-      _selectedOption = index;
-      _answered = true;
-      if (index == questions[_currentIndex].correctIndex) {
-        _correctCount++;
-      } else {
-        _wrongCount++;
-      }
-    });
-  }
-
-  void _nextQuestion(List<QuizQuestion> questions) {
-    HapticFeedback.selectionClick();
-    if (_currentIndex < questions.length - 1) {
-      setState(() {
-        _currentIndex++;
-        _selectedOption = null;
-        _answered = false;
-      });
-    } else {
-      setState(() => _finished = true);
-    }
-  }
+  bool _showResult = false;
 
   @override
   Widget build(BuildContext context) {
@@ -15321,76 +15443,112 @@ class _QuizPageState extends State<QuizPage> {
           ValueListenableBuilder<List<QuizQuestion>>(
         valueListenable: quizNotifier,
         builder: (context, questions, ___) {
-          return Scaffold(
-            backgroundColor: bgC,
-            appBar: AppBar(
-              title: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [kQuizColor, kAccentGold],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: kQuizColor.withOpacity(0.4),
-                          blurRadius: 12,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(Icons.quiz_rounded,
-                        color: Colors.white, size: 20),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'کوئیز ورزشی',
-                    style: TextStyle(
-                      color: txtC,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'Vazirmatn',
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: bgC,
-              foregroundColor: txtC,
-              elevation: 0,
-              actions: [
-                if (questions.isNotEmpty && !_finished)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 12),
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
+          return ValueListenableBuilder<Map<String, int>>(
+            valueListenable: answeredQuizNotifier,
+            builder: (context, answers, ____) {
+              final totalQuestions = questions.length;
+              final answeredCount = questions
+                  .where((q) => answers.containsKey(q.id))
+                  .length;
+              final correctCount = questions.where((q) {
+                final ans = answers[q.id];
+                return ans != null && ans == q.correctIndex;
+              }).length;
+
+              return Scaffold(
+                backgroundColor: bgC,
+                appBar: AppBar(
+                  title: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(
-                          color: kPrimaryNavy.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(8),
+                          gradient: const LinearGradient(
+                            colors: [kQuizColor, kAccentGold],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: kQuizColor.withOpacity(0.4),
+                              blurRadius: 12,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
-                        child: Text(
-                          '${_currentIndex + 1} / ${questions.length}',
-                          style: TextStyle(
-                            color: txtC,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'Vazirmatn',
+                        child: const Icon(Icons.quiz_rounded,
+                            color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'کوئیز ورزشی',
+                        style: TextStyle(
+                          color: txtC,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: bgC,
+                  foregroundColor: txtC,
+                  elevation: 0,
+                  actions: [
+                    if (questions.isNotEmpty) ...[
+                      if (_showResult)
+                        TextButton.icon(
+                          onPressed: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _showResult = false);
+                          },
+                          icon: Icon(Icons.list_alt_rounded,
+                              color: kQuizColor, size: 18),
+                          label: Text(
+                            'سوالات',
+                            style: TextStyle(
+                              color: kQuizColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Vazirmatn',
+                            ),
+                          ),
+                        )
+                      else
+                        TextButton.icon(
+                          onPressed: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _showResult = true);
+                          },
+                          icon: Icon(Icons.bar_chart_rounded,
+                              color: kQuizColor, size: 18),
+                          label: Text(
+                            'نتیجه',
+                            style: TextStyle(
+                              color: kQuizColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Vazirmatn',
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            body: questions.isEmpty
-                ? _buildEmpty()
-                : _finished
-                    ? _buildResult(questions.length)
-                    : _buildQuestion(questions),
+                    ],
+                  ],
+                ),
+                body: questions.isEmpty
+                    ? _buildEmpty()
+                    : _showResult
+                        ? _buildResult(
+                            totalQuestions,
+                            answeredCount,
+                            correctCount,
+                            questions,
+                            answers,
+                          )
+                        : _buildQuestionList(
+                            questions, answers, answeredCount),
+              );
+            },
           );
         },
       ),
@@ -15453,166 +15611,333 @@ class _QuizPageState extends State<QuizPage> {
     );
   }
 
-  Widget _buildQuestion(List<QuizQuestion> questions) {
-    final q = questions[_currentIndex];
-    final progress = (_currentIndex + 1) / questions.length;
-
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Progress
-          Container(
-            height: 6,
-            decoration: BoxDecoration(
-              color: lineC,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerRight,
-              widthFactor: progress,
-              child: Container(
+  Widget _buildQuestionList(
+    List<QuizQuestion> questions,
+    Map<String, int> answers,
+    int answeredCount,
+  ) {
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+          child: Column(
+            children: [
+              Container(
+                height: 6,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [kQuizColor, kAccentGold],
-                  ),
+                  color: lineC,
                   borderRadius: BorderRadius.circular(999),
                 ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Question Card
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topRight,
-                end: Alignment.bottomLeft,
-                colors: darkModeNotifier.value
-                    ? [kDarkCard, kDarkCard2]
-                    : [Colors.white, kLightCard2],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: kQuizColor.withOpacity(0.3),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: kQuizColor.withOpacity(0.15),
-                  blurRadius: 20,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [kQuizColor, kAccentGold],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
+                child: FractionallySizedBox(
+                  alignment: Alignment.centerRight,
+                  widthFactor: questions.isNotEmpty
+                      ? (_currentIndex + 1) / questions.length
+                      : 0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [kQuizColor, kAccentGold],
                       ),
-                      child: const Icon(Icons.help_outline_rounded,
-                          color: Colors.white, size: 22),
+                      borderRadius: BorderRadius.circular(999),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'سوال ${_currentIndex + 1}',
-                        style: TextStyle(
-                          color: kQuizColor,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'Vazirmatn',
-                        ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: kQuizColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'سوال ${_currentIndex + 1} از ${questions.length}',
+                      style: TextStyle(
+                        color: kQuizColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn',
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  q.question,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: txtC,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    height: 1.8,
-                    fontFamily: 'Vazirmatn',
                   ),
-                ),
-              ],
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: kSuccess.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'پاسخ‌داده: $answeredCount / ${questions.length}',
+                      style: TextStyle(
+                        color: kSuccess,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 100),
+            child: _buildQuestion(
+              questions[_currentIndex],
+              answers,
             ),
           ),
-          const SizedBox(height: 20),
-
-          // Options
-          ...List.generate(q.options.length, (i) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _buildOption(q, i),
-            );
-          }),
-
-          // Answer Feedback
-          if (_answered) ...[
-            const SizedBox(height: 16),
-            _buildAnswerFeedback(q),
-          ],
-
-          // Next Button
-          if (_answered) ...[
-            const SizedBox(height: 20),
-            SizedBox(
-              height: 54,
-              child: ElevatedButton.icon(
-                onPressed: () => _nextQuestion(questions),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kQuizColor,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                icon: Icon(
-                  _currentIndex < questions.length - 1
-                      ? Icons.arrow_back_rounded
-                      : Icons.check_circle_rounded,
-                  size: 20,
-                ),
-                label: Text(
-                  _currentIndex < questions.length - 1
-                      ? 'سوال بعدی'
-                      : 'مشاهده نتیجه',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildOption(QuizQuestion q, int index) {
+  Widget _buildQuestion(
+    QuizQuestion q,
+    Map<String, int> answers,
+  ) {
+    final isAlreadyAnswered = answers.containsKey(q.id);
+    final savedAnswer = answers[q.id];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: darkModeNotifier.value
+                  ? [kDarkCard, kDarkCard2]
+                  : [Colors.white, kLightCard2],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isAlreadyAnswered
+                  ? kSuccess.withOpacity(0.4)
+                  : kQuizColor.withOpacity(0.3),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: (isAlreadyAnswered ? kSuccess : kQuizColor)
+                    .withOpacity(0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isAlreadyAnswered
+                            ? [kSuccess, kSuccessLight]
+                            : [kQuizColor, kAccentGold],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      isAlreadyAnswered
+                          ? Icons.check_circle_rounded
+                          : Icons.help_outline_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'سوال ${_currentIndex + 1}',
+                          style: TextStyle(
+                            color: isAlreadyAnswered
+                                ? kSuccess
+                                : kQuizColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                        if (isAlreadyAnswered)
+                          Text(
+                            'قبلاً به این سوال پاسخ داده‌اید',
+                            style: TextStyle(
+                              color: mutC,
+                              fontSize: 10.5,
+                              fontFamily: 'Vazirmatn',
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                q.question,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  height: 1.8,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        ...List.generate(q.options.length, (i) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _buildOption(q, i, isAlreadyAnswered, savedAnswer),
+          );
+        }),
+        if (isAlreadyAnswered) ...[
+          const SizedBox(height: 16),
+          _buildAnswerFeedback(q, savedAnswer ?? 0),
+        ],
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            if (_currentIndex > 0)
+              Expanded(
+                child: SizedBox(
+                  height: 54,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _currentIndex--);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: kQuizColor,
+                      side: BorderSide(color: kQuizColor, width: 1.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    icon: const Icon(Icons.arrow_forward_rounded,
+                        size: 20),
+                    label: const Text(
+                      'قبلی',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            if (_currentIndex > 0) const SizedBox(width: 10),
+            Expanded(
+              flex: 2,
+              child: SizedBox(
+                height: 54,
+                child: ElevatedButton.icon(
+                  onPressed: isAlreadyAnswered
+                      ? () {
+                          HapticFeedback.selectionClick();
+                          if (_currentIndex <
+                              quizNotifier.value.length - 1) {
+                            setState(() => _currentIndex++);
+                          } else {
+                            setState(() => _showResult = true);
+                          }
+                        }
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kQuizColor,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: lineC,
+                    disabledForegroundColor: mutC,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  icon: Icon(
+                    _currentIndex < quizNotifier.value.length - 1
+                        ? Icons.arrow_back_rounded
+                        : Icons.bar_chart_rounded,
+                    size: 20,
+                  ),
+                  label: Text(
+                    _currentIndex < quizNotifier.value.length - 1
+                        ? 'سوال بعدی'
+                        : 'مشاهده نتیجه',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (!isAlreadyAnswered) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: kWarning.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: kWarning.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline_rounded,
+                    color: kWarning, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'توجه: بعد از انتخاب گزینه، پاسخ شما ثبت می‌شود و دیگر قابل تغییر نیست.',
+                    style: TextStyle(
+                      color: kWarning,
+                      fontSize: 10.5,
+                      height: 1.6,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildOption(
+    QuizQuestion q,
+    int index,
+    bool isAlreadyAnswered,
+    int? savedAnswer,
+  ) {
     final isCorrect = index == q.correctIndex;
-    final isSelected = _selectedOption == index;
+    final isSelected = savedAnswer == index;
     final isDark = darkModeNotifier.value;
 
     Color bgColor;
@@ -15621,7 +15946,7 @@ class _QuizPageState extends State<QuizPage> {
     IconData? icon;
     Color? iconColor;
 
-    if (!_answered) {
+    if (!isAlreadyAnswered) {
       bgColor = pnl;
       borderColor = lineC;
       textColor = txtC;
@@ -15648,7 +15973,12 @@ class _QuizPageState extends State<QuizPage> {
     }
 
     return GestureDetector(
-      onTap: _answered ? null : () => _selectOption(index, [q]),
+      onTap: isAlreadyAnswered
+          ? null
+          : () async {
+              HapticFeedback.mediumImpact();
+              await saveUserAnswer(q.id, index);
+            },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.all(16),
@@ -15657,11 +15987,12 @@ class _QuizPageState extends State<QuizPage> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: borderColor,
-            width: (isCorrect && _answered) || (isSelected && _answered)
+            width: (isCorrect && isAlreadyAnswered) ||
+                    (isSelected && isAlreadyAnswered)
                 ? 1.8
                 : 1.2,
           ),
-          boxShadow: _answered && (isCorrect || isSelected)
+          boxShadow: isAlreadyAnswered && (isCorrect || isSelected)
               ? [
                   BoxShadow(
                     color: (isCorrect ? kSuccess : kUrgent)
@@ -15678,7 +16009,7 @@ class _QuizPageState extends State<QuizPage> {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                gradient: !_answered
+                gradient: !isAlreadyAnswered
                     ? LinearGradient(
                         colors: [
                           kQuizColor.withOpacity(0.12),
@@ -15692,7 +16023,7 @@ class _QuizPageState extends State<QuizPage> {
                             ? const LinearGradient(
                                 colors: [kUrgent, kUrgentDark])
                             : null,
-                color: _answered && !isCorrect && !isSelected
+                color: isAlreadyAnswered && !isCorrect && !isSelected
                     ? (isDark ? kDarkCard2 : kLightCard2)
                     : null,
                 borderRadius: BorderRadius.circular(10),
@@ -15701,7 +16032,7 @@ class _QuizPageState extends State<QuizPage> {
                 child: Text(
                   ['الف', 'ب', 'پ', 'ت'][index % 4],
                   style: TextStyle(
-                    color: !_answered
+                    color: !isAlreadyAnswered
                         ? kQuizColor
                         : (isCorrect || isSelected)
                             ? Colors.white
@@ -15721,10 +16052,10 @@ class _QuizPageState extends State<QuizPage> {
                 style: TextStyle(
                   color: textColor,
                   fontSize: 14,
-                  fontWeight:
-                      (isCorrect && _answered) || (isSelected && _answered)
-                          ? FontWeight.w900
-                          : FontWeight.w700,
+                  fontWeight: (isCorrect && isAlreadyAnswered) ||
+                          (isSelected && isAlreadyAnswered)
+                      ? FontWeight.w900
+                      : FontWeight.w700,
                   height: 1.6,
                   fontFamily: 'Vazirmatn',
                 ),
@@ -15740,8 +16071,8 @@ class _QuizPageState extends State<QuizPage> {
     );
   }
 
-  Widget _buildAnswerFeedback(QuizQuestion q) {
-    final isCorrect = _selectedOption == q.correctIndex;
+  Widget _buildAnswerFeedback(QuizQuestion q, int selectedIndex) {
+    final isCorrect = selectedIndex == q.correctIndex;
     final correctLetter = ['الف', 'ب', 'پ', 'ت'][q.correctIndex % 4];
     final correctText = q.options[q.correctIndex];
 
@@ -15968,27 +16299,42 @@ class _QuizPageState extends State<QuizPage> {
     );
   }
 
-  Widget _buildResult(int total) {
-    final percent = total > 0 ? (_correctCount / total * 100).round() : 0;
-    final isExcellent = percent >= 80;
-    final isGood = percent >= 50 && percent < 80;
+  Widget _buildResult(
+    int total,
+    int answered,
+    int correct,
+    List<QuizQuestion> questions,
+    Map<String, int> answers,
+  ) {
+    final wrong = answered - correct;
+    final percent = total > 0 ? (correct / total * 100).round() : 0;
+    final unanswered = total - answered;
 
     Color resultColor;
     String resultText;
     IconData resultIcon;
+    String motivationalText;
 
-    if (isExcellent) {
+    if (answered == 0) {
+      resultColor = kQuizColor;
+      resultText = 'هنوز شروع نکردی';
+      resultIcon = Icons.play_circle_rounded;
+      motivationalText = 'برای دیدن نتیجه، به سوالات پاسخ بده';
+    } else if (percent >= 80) {
       resultColor = kSuccess;
       resultText = 'عالی بود! 🎉';
       resultIcon = Icons.emoji_events_rounded;
-    } else if (isGood) {
+      motivationalText = 'دانش ورزشی شما فوق‌العاده است';
+    } else if (percent >= 50) {
       resultColor = kWarning;
       resultText = 'خوب بود! 👍';
       resultIcon = Icons.thumb_up_rounded;
+      motivationalText = 'با کمی تمرین بیشتر، بهتر هم می‌شی';
     } else {
       resultColor = kUrgent;
       resultText = 'نیاز به تمرین بیشتر';
       resultIcon = Icons.school_rounded;
+      motivationalText = 'اشکالی نداره، با مرور توضیحات بهتر می‌شی';
     }
 
     return SingleChildScrollView(
@@ -16048,6 +16394,16 @@ class _QuizPageState extends State<QuizPage> {
                     fontFamily: 'Vazirmatn',
                   ),
                 ),
+                const SizedBox(height: 6),
+                Text(
+                  motivationalText,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: mutC,
+                    fontSize: 12,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
                 const SizedBox(height: 24),
                 Container(
                   padding: const EdgeInsets.all(24),
@@ -16069,7 +16425,7 @@ class _QuizPageState extends State<QuizPage> {
                         ),
                       ),
                       Text(
-                        'امتیاز شما',
+                        'امتیاز',
                         style: TextStyle(
                           color: mutC,
                           fontSize: 11,
@@ -16083,14 +16439,35 @@ class _QuizPageState extends State<QuizPage> {
             ),
           ),
           const SizedBox(height: 20),
-
+          Row(
+            children: [
+              Expanded(
+                child: _statCard(
+                  icon: Icons.list_alt_rounded,
+                  label: 'کل سوالات',
+                  value: '$total',
+                  color: kQuizColor,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _statCard(
+                  icon: Icons.edit_note_rounded,
+                  label: 'پاسخ داده',
+                  value: '$answered',
+                  color: kInfo,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
                 child: _statCard(
                   icon: Icons.check_circle_rounded,
-                  label: 'پاسخ صحیح',
-                  value: '$_correctCount',
+                  label: 'صحیح',
+                  value: '$correct',
                   color: kSuccess,
                 ),
               ),
@@ -16098,26 +16475,40 @@ class _QuizPageState extends State<QuizPage> {
               Expanded(
                 child: _statCard(
                   icon: Icons.cancel_rounded,
-                  label: 'پاسخ اشتباه',
-                  value: '$_wrongCount',
+                  label: 'اشتباه',
+                  value: '$wrong',
                   color: kUrgent,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          _statCard(
-            icon: Icons.list_alt_rounded,
-            label: 'مجموع سوالات',
-            value: '$total',
-            color: kQuizColor,
-          ),
-
+          if (unanswered > 0) ...[
+            const SizedBox(height: 10),
+            _statCard(
+              icon: Icons.pending_actions_rounded,
+              label: 'بدون پاسخ',
+              value: '$unanswered',
+              color: kWarning,
+            ),
+          ],
           const SizedBox(height: 24),
           SizedBox(
             height: 54,
             child: ElevatedButton.icon(
-              onPressed: _resetQuiz,
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                int firstUnanswered = 0;
+                for (int i = 0; i < questions.length; i++) {
+                  if (!answers.containsKey(questions[i].id)) {
+                    firstUnanswered = i;
+                    break;
+                  }
+                }
+                setState(() {
+                  _currentIndex = firstUnanswered;
+                  _showResult = false;
+                });
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: kQuizColor,
                 foregroundColor: Colors.white,
@@ -16126,10 +16517,17 @@ class _QuizPageState extends State<QuizPage> {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              icon: const Icon(Icons.refresh_rounded, size: 20),
-              label: const Text(
-                'دوباره امتحان کن',
-                style: TextStyle(
+              icon: Icon(
+                unanswered > 0
+                    ? Icons.play_arrow_rounded
+                    : Icons.list_alt_rounded,
+                size: 20,
+              ),
+              label: Text(
+                unanswered > 0
+                    ? 'ادامه پاسخ‌دهی'
+                    : 'مشاهده سوالات',
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
                   fontFamily: 'Vazirmatn',
@@ -16137,6 +16535,22 @@ class _QuizPageState extends State<QuizPage> {
               ),
             ),
           ),
+          const SizedBox(height: 20),
+          if (answered > 0)
+            TextButton.icon(
+              onPressed: () => _confirmReset(context, answered),
+              icon: Icon(Icons.restart_alt_rounded,
+                  color: mutC, size: 16),
+              label: Text(
+                'شروع مجدد کوئیز',
+                style: TextStyle(
+                  color: mutC,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -16194,6 +16608,66 @@ class _QuizPageState extends State<QuizPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmReset(BuildContext context, int answeredCount) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: pnl,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: rose, size: 24),
+            const SizedBox(width: 8),
+            Text(
+              'شروع مجدد کوئیز',
+              style: TextStyle(
+                color: txtC,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'همه پاسخ‌های قبلی شما ($answeredCount سوال) پاک می‌شوند و می‌توانید از اول پاسخ دهید. مطمئنید؟',
+          style: TextStyle(
+            color: mutC,
+            fontFamily: 'Vazirmatn',
+            height: 1.7,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('انصراف',
+                style: TextStyle(
+                    color: mutC, fontFamily: 'Vazirmatn')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('شروع مجدد',
+                style: TextStyle(
+                    color: rose,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn')),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      await resetQuizAnswers();
+      if (context.mounted) {
+        setState(() {
+          _currentIndex = 0;
+          _showResult = false;
+        });
+        showSnack(context, 'کوئیز از اول شروع شد');
+      }
+    }
   }
 }
 
@@ -16592,8 +17066,7 @@ class ReadingStatsPage extends StatelessWidget {
                         color: isToday ? kTabShop : mutC,
                         fontSize: 10.5,
                         fontWeight: isToday
-                            ? FontWeight.w900
-                            : FontWeight.w700,
+                            ? FontWeight.w900                            : FontWeight.w700,
                         fontFamily: 'Vazirmatn',
                       ),
                     ),
