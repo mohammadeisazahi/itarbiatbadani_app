@@ -69,6 +69,10 @@ const Color kTabNews = Color(0xffc1121f);
 const Color kTabShop = Color(0xffd97706);
 const Color kTabAccount = Color(0xff0d9488);
 
+/// 🎨 رنگ کوئیز
+const Color kQuizColor = Color(0xff7b2d26);
+const Color kQuizColorDark = Color(0xff5c1f19);
+
 /// 🌙 سطوح تیره
 const Color kDarkBg = Color(0xff0a121e);
 const Color kDarkCard = Color(0xff1a2538);
@@ -97,6 +101,86 @@ const List<Color> accentPalette = [
   Color(0xff8b6914),
   Color(0xff0f1a2e),
 ];
+
+/* ==================== QUIZ MODEL ==================== */
+
+final quizNotifier = ValueNotifier<List<QuizQuestion>>([]);
+
+class QuizQuestion {
+  final String id;
+  final String question;
+  final List<String> options;
+  final int correctIndex;
+  final String? explanation;
+
+  QuizQuestion({
+    required this.id,
+    required this.question,
+    required this.options,
+    required this.correctIndex,
+    this.explanation,
+  });
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'question': question,
+        'options': options,
+        'correctIndex': correctIndex,
+        'explanation': explanation,
+      };
+
+  factory QuizQuestion.fromMap(Map<String, dynamic> m) => QuizQuestion(
+        id: m['id'].toString(),
+        question: m['question'].toString(),
+        options: (m['options'] as List).map((e) => e.toString()).toList(),
+        correctIndex: m['correctIndex'] as int,
+        explanation: m['explanation']?.toString(),
+      );
+}
+
+Future<void> loadQuiz() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString('quiz_questions');
+    if (data != null && data.isNotEmpty) {
+      final list = (json.decode(data) as List)
+          .map((e) => QuizQuestion.fromMap(Map<String, dynamic>.from(e)))
+          .toList();
+      quizNotifier.value = list;
+    }
+  } catch (_) {}
+}
+
+Future<void> saveQuiz() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'quiz_questions',
+      json.encode(quizNotifier.value.map((q) => q.toMap()).toList()),
+    );
+  } catch (_) {}
+}
+
+Future<void> addQuizQuestion(QuizQuestion q) async {
+  final list = List<QuizQuestion>.from(quizNotifier.value);
+  list.add(q);
+  quizNotifier.value = list;
+  await saveQuiz();
+}
+
+Future<void> removeQuizQuestion(String id) async {
+  final list = quizNotifier.value.where((q) => q.id != id).toList();
+  quizNotifier.value = list;
+  await saveQuiz();
+}
+
+Future<void> clearAllQuiz() async {
+  quizNotifier.value = [];
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('quiz_questions');
+  } catch (_) {}
+}
 /* ==================== THEME COLORS ==================== */
 
 /// 🎨 پس‌زمینه‌ها
@@ -1343,6 +1427,7 @@ void main() async {
     await loadFollowedCategories();
     await loadInAppNotifications();
     await loadReadingStats();
+    await loadQuiz();
     Future.delayed(const Duration(seconds: 2), () {
       checkForNewNotifications();
     });
@@ -3027,7 +3112,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 14),
-            itemCount: 4 + followedCats.length,
+            itemCount: 5 + followedCats.length,
             separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (c, i) {
               // ❤️ دسته‌های دنبال‌شده ابتدا نمایش داده می‌شوند
@@ -3087,8 +3172,33 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
 
               final actionIndex = i - followedCats.length;
 
-              // 🏋️ ماشین‌حساب BMI
+              // 🎯 کوئیز ورزشی (اول از همه ابزارها)
               if (actionIndex == 0) {
+                return ValueListenableBuilder<List<QuizQuestion>>(
+                  valueListenable: quizNotifier,
+                  builder: (c, questions, __) {
+                    return _actionChip(
+                      icon: Icons.quiz_rounded,
+                      label: 'کوئیز ورزشی',
+                      color: kQuizColor,
+                      badge: questions.isNotEmpty
+                          ? '${questions.length}'
+                          : null,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const QuizPage()),
+                        );
+                      },
+                    );
+                  },
+                );
+              }
+
+              // 🏋️ ماشین‌حساب BMI
+              if (actionIndex == 1) {
                 return _actionChip(
                   icon: Icons.calculate_rounded,
                   label: 'تناسب اندام',
@@ -3105,7 +3215,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
               }
 
               // 📊 آمار مطالعه
-              if (actionIndex == 1) {
+              if (actionIndex == 2) {
                 return ValueListenableBuilder<Map<String, dynamic>>(
                   valueListenable: readingStatsNotifier,
                   builder: (c, stats, __) {
@@ -3129,7 +3239,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
               }
 
               // 🔖 نشان‌شده‌ها
-              if (actionIndex == 2) {
+              if (actionIndex == 3) {
                 return _actionChip(
                   icon: Icons.bookmark_rounded,
                   label: 'نشان‌شده‌ها',
@@ -3145,7 +3255,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
                 );
               }
 
-              // ❤️ دسته‌های من
+              // ❤️ دسته‌های من (آخر)
               final count = followed.length;
               final hasItems = count > 0;
               final isDark = darkModeNotifier.value;
@@ -4449,7 +4559,6 @@ class _ModernPostCardState extends State<ModernPostCard>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // ===== اصلاح شده: زیرعنوان داخل کادر =====
                             Row(
                               children: [
                                 if (cat.isNotEmpty)
@@ -5887,10 +5996,11 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
   late AnimationController _pulseCtrl;
   bool _pressed = false;
 
-  static const Color _blue1 = Color(0xff38bdf8);
-  static const Color _blue2 = Color(0xff0ea5e9);
-  static const Color _blue3 = Color(0xff0284c7);
-  static const Color _blueSoft = Color(0xffbae6fd);
+  // 🎨 رنگ‌های نارنجی-طلایی جدید
+  static const Color _c1 = Color(0xffc9a961);
+  static const Color _c2 = Color(0xffa88840);
+  static const Color _c3 = Color(0xff7b2d26);
+  static const Color _cSoft = Color(0xfff0e4c0);
 
   @override
   void initState() {
@@ -5966,31 +6076,31 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
             end: Alignment.bottomLeft,
             colors: isDark
                 ? [
-                    const Color(0xff082f49),
-                    const Color(0xff0c4a6e),
+                    const Color(0xff2b1d10),
+                    const Color(0xff3d2a15),
                     kDarkCard,
                   ]
                 : [
-                    const Color(0xffe0f2fe),
-                    const Color(0xfff0f9ff),
+                    const Color(0xfffff8eb),
+                    const Color(0xfffffcf5),
                     Colors.white,
                   ],
           ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: _pressed
-                ? _blue2
-                : _blue1.withOpacity(isDark ? 0.35 : 0.30),
-            width: _pressed ? 1.8 : 1,
+                ? _c2
+                : _c1.withOpacity(isDark ? 0.45 : 0.35),
+            width: _pressed ? 1.8 : 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: _blue2.withOpacity(_pressed ? 0.35 : 0.15),
+              color: _c2.withOpacity(_pressed ? 0.35 : 0.18),
               blurRadius: _pressed ? 28 : 18,
               offset: const Offset(0, 6),
             ),
             BoxShadow(
-              color: _blue1.withOpacity(_pressed ? 0.20 : 0.08),
+              color: _c1.withOpacity(_pressed ? 0.20 : 0.10),
               blurRadius: _pressed ? 24 : 14,
               spreadRadius: _pressed ? -3 : -5,
             ),
@@ -6010,7 +6120,7 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        _blue2.withOpacity(isDark ? 0.4 : 0.22),
+                        _c2.withOpacity(isDark ? 0.35 : 0.20),
                         Colors.transparent,
                       ],
                     ),
@@ -6027,7 +6137,7 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        _blue1.withOpacity(isDark ? 0.3 : 0.18),
+                        _c1.withOpacity(isDark ? 0.30 : 0.18),
                         Colors.transparent,
                       ],
                     ),
@@ -6050,16 +6160,16 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            _blue2.withOpacity(glow),
-                            _blue1,
-                            _blueSoft,
-                            _blue1,
-                            _blue2.withOpacity(glow),
+                            _c2.withOpacity(glow),
+                            _c1,
+                            _cSoft,
+                            _c1,
+                            _c2.withOpacity(glow),
                           ],
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: _blue2.withOpacity(glow * 0.7),
+                            color: _c2.withOpacity(glow * 0.7),
                             blurRadius: 14,
                             spreadRadius: 1,
                           ),
@@ -6083,12 +6193,12 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                             gradient: const LinearGradient(
                               begin: Alignment.topRight,
                               end: Alignment.bottomLeft,
-                              colors: [_blue1, _blue2, _blue3],
+                              colors: [_c1, _c2, _c3],
                             ),
                             borderRadius: BorderRadius.circular(10),
                             boxShadow: [
                               BoxShadow(
-                                color: _blue2.withOpacity(0.55),
+                                color: _c2.withOpacity(0.55),
                                 blurRadius: 14,
                                 offset: const Offset(0, 3),
                               ),
@@ -6106,12 +6216,12 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                               horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              colors: [_blue2, _blue3],
+                              colors: [_c2, _c3],
                             ),
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
-                                color: _blue2.withOpacity(0.45),
+                                color: _c2.withOpacity(0.45),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
@@ -6222,7 +6332,7 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                         shadows: isDark
                             ? [
                                 Shadow(
-                                  color: _blue2.withOpacity(0.2),
+                                  color: _c2.withOpacity(0.2),
                                   blurRadius: 8,
                                 ),
                               ]
@@ -6250,19 +6360,19 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                       child: Container(
                         height: 4,
                         color: isDark
-                            ? const Color(0xff082f49)
-                            : _blueSoft.withOpacity(0.5),
+                            ? const Color(0xff2b1d10)
+                            : _cSoft.withOpacity(0.5),
                         child: FractionallySizedBox(
                           alignment: Alignment.centerRight,
                           widthFactor: freshness,
                           child: Container(
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [_blue1, _blue2, _blue3],
+                                colors: [_c1, _c2, _c3],
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: _blue2.withOpacity(0.5),
+                                  color: _c2.withOpacity(0.5),
                                   blurRadius: 6,
                                 ),
                               ],
@@ -6274,13 +6384,13 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                     const SizedBox(height: 12),
                     Container(
                       height: 1,
-                      color: _blue2.withOpacity(isDark ? 0.2 : 0.15),
+                      color: _c2.withOpacity(isDark ? 0.2 : 0.15),
                     ),
                     const SizedBox(height: 10),
                     Row(
                       children: [
                         const Icon(Icons.access_time_rounded,
-                            size: 12, color: _blue2),
+                            size: 12, color: _c2),
                         const SizedBox(width: 4),
                         Text(
                           '$readTime دقیقه مطالعه',
@@ -6296,12 +6406,12 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard>
                               horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              colors: [_blue2, _blue3],
+                              colors: [_c2, _c3],
                             ),
                             borderRadius: BorderRadius.circular(999),
                             boxShadow: [
                               BoxShadow(
-                                color: _blue2.withOpacity(0.35),
+                                color: _c2.withOpacity(0.35),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -7497,6 +7607,7 @@ class _NewsPageState extends State<NewsPage> {
     );
   }
 }
+
 /* ==================== PREMIUM NEWS CARD ==================== */
 
 class _PremiumNewsCard extends StatefulWidget {
@@ -7773,7 +7884,6 @@ class _PremiumNewsCardState extends State<_PremiumNewsCard> {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  // ===== اصلاح شده: زمینه دکمه «مشاهده خبر» در حالت تیره =====
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 6),
@@ -8490,6 +8600,7 @@ class _BookmarksPageState extends State<BookmarksPage>
     }
   }
 }
+
 /* ==================== PREMIUM SEARCH PAGE ==================== */
 
 class SearchPage extends StatefulWidget {
@@ -9927,6 +10038,7 @@ class _ModernWebPageState extends State<ModernWebPage> {
     );
   }
 }
+
 /* ==================== URGENT NEWS DETAIL PAGE ==================== */
 
 class UrgentNewsDetailPage extends StatefulWidget {
@@ -10096,9 +10208,9 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                             decoration: const BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  Color(0xff38bdf8),
-                                  Color(0xff0ea5e9),
-                                  Color(0xff0284c7),
+                                  Color(0xffc9a961),
+                                  Color(0xffa88840),
+                                  Color(0xff7b2d26),
                                 ],
                               ),
                             ),
@@ -10216,29 +10328,29 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
           end: Alignment.bottomLeft,
           colors: isDark
               ? [
-                  const Color(0xff082f49),
-                  const Color(0xff0c4a6e),
+                  const Color(0xff2b1d10),
+                  const Color(0xff3d2a15),
                   kDarkCard,
                 ]
               : [
-                  const Color(0xffe0f2fe),
-                  const Color(0xfff0f9ff),
+                  const Color(0xfffff8eb),
+                  const Color(0xfffffcf5),
                   Colors.white,
                 ],
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: const Color(0xff0ea5e9).withOpacity(0.4),
-          width: 1.2,
+          color: const Color(0xffc9a961).withOpacity(0.5),
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xff0ea5e9).withOpacity(0.25),
+            color: const Color(0xffa88840).withOpacity(0.25),
             blurRadius: 28,
             offset: const Offset(0, 10),
           ),
           BoxShadow(
-            color: const Color(0xff38bdf8).withOpacity(0.15),
+            color: const Color(0xffc9a961).withOpacity(0.15),
             blurRadius: 18,
             offset: const Offset(0, 4),
           ),
@@ -10258,7 +10370,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xff0ea5e9)
+                      const Color(0xffa88840)
                           .withOpacity(isDark ? 0.4 : 0.2),
                       Colors.transparent,
                     ],
@@ -10276,7 +10388,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xff38bdf8)
+                      const Color(0xffc9a961)
                           .withOpacity(isDark ? 0.3 : 0.18),
                       Colors.transparent,
                     ],
@@ -10297,21 +10409,21 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                           begin: Alignment.topRight,
                           end: Alignment.bottomLeft,
                           colors: [
-                            Color(0xff38bdf8),
-                            Color(0xff0ea5e9),
-                            Color(0xff0284c7),
+                            Color(0xffc9a961),
+                            Color(0xffa88840),
+                            Color(0xff7b2d26),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(15),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xff0ea5e9)
+                            color: const Color(0xffa88840)
                                 .withOpacity(0.55),
                             blurRadius: 20,
                             offset: const Offset(0, 5),
                           ),
                           BoxShadow(
-                            color: const Color(0xff38bdf8)
+                            color: const Color(0xffc9a961)
                                 .withOpacity(0.4),
                             blurRadius: 12,
                             offset: const Offset(0, 2),
@@ -10331,14 +10443,14 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [
-                            Color(0xff0ea5e9),
-                            Color(0xff0284c7),
+                            Color(0xffa88840),
+                            Color(0xff7b2d26),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xff0ea5e9)
+                            color: const Color(0xffa88840)
                                 .withOpacity(0.5),
                             blurRadius: 14,
                             offset: const Offset(0, 3),
@@ -10368,15 +10480,15 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: const Color(0xff38bdf8).withOpacity(0.2),
+                        color: const Color(0xffc9a961).withOpacity(0.2),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: const Color(0xff38bdf8).withOpacity(0.4),
+                          color: const Color(0xffc9a961).withOpacity(0.4),
                         ),
                       ),
                       child: Icon(
                         Icons.newspaper_rounded,
-                        color: const Color(0xff38bdf8).withOpacity(0.9),
+                        color: const Color(0xffc9a961).withOpacity(0.9),
                         size: 20,
                       ),
                     ),
@@ -10395,7 +10507,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                     shadows: isDark
                         ? [
                             Shadow(
-                              color: const Color(0xff0ea5e9)
+                              color: const Color(0xffa88840)
                                   .withOpacity(0.2),
                               blurRadius: 12,
                             ),
@@ -10409,9 +10521,9 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        const Color(0xff0ea5e9).withOpacity(0.6),
-                        const Color(0xff38bdf8).withOpacity(0.4),
-                        const Color(0xff0284c7).withOpacity(0.2),
+                        const Color(0xffa88840).withOpacity(0.6),
+                        const Color(0xffc9a961).withOpacity(0.4),
+                        const Color(0xff7b2d26).withOpacity(0.2),
                       ],
                     ),
                   ),
@@ -10423,7 +10535,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                       child: _infoChip(
                         icon: Icons.calendar_today_rounded,
                         label: date,
-                        color: const Color(0xff0ea5e9),
+                        color: const Color(0xffa88840),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -10431,7 +10543,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                       child: _infoChip(
                         icon: Icons.access_time_rounded,
                         label: '$readTime دقیقه',
-                        color: const Color(0xff38bdf8),
+                        color: const Color(0xffc9a961),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -10439,7 +10551,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                       child: _infoChip(
                         icon: Icons.text_fields_rounded,
                         label: '$words کلمه',
-                        color: const Color(0xff0284c7),
+                        color: const Color(0xff7b2d26),
                       ),
                     ),
                   ],
@@ -10528,8 +10640,8 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [
-                            Color(0xff0ea5e9),
-                            Color(0xff0284c7),
+                            Color(0xffc9a961),
+                            Color(0xff7b2d26),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(3),
@@ -10684,14 +10796,14 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [
-                          Color(0xff0ea5e9),
-                          Color(0xff0284c7),
+                          Color(0xffc9a961),
+                          Color(0xff7b2d26),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xff0ea5e9)
+                          color: const Color(0xffa88840)
                               .withOpacity(0.4),
                           blurRadius: 12,
                           offset: const Offset(0, 3),
@@ -11081,8 +11193,8 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [
-                          Color(0xff0ea5e9),
-                          Color(0xff0284c7),
+                          Color(0xffc9a961),
+                          Color(0xff7b2d26),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(3),
@@ -11127,13 +11239,13 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                             width: 30,
                             height: 30,
                             decoration: BoxDecoration(
-                              color: const Color(0xff0ea5e9)
+                              color: const Color(0xffc9a961)
                                   .withOpacity(.12),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(
                               Icons.bolt_rounded,
-                              color: Color(0xff0ea5e9),
+                              color: Color(0xffc9a961),
                               size: 16,
                             ),
                           ),
@@ -11224,7 +11336,7 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
           elevation: 0,
         ),
         body: RefreshIndicator(
-          color: const Color(0xff0ea5e9),
+          color: const Color(0xffc9a961),
           backgroundColor: pnl,
           onRefresh: _refresh,
           child: FutureBuilder<List>(
@@ -11417,7 +11529,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                'برای مدیریت اخبار فوری وارد شوید',
+                'برای مدیریت اخبار و کوئیز وارد شوید',
                 style: TextStyle(
                   color: mutC,
                   fontSize: 12.5,
@@ -11665,6 +11777,13 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
   String? _uploadedFileName;
   String? _uploadedMediaId;
 
+  // Quiz design variables
+  final _quizQuestionCtrl = TextEditingController();
+  final _quizExplanationCtrl = TextEditingController();
+  final _quizOptionsCtrls =
+      List.generate(4, (_) => TextEditingController());
+  int _quizCorrectIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -11698,8 +11817,8 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         showSnack(context, 'خطا در دسترسی به فایل', error: true);
         return;
       }
-      if (file.size > 20 * 1024 * 1024) {
-        showSnack(context, 'حجم فایل نباید بیش از ۲۰ مگابایت باشد.',
+      if (file.size > 30 * 1024 * 1024) {
+        showSnack(context, 'حجم فایل نباید بیش از ۳۰ مگابایت باشد.',
             error: true);
         return;
       }
@@ -11832,6 +11951,47 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     } finally {
       if (mounted) setState(() => _sending = false);
     }
+  }
+
+  Future<void> _addQuizQuestion() async {
+    final question = _quizQuestionCtrl.text.trim();
+    final options = _quizOptionsCtrls.map((c) => c.text.trim()).toList();
+
+    if (question.isEmpty) {
+      showSnack(context, 'متن سوال را وارد کنید.', error: true);
+      return;
+    }
+    for (int i = 0; i < options.length; i++) {
+      if (options[i].isEmpty) {
+        showSnack(context, 'گزینه ${i + 1} را وارد کنید.', error: true);
+        return;
+      }
+    }
+
+    final q = QuizQuestion(
+      id: 'q_${DateTime.now().millisecondsSinceEpoch}',
+      question: question,
+      options: options,
+      correctIndex: _quizCorrectIndex,
+      explanation: _quizExplanationCtrl.text.trim().isEmpty
+          ? null
+          : _quizExplanationCtrl.text.trim(),
+    );
+
+    await addQuizQuestion(q);
+
+    if (!mounted) return;
+    HapticFeedback.mediumImpact();
+    showSnack(context, '✅ سوال با موفقیت اضافه شد!');
+
+    setState(() {
+      _quizQuestionCtrl.clear();
+      _quizExplanationCtrl.clear();
+      for (final c in _quizOptionsCtrls) {
+        c.clear();
+      }
+      _quizCorrectIndex = 0;
+    });
   }
 
   Future<void> _showEditDialog(dynamic post) async {
@@ -12156,6 +12316,11 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
   void dispose() {
     _titleCtrl.dispose();
     _contentCtrl.dispose();
+    _quizQuestionCtrl.dispose();
+    _quizExplanationCtrl.dispose();
+    for (final c in _quizOptionsCtrls) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -12216,7 +12381,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         backgroundColor: bgC,
         appBar: AppBar(
           title: const Text(
-            'پنل مدیریت اخبار فوری',
+            'پنل مدیریت',
             style: TextStyle(
                 fontWeight: FontWeight.w900, fontFamily: 'Vazirmatn'),
           ),
@@ -12230,34 +12395,14 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: kPrimaryNavy.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                      color: kPrimaryNavy.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline_rounded,
-                        color: kPrimaryNavy, size: 22),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'خبر فوری پس از انتشار، بالای صفحه اصلی اپ نمایش داده می‌شود. لینک خبر به‌صورت خودکار با حروف انگلیسی ساخته می‌شود.',
-                        style: TextStyle(
-                          color: txtC,
-                          fontSize: 12,
-                          height: 1.6,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              // ========== بخش اخبار فوری ==========
+              _sectionBanner(
+                icon: Icons.newspaper_rounded,
+                title: 'انتشار خبر فوری',
+                subtitle: 'خبر جدید با فایل ضمیمه حداکثر ۳۰ مگابایت',
+                color: kPrimaryNavy,
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 18),
               Text(
                 'عنوان خبر',
                 style: TextStyle(
@@ -12427,6 +12572,498 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               ),
               const SizedBox(height: 30),
               Divider(color: lineC),
+              const SizedBox(height: 20),
+
+              // ========== بخش طراحی کوئیز ==========
+              _sectionBanner(
+                icon: Icons.quiz_rounded,
+                title: 'طراحی کوئیز ورزشی',
+                subtitle:
+                    'سوال چهارگزینه‌ای بساز، پاسخ درست و توضیحات آموزشی رو مشخص کن',
+                color: kQuizColor,
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'متن سوال',
+                style: TextStyle(
+                  color: kQuizColor,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: pnl,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: lineC),
+                ),
+                child: TextField(
+                  controller: _quizQuestionCtrl,
+                  textDirection: TextDirection.rtl,
+                  textAlign: TextAlign.right,
+                  maxLines: 3,
+                  style: TextStyle(
+                    color: txtC,
+                    fontSize: 13.5,
+                    height: 1.7,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                  decoration: InputDecoration(
+                    hintText:
+                        'مثلاً: کدام ماده معدنی برای سلامت استخوان ضروری است؟',
+                    hintStyle: TextStyle(
+                        color: mutC, fontFamily: 'Vazirmatn'),
+                    filled: true,
+                    fillColor: Colors.transparent,
+                    contentPadding: const EdgeInsets.all(14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'گزینه‌ها (روی حرف گزینه بزن تا به‌عنوان پاسخ صحیح انتخاب شود)',
+                style: TextStyle(
+                  color: kQuizColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...List.generate(4, (i) {
+                final isCorrect = _quizCorrectIndex == i;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isCorrect
+                          ? kSuccess.withOpacity(0.08)
+                          : pnl,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isCorrect ? kSuccess : lineC,
+                        width: isCorrect ? 1.5 : 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _quizCorrectIndex = i);
+                          },
+                          child: Container(
+                            width: 52,
+                            height: 62,
+                            decoration: BoxDecoration(
+                              gradient: isCorrect
+                                  ? const LinearGradient(
+                                      colors: [kSuccess, kSuccessLight])
+                                  : null,
+                              color: isCorrect
+                                  ? null
+                                  : (darkModeNotifier.value
+                                      ? kDarkCard2
+                                      : kLightCard2),
+                              borderRadius:
+                                  const BorderRadius.horizontal(
+                                      right: Radius.circular(13)),
+                            ),
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    ['الف', 'ب', 'پ', 'ت'][i],
+                                    style: TextStyle(
+                                      color: isCorrect
+                                          ? Colors.white
+                                          : txtC,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w900,
+                                      fontFamily: 'Vazirmatn',
+                                    ),
+                                  ),
+                                  if (isCorrect) ...[
+                                    const SizedBox(height: 2),
+                                    const Icon(
+                                        Icons.check_circle_rounded,
+                                        color: Colors.white,
+                                        size: 12),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: TextField(
+                            controller: _quizOptionsCtrls[i],
+                            textDirection: TextDirection.rtl,
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                              color: txtC,
+                              fontSize: 13,
+                              fontFamily: 'Vazirmatn',
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'گزینه ${i + 1}',
+                              hintStyle: TextStyle(
+                                  color: mutC,
+                                  fontFamily: 'Vazirmatn',
+                                  fontSize: 12),
+                              filled: true,
+                              fillColor: Colors.transparent,
+                              contentPadding:
+                                  const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 16),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(0),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: kSuccess.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: kSuccess.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline_rounded,
+                        color: kSuccess, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'پاسخ صحیح انتخاب‌شده: گزینه «${['الف', 'ب', 'پ', 'ت'][_quizCorrectIndex]}»',
+                        style: TextStyle(
+                          color: kSuccess,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: kInfo.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: kInfo.withOpacity(0.25)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.lightbulb_outline_rounded,
+                        color: kInfo, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'توضیحات آموزشی بعد از پاسخ کاربر (چه درست چه اشتباه) نمایش داده می‌شود.',
+                        style: TextStyle(
+                          color: kInfo,
+                          fontSize: 10.5,
+                          height: 1.6,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'توضیحات آموزشی (توصیه‌شده)',
+                style: TextStyle(
+                  color: kQuizColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: pnl,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: lineC),
+                ),
+                child: TextField(
+                  controller: _quizExplanationCtrl,
+                  textDirection: TextDirection.rtl,
+                  textAlign: TextAlign.right,
+                  maxLines: 3,
+                  style: TextStyle(
+                    color: txtC,
+                    fontSize: 13,
+                    height: 1.7,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                  decoration: InputDecoration(
+                    hintText:
+                        'مثلاً: کلسیم نقش کلیدی در استحکام استخوان‌ها دارد. منابع خوب کلسیم شامل شیر، ماست، پنیر و سبزیجات برگ سبز است.',
+                    hintStyle: TextStyle(
+                        color: mutC,
+                        fontFamily: 'Vazirmatn',
+                        fontSize: 12),
+                    filled: true,
+                    fillColor: Colors.transparent,
+                    contentPadding: const EdgeInsets.all(14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: _addQuizQuestion,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kQuizColor,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: const Icon(Icons.add_rounded, size: 20),
+                  label: const Text(
+                    'افزودن سوال به کوئیز',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // ========== لیست سوالات کوئیز ==========
+              ValueListenableBuilder<List<QuizQuestion>>(
+                valueListenable: quizNotifier,
+                builder: (c, questions, __) {
+                  if (questions.isEmpty) {
+                    return Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: pnl2,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: lineC),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.quiz_outlined,
+                              color: mutC, size: 22),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'هنوز سوالی اضافه نشده است',
+                              style: TextStyle(
+                                color: mutC,
+                                fontSize: 12,
+                                fontFamily: 'Vazirmatn',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.list_alt_rounded,
+                              color: kQuizColor, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'سوالات کوئیز (${questions.length})',
+                            style: TextStyle(
+                              color: txtC,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Vazirmatn',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      ...questions.map((q) {
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: pnl,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: lineC),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: kSuccess.withOpacity(0.15),
+                                      borderRadius:
+                                          BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      'پاسخ: ${['الف', 'ب', 'پ', 'ت'][q.correctIndex % 4]}',
+                                      style: TextStyle(
+                                        color: kSuccess,
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w900,
+                                        fontFamily: 'Vazirmatn',
+                                      ),
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  GestureDetector(
+                                    onTap: () async {
+                                      final confirm =
+                                          await showDialog<bool>(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          backgroundColor: pnl,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                          ),
+                                          title: Text(
+                                            'حذف سوال',
+                                            style: TextStyle(
+                                              color: txtC,
+                                              fontWeight: FontWeight.w900,
+                                              fontFamily: 'Vazirmatn',
+                                            ),
+                                          ),
+                                          content: Text(
+                                            'آیا این سوال حذف شود؟',
+                                            style: TextStyle(
+                                                color: mutC,
+                                                fontFamily:
+                                                    'Vazirmatn'),
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(
+                                                      ctx, false),
+                                              child: Text('انصراف',
+                                                  style: TextStyle(
+                                                      color: mutC,
+                                                      fontFamily:
+                                                          'Vazirmatn')),
+                                            ),
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(
+                                                      ctx, true),
+                                              child: Text('حذف',
+                                                  style: TextStyle(
+                                                      color: rose,
+                                                      fontWeight:
+                                                          FontWeight
+                                                              .w900,
+                                                      fontFamily:
+                                                          'Vazirmatn')),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm == true) {
+                                        await removeQuizQuestion(q.id);
+                                        if (mounted) {
+                                          showSnack(context,
+                                              'سوال حذف شد');
+                                        }
+                                      }
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      child: Icon(
+                                        Icons.delete_outline_rounded,
+                                        color: rose,
+                                        size: 18,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                q.question,
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                  color: txtC,
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.6,
+                                  fontFamily: 'Vazirmatn',
+                                ),
+                              ),
+                              if (q.explanation != null &&
+                                  q.explanation!.isNotEmpty) ...[
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Icon(Icons.lightbulb_rounded,
+                                        color: kInfo, size: 12),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        q.explanation!,
+                                        maxLines: 1,
+                                        overflow:
+                                            TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: mutC,
+                                          fontSize: 10.5,
+                                          fontFamily: 'Vazirmatn',
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  );
+                },
+              ),
+
+              const SizedBox(height: 30),
+              Divider(color: lineC),
               const SizedBox(height: 14),
               Text(
                 'اخبار منتشر شده',
@@ -12549,6 +13186,76 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     );
   }
 
+  Widget _sectionBanner({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            color.withOpacity(0.15),
+            color.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withOpacity(0.35), width: 1.2),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [color, color.withOpacity(0.7)],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: mutC,
+                    fontSize: 10.5,
+                    height: 1.5,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFilePickerButton() {
     final isDark = darkModeNotifier.value;
     return GestureDetector(
@@ -12612,7 +13319,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
             ),
             const SizedBox(height: 4),
             Text(
-              'PDF، تصویر، ویدیو، Word، Excel، ZIP و...\nحداکثر ۲۰ مگابایت',
+              'PDF، تصویر، ویدیو، Word، Excel، ZIP و...\nحداکثر ۳۰ مگابایت',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: mutC,
@@ -13647,7 +14354,6 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
   void initState() {
     super.initState();
     _loadSaved();
-    // ❌ محاسبه خودکار حذف شد
   }
 
   Future<void> _loadSaved() async {
@@ -14553,6 +15259,944 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
   }
 }
 
+/* ==================== QUIZ PAGE (FOR USERS) ==================== */
+
+class QuizPage extends StatefulWidget {
+  const QuizPage({super.key});
+  @override
+  State<QuizPage> createState() => _QuizPageState();
+}
+
+class _QuizPageState extends State<QuizPage> {
+  int _currentIndex = 0;
+  int? _selectedOption;
+  bool _answered = false;
+  int _correctCount = 0;
+  int _wrongCount = 0;
+  bool _finished = false;
+
+  void _resetQuiz() {
+    setState(() {
+      _currentIndex = 0;
+      _selectedOption = null;
+      _answered = false;
+      _correctCount = 0;
+      _wrongCount = 0;
+      _finished = false;
+    });
+  }
+
+  void _selectOption(int index, List<QuizQuestion> questions) {
+    if (_answered) return;
+    HapticFeedback.lightImpact();
+    setState(() {
+      _selectedOption = index;
+      _answered = true;
+      if (index == questions[_currentIndex].correctIndex) {
+        _correctCount++;
+      } else {
+        _wrongCount++;
+      }
+    });
+  }
+
+  void _nextQuestion(List<QuizQuestion> questions) {
+    HapticFeedback.selectionClick();
+    if (_currentIndex < questions.length - 1) {
+      setState(() {
+        _currentIndex++;
+        _selectedOption = null;
+        _answered = false;
+      });
+    } else {
+      setState(() => _finished = true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) =>
+          ValueListenableBuilder<List<QuizQuestion>>(
+        valueListenable: quizNotifier,
+        builder: (context, questions, ___) {
+          return Scaffold(
+            backgroundColor: bgC,
+            appBar: AppBar(
+              title: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [kQuizColor, kAccentGold],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: kQuizColor.withOpacity(0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.quiz_rounded,
+                        color: Colors.white, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'کوئیز ورزشی',
+                    style: TextStyle(
+                      color: txtC,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: bgC,
+              foregroundColor: txtC,
+              elevation: 0,
+              actions: [
+                if (questions.isNotEmpty && !_finished)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12),
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: kPrimaryNavy.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '${_currentIndex + 1} / ${questions.length}',
+                          style: TextStyle(
+                            color: txtC,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            body: questions.isEmpty
+                ? _buildEmpty()
+                : _finished
+                    ? _buildResult(questions.length)
+                    : _buildQuestion(questions),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    kQuizColor.withOpacity(0.15),
+                    kQuizColor.withOpacity(0.05),
+                  ],
+                ),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: kQuizColor.withOpacity(0.3),
+                  width: 1.5,
+                ),
+              ),
+              child: const Icon(
+                Icons.quiz_outlined,
+                color: kQuizColor,
+                size: 48,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'هنوز سوالی ثبت نشده',
+              style: TextStyle(
+                color: txtC,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'به‌زودی از طرف مدیریت، سوالات کوئیز اضافه خواهد شد',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: mutC,
+                fontSize: 12,
+                height: 1.7,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuestion(List<QuizQuestion> questions) {
+    final q = questions[_currentIndex];
+    final progress = (_currentIndex + 1) / questions.length;
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Progress
+          Container(
+            height: 6,
+            decoration: BoxDecoration(
+              color: lineC,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerRight,
+              widthFactor: progress,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [kQuizColor, kAccentGold],
+                  ),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Question Card
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+                colors: darkModeNotifier.value
+                    ? [kDarkCard, kDarkCard2]
+                    : [Colors.white, kLightCard2],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: kQuizColor.withOpacity(0.3),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: kQuizColor.withOpacity(0.15),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [kQuizColor, kAccentGold],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.help_outline_rounded,
+                          color: Colors.white, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'سوال ${_currentIndex + 1}',
+                        style: TextStyle(
+                          color: kQuizColor,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  q.question,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: txtC,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    height: 1.8,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Options
+          ...List.generate(q.options.length, (i) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _buildOption(q, i),
+            );
+          }),
+
+          // Answer Feedback
+          if (_answered) ...[
+            const SizedBox(height: 16),
+            _buildAnswerFeedback(q),
+          ],
+
+          // Next Button
+          if (_answered) ...[
+            const SizedBox(height: 20),
+            SizedBox(
+              height: 54,
+              child: ElevatedButton.icon(
+                onPressed: () => _nextQuestion(questions),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kQuizColor,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                icon: Icon(
+                  _currentIndex < questions.length - 1
+                      ? Icons.arrow_back_rounded
+                      : Icons.check_circle_rounded,
+                  size: 20,
+                ),
+                label: Text(
+                  _currentIndex < questions.length - 1
+                      ? 'سوال بعدی'
+                      : 'مشاهده نتیجه',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOption(QuizQuestion q, int index) {
+    final isCorrect = index == q.correctIndex;
+    final isSelected = _selectedOption == index;
+    final isDark = darkModeNotifier.value;
+
+    Color bgColor;
+    Color borderColor;
+    Color textColor;
+    IconData? icon;
+    Color? iconColor;
+
+    if (!_answered) {
+      bgColor = pnl;
+      borderColor = lineC;
+      textColor = txtC;
+      icon = null;
+      iconColor = null;
+    } else if (isCorrect) {
+      bgColor = kSuccess.withOpacity(0.15);
+      borderColor = kSuccess;
+      textColor = kSuccess;
+      icon = Icons.check_circle_rounded;
+      iconColor = kSuccess;
+    } else if (isSelected) {
+      bgColor = kUrgent.withOpacity(0.15);
+      borderColor = kUrgent;
+      textColor = kUrgent;
+      icon = Icons.cancel_rounded;
+      iconColor = kUrgent;
+    } else {
+      bgColor = pnl;
+      borderColor = lineC;
+      textColor = mutC;
+      icon = null;
+      iconColor = null;
+    }
+
+    return GestureDetector(
+      onTap: _answered ? null : () => _selectOption(index, [q]),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: borderColor,
+            width: (isCorrect && _answered) || (isSelected && _answered)
+                ? 1.8
+                : 1.2,
+          ),
+          boxShadow: _answered && (isCorrect || isSelected)
+              ? [
+                  BoxShadow(
+                    color: (isCorrect ? kSuccess : kUrgent)
+                        .withOpacity(0.25),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                gradient: !_answered
+                    ? LinearGradient(
+                        colors: [
+                          kQuizColor.withOpacity(0.12),
+                          kQuizColor.withOpacity(0.05),
+                        ],
+                      )
+                    : isCorrect
+                        ? const LinearGradient(
+                            colors: [kSuccess, kSuccessLight])
+                        : isSelected
+                            ? const LinearGradient(
+                                colors: [kUrgent, kUrgentDark])
+                            : null,
+                color: _answered && !isCorrect && !isSelected
+                    ? (isDark ? kDarkCard2 : kLightCard2)
+                    : null,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Center(
+                child: Text(
+                  ['الف', 'ب', 'پ', 'ت'][index % 4],
+                  style: TextStyle(
+                    color: !_answered
+                        ? kQuizColor
+                        : (isCorrect || isSelected)
+                            ? Colors.white
+                            : mutC,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                q.options[index],
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 14,
+                  fontWeight:
+                      (isCorrect && _answered) || (isSelected && _answered)
+                          ? FontWeight.w900
+                          : FontWeight.w700,
+                  height: 1.6,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ),
+            if (icon != null) ...[
+              const SizedBox(width: 8),
+              Icon(icon, color: iconColor, size: 24),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnswerFeedback(QuizQuestion q) {
+    final isCorrect = _selectedOption == q.correctIndex;
+    final correctLetter = ['الف', 'ب', 'پ', 'ت'][q.correctIndex % 4];
+    final correctText = q.options[q.correctIndex];
+
+    final Color feedbackColor = isCorrect ? kSuccess : kUrgent;
+    final Color feedbackDark = isCorrect ? kSuccess : kUrgentDark;
+    final IconData feedbackIcon = isCorrect
+        ? Icons.celebration_rounded
+        : Icons.sentiment_dissatisfied_rounded;
+    final String feedbackTitle =
+        isCorrect ? 'آفرین! پاسخ درست بود 🎉' : 'متأسفانه پاسخ اشتباه بود';
+    final String feedbackSubtitle = isCorrect
+        ? 'توضیحات این سوال رو بخون:'
+        : 'پاسخ درست رو با دقت بخون و یاد بگیر:';
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: [
+            feedbackColor.withOpacity(0.12),
+            feedbackColor.withOpacity(0.03),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: feedbackColor.withOpacity(0.4),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: feedbackColor.withOpacity(0.15),
+            blurRadius: 16,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [feedbackColor, feedbackDark],
+              ),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.25),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(feedbackIcon,
+                      color: Colors.white, size: 22),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        feedbackTitle,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        feedbackSubtitle,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.85),
+                          fontSize: 10.5,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: kSuccess.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: kSuccess.withOpacity(0.4),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [kSuccess, kSuccessLight],
+                          ),
+                          borderRadius: BorderRadius.circular(9),
+                          boxShadow: [
+                            BoxShadow(
+                              color: kSuccess.withOpacity(0.4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.check_rounded,
+                            color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'پاسخ صحیح: گزینه «$correctLetter»',
+                              style: const TextStyle(
+                                color: kSuccess,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w900,
+                                fontFamily: 'Vazirmatn',
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              correctText,
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                color: txtC,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                height: 1.6,
+                                fontFamily: 'Vazirmatn',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (q.explanation != null &&
+                    q.explanation!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: kInfo.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: kInfo.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: kInfo.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.lightbulb_rounded,
+                                color: kInfo,
+                                size: 16,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'توضیحات آموزشی',
+                              style: TextStyle(
+                                color: kInfo,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w900,
+                                fontFamily: 'Vazirmatn',
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          q.explanation!,
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                            color: txtC,
+                            fontSize: 13,
+                            height: 1.9,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResult(int total) {
+    final percent = total > 0 ? (_correctCount / total * 100).round() : 0;
+    final isExcellent = percent >= 80;
+    final isGood = percent >= 50 && percent < 80;
+
+    Color resultColor;
+    String resultText;
+    IconData resultIcon;
+
+    if (isExcellent) {
+      resultColor = kSuccess;
+      resultText = 'عالی بود! 🎉';
+      resultIcon = Icons.emoji_events_rounded;
+    } else if (isGood) {
+      resultColor = kWarning;
+      resultText = 'خوب بود! 👍';
+      resultIcon = Icons.thumb_up_rounded;
+    } else {
+      resultColor = kUrgent;
+      resultText = 'نیاز به تمرین بیشتر';
+      resultIcon = Icons.school_rounded;
+    }
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(14, 20, 14, 100),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+                colors: [
+                  resultColor.withOpacity(0.15),
+                  resultColor.withOpacity(0.05),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                  color: resultColor.withOpacity(0.4), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: resultColor.withOpacity(0.2),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Container(
+                  width: 90,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [resultColor, resultColor.withOpacity(0.7)],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: resultColor.withOpacity(0.4),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Icon(resultIcon, color: Colors.white, size: 48),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  resultText,
+                  style: TextStyle(
+                    color: resultColor,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: pnl,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: resultColor, width: 3),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '$percent٪',
+                        style: TextStyle(
+                          color: resultColor,
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                      Text(
+                        'امتیاز شما',
+                        style: TextStyle(
+                          color: mutC,
+                          fontSize: 11,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          Row(
+            children: [
+              Expanded(
+                child: _statCard(
+                  icon: Icons.check_circle_rounded,
+                  label: 'پاسخ صحیح',
+                  value: '$_correctCount',
+                  color: kSuccess,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _statCard(
+                  icon: Icons.cancel_rounded,
+                  label: 'پاسخ اشتباه',
+                  value: '$_wrongCount',
+                  color: kUrgent,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _statCard(
+            icon: Icons.list_alt_rounded,
+            label: 'مجموع سوالات',
+            value: '$total',
+            color: kQuizColor,
+          ),
+
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 54,
+            child: ElevatedButton.icon(
+              onPressed: _resetQuiz,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kQuizColor,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              icon: const Icon(Icons.refresh_rounded, size: 20),
+              label: const Text(
+                'دوباره امتحان کن',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: pnl,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: lineC),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: mutC,
+                    fontSize: 11,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /* ==================== READING STATS PAGE ==================== */
 
 class ReadingStatsPage extends StatelessWidget {
@@ -14562,7 +16206,8 @@ class ReadingStatsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
       valueListenable: darkModeNotifier,
-      builder: (context, _, __) => ValueListenableBuilder<Map<String, dynamic>>(
+      builder: (context, _, __) =>
+          ValueListenableBuilder<Map<String, dynamic>>(
         valueListenable: readingStatsNotifier,
         builder: (context, stats, ___) {
           final totalRead = stats['totalRead'] ?? 0;
@@ -15144,7 +16789,9 @@ class ReadingStatsPage extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        if ((article['image'] ?? '').toString().isNotEmpty)
+                        if ((article['image'] ?? '')
+                            .toString()
+                            .isNotEmpty)
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: SizedBox(
