@@ -66,6 +66,12 @@ const Color kInfoLight = Color(0xff60a5fa);
 const Color kNewsRed = Color(0xffdc2626);
 const Color kNewsRedDark = Color(0xff991b1b);
 
+/// 🎨 رنگ آبی روشن اخبار (News Blue)
+const Color kNewsBlue = Color(0xff0ea5e9);
+const Color kNewsBlueLight = Color(0xff38bdf8);
+const Color kNewsBlueDark = Color(0xff0284c7);
+const Color kNewsBlueSoft = Color(0xffe0f2fe);
+
 /// 🎨 رنگ تب‌ها
 const Color kTabHome = Color(0xff1a2b47);
 const Color kTabArticles = Color(0xff1e40af);
@@ -3163,7 +3169,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
             itemCount: 5 + followedCats.length,
             separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (c, i) {
-              // ❤️ دسته‌های دنبال‌شده ابتدا
+              // ❤️ دسته‌های دنبال‌شده ابتدا نمایش داده می‌شوند
               if (i < followedCats.length) {
                 final cat = followedCats[i];
                 return GestureDetector(
@@ -3245,7 +3251,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
                 );
               }
 
-              // 🏋️ تناسب اندام
+              // 🏋️ ماشین‌حساب BMI
               if (actionIndex == 1) {
                 return _actionChip(
                   icon: Icons.calculate_rounded,
@@ -3303,7 +3309,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
                 );
               }
 
-              // ❤️ دسته‌های من
+              // ❤️ دسته‌های من (آخر)
               final count = followed.length;
               final hasItems = count > 0;
               final isDark = darkModeNotifier.value;
@@ -3444,7 +3450,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
     );
   }
 }
-/* ==================== PROFESSIONAL HERO CAROUSEL ==================== */
+/* ==================== COMPACT HERO CAROUSEL ==================== */
 
 class HeroCarousel extends StatefulWidget {
   final Future<List>? postsFuture;
@@ -3455,7 +3461,7 @@ class HeroCarousel extends StatefulWidget {
 }
 
 class _HeroCarouselState extends State<HeroCarousel> {
-  final _pageCtrl = PageController(viewportFraction: 0.88);
+  final _pageCtrl = PageController(viewportFraction: 0.92);
   Timer? _timer;
   Timer? _progressTimer;
   int _current = 0;
@@ -3491,7 +3497,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
       final next = (_current + 1) % count;
       _pageCtrl.animateToPage(
         next,
-        duration: const Duration(milliseconds: 800),
+        duration: const Duration(milliseconds: 700),
         curve: Curves.easeInOutCubic,
       );
       setState(() => _autoProgress = 0);
@@ -3505,20 +3511,20 @@ class _HeroCarouselState extends State<HeroCarousel> {
       builder: (c, s) {
         if (s.connectionState == ConnectionState.waiting) {
           return Container(
-            height: 400,
-            margin: const EdgeInsets.fromLTRB(14, 20, 14, 12),
+            height: 260,
+            margin: const EdgeInsets.fromLTRB(14, 16, 14, 12),
             decoration: BoxDecoration(
               color: pnl,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(22),
               border: Border.all(color: lineC),
             ),
-            child: const ShimmerBox(height: 400, radius: 24),
+            child: const ShimmerBox(height: 260, radius: 22),
           );
         }
         final posts = (s.data ?? []).take(5).toList();
         if (posts.isEmpty) {
           return Padding(
-            padding: const EdgeInsets.fromLTRB(14, 20, 14, 12),
+            padding: const EdgeInsets.fromLTRB(14, 16, 14, 12),
             child: ModernHeroBanner(),
           );
         }
@@ -3530,69 +3536,11 @@ class _HeroCarouselState extends State<HeroCarousel> {
         }
 
         return Container(
-          margin: const EdgeInsets.only(top: 20, bottom: 8),
+          margin: const EdgeInsets.only(top: 14, bottom: 6),
           child: Column(
             children: [
-              // Section Label
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 4,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [kPrimaryNavy, kAccentGold],
-                        ),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Icon(
-                      Icons.auto_stories_rounded,
-                      color: accentNotifier.value,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'مطالب برگزیده',
-                      style: TextStyle(
-                        color: txtC,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                        fontFamily: 'Vazirmatn',
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: darkModeNotifier.value
-                            ? Colors.white.withOpacity(0.06)
-                            : const Color(0xfff3f4f6),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        '${_current + 1} / $_count',
-                        style: TextStyle(
-                          color: mutC,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          fontFamily: 'Vazirmatn',
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Carousel
               SizedBox(
-                height: 400,
+                height: 260,
                 child: PageView.builder(
                   controller: _pageCtrl,
                   onPageChanged: (i) {
@@ -3603,7 +3551,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
                   },
                   itemCount: posts.length,
                   itemBuilder: (c, i) => Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 7),
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
                     child: _CarouselCard(
                       post: posts[i],
                       isActive: i == _current,
@@ -3611,7 +3559,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               _buildDots(posts.length),
             ],
           ),
@@ -3621,75 +3569,70 @@ class _HeroCarouselState extends State<HeroCarousel> {
   }
 
   Widget _buildDots(int count) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(count, (i) {
-          final active = i == _current;
-          return GestureDetector(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              _pageCtrl.animateToPage(
-                i,
-                duration: const Duration(milliseconds: 600),
-                curve: Curves.easeInOutCubic,
-              );
-            },
-            child: AnimatedContainer(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(count, (i) {
+        final active = i == _current;
+        return GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            _pageCtrl.animateToPage(
+              i,
               duration: const Duration(milliseconds: 500),
-              curve: Curves.easeOutCubic,
-              margin: const EdgeInsets.symmetric(horizontal: 3),
-              width: active ? 36 : 8,
-              height: 6,
-              decoration: BoxDecoration(
-                color: active
-                    ? kPrimaryNavy.withOpacity(0.15)
-                    : (darkModeNotifier.value
-                        ? Colors.white.withOpacity(0.15)
-                        : const Color(0xffe5e7eb)),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: active
-                  ? Stack(
+              curve: Curves.easeInOutCubic,
+            );
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutCubic,
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            width: active ? 30 : 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: active
+                  ? kAccentGold
+                  : mutC.withOpacity(0.25),
+              borderRadius: BorderRadius.circular(999),
+              boxShadow: active
+                  ? [
+                      BoxShadow(
+                        color: kAccentGold.withOpacity(0.6),
+                        blurRadius: 10,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: active
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: Stack(
                       children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            color: darkModeNotifier.value
-                                ? kAccentGold.withOpacity(0.15)
-                                : kPrimaryNavy.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                        ),
                         FractionallySizedBox(
                           widthFactor: _autoProgress,
                           child: Container(
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [kPrimaryNavy, kAccentGold],
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.white.withOpacity(0.9),
+                                  kAccentGoldLight,
+                                ],
                               ),
-                              borderRadius: BorderRadius.circular(999),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: kAccentGold.withOpacity(0.5),
-                                  blurRadius: 6,
-                                ),
-                              ],
                             ),
                           ),
                         ),
                       ],
-                    )
-                  : null,
-            ),
-          );
-        }),
-      ),
+                    ),
+                  )
+                : null,
+          ),
+        );
+      }),
     );
   }
 }
 
-/* ==================== PROFESSIONAL CAROUSEL CARD ==================== */
+/* ==================== COMPACT CAROUSEL CARD ==================== */
 
 class _CarouselCard extends StatefulWidget {
   final dynamic post;
@@ -3713,7 +3656,7 @@ class _CarouselCardState extends State<_CarouselCard>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 12),
+      duration: const Duration(seconds: 10),
     )..repeat(reverse: true);
     _ken = Tween<double>(begin: 1.0, end: 1.12).animate(
       CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
@@ -3733,8 +3676,7 @@ class _CarouselCardState extends State<_CarouselCard>
     final cat = pCategory(widget.post);
     final link = pLink(widget.post);
     final date = pTimeAgo(widget.post);
-    final excerpt = pExcerpt(widget.post, maxChars: 100);
-    final isDark = darkModeNotifier.value;
+    final excerpt = pExcerpt(widget.post, maxChars: 70);
 
     return GestureDetector(
       onTap: () {
@@ -3742,15 +3684,14 @@ class _CarouselCardState extends State<_CarouselCard>
         openUrl(context, link, post: widget.post);
       },
       child: AnimatedScale(
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeOutCubic,
-        scale: widget.isActive ? 1.0 : 0.94,
+        duration: const Duration(milliseconds: 400),
+        scale: widget.isActive ? 1.0 : 0.95,
         child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 500),
-          opacity: widget.isActive ? 1.0 : 0.6,
+          duration: const Duration(milliseconds: 400),
+          opacity: widget.isActive ? 1.0 : 0.7,
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(22),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(
@@ -3760,18 +3701,17 @@ class _CarouselCardState extends State<_CarouselCard>
                 ),
                 if (widget.isActive)
                   BoxShadow(
-                    color: kAccentGold.withOpacity(0.15),
+                    color: kAccentGold.withOpacity(0.12),
                     blurRadius: 40,
                     spreadRadius: -8,
                   ),
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(22),
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Image with Ken-Burns
                   if (img.isNotEmpty)
                     AnimatedBuilder(
                       animation: _ken,
@@ -3781,29 +3721,20 @@ class _CarouselCardState extends State<_CarouselCard>
                           child: CachedNetworkImage(
                             imageUrl: img,
                             fit: BoxFit.cover,
-                            memCacheWidth: 1200,
-                            memCacheHeight: 800,
-                            maxWidthDiskCache: 1200,
-                            maxHeightDiskCache: 800,
+                            memCacheWidth: 1080,
+                            memCacheHeight: 720,
+                            maxWidthDiskCache: 1080,
+                            maxHeightDiskCache: 720,
                             fadeInDuration:
                                 const Duration(milliseconds: 500),
                             fadeOutDuration:
-                                const Duration(milliseconds: 300),
-                            placeholder: (_, __) => Container(
-                              color: isDark
-                                  ? kDarkCard2
-                                  : const Color(0xfff3f4f6),
-                            ),
+                                const Duration(milliseconds: 250),
+                            placeholder: (_, __) =>
+                                Container(color: pnl2),
                             errorWidget: (_, __, ___) => Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [kPrimaryNavy, kPrimaryNavyDark],
-                                ),
-                              ),
+                              color: pnl2,
                               child: Icon(Icons.article_rounded,
-                                  color: Colors.white.withOpacity(0.3),
+                                  color: accentNotifier.value,
                                   size: 60),
                             ),
                           ),
@@ -3824,97 +3755,93 @@ class _CarouselCardState extends State<_CarouselCard>
                           size: 60),
                     ),
 
-                  // Layer 1: subtle top gradient
+                  // Cinematic gradient
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withOpacity(0.35),
-                          Colors.transparent,
-                          Colors.transparent,
-                        ],
-                        stops: const [0.0, 0.3, 1.0],
-                      ),
-                    ),
-                  ),
-                  // Layer 2: heavy bottom gradient for text readability
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
+                          Colors.black.withOpacity(0.4),
                           Colors.transparent,
                           Colors.black.withOpacity(0.4),
-                          Colors.black.withOpacity(0.85),
                           Colors.black.withOpacity(0.95),
                         ],
-                        stops: const [0.0, 0.45, 0.75, 1.0],
+                        stops: const [0.0, 0.35, 0.6, 1.0],
                       ),
                     ),
                   ),
 
-                  // Gold accent line at top
+                  // Gold accent bottom
                   Positioned(
-                    top: 0,
+                    bottom: 0,
                     left: 0,
                     right: 0,
                     child: Container(
                       height: 3,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            kAccentGold.withOpacity(0.0),
+                            kPrimaryNavy,
                             kAccentGold,
-                            kAccentGold.withOpacity(0.0),
+                            kAccentGoldLight,
                           ],
-                          stops: const [0.0, 0.5, 1.0],
                         ),
                       ),
                     ),
                   ),
 
-                  // Top row: category + star
+                  // Top row
                   Positioned(
-                    top: 18,
-                    left: 18,
-                    right: 18,
+                    left: 14,
+                    right: 14,
+                    top: 14,
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (cat.isNotEmpty)
                           Flexible(
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 6),
+                                  horizontal: 9, vertical: 5),
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.55),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.15),
-                                  width: 0.8,
+                                gradient: LinearGradient(
+                                  colors: [
+                                    kAccentGold.withOpacity(0.95),
+                                    kAccentGoldDark.withOpacity(0.95),
+                                  ],
                                 ),
+                                borderRadius: BorderRadius.circular(8),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
+                                    color: kAccentGold.withOpacity(0.5),
                                     blurRadius: 12,
+                                    offset: const Offset(0, 3),
                                   ),
                                 ],
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.3),
+                                  width: 1,
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Container(
-                                    width: 4,
-                                    height: 4,
-                                    decoration: const BoxDecoration(
-                                      color: kAccentGold,
+                                    width: 5,
+                                    height: 5,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
                                       shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.white
+                                              .withOpacity(0.8),
+                                          blurRadius: 6,
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
+                                  const SizedBox(width: 5),
                                   Flexible(
                                     child: Text(
                                       cat,
@@ -3923,9 +3850,8 @@ class _CarouselCardState extends State<_CarouselCard>
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 10,
-                                        fontWeight: FontWeight.w800,
+                                        fontWeight: FontWeight.w900,
                                         fontFamily: 'Vazirmatn',
-                                        letterSpacing: 0.2,
                                       ),
                                     ),
                                   ),
@@ -3934,59 +3860,48 @@ class _CarouselCardState extends State<_CarouselCard>
                             ),
                           ),
                         const Spacer(),
-                        if (widget.isActive)
-                          Container(
-                            padding: const EdgeInsets.all(7),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [kAccentGold, kAccentGoldDark],
-                              ),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: kAccentGold.withOpacity(0.5),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.star_rounded,
-                              color: Colors.white,
-                              size: 14,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 9, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.55),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.2),
+                              width: 1,
                             ),
                           ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.schedule_rounded,
+                                  color: Colors.white70, size: 11),
+                              const SizedBox(width: 4),
+                              Text(
+                                date,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w700,
+                                  fontFamily: 'Vazirmatn',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
 
                   // Bottom content
                   Positioned(
-                    left: 22,
-                    right: 22,
-                    bottom: 20,
+                    left: 16,
+                    right: 16,
+                    bottom: 16,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (excerpt.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Text(
-                              excerpt,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.right,
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.65),
-                                fontSize: 11,
-                                height: 1.6,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Vazirmatn',
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                          ),
                         Text(
                           title,
                           maxLines: 2,
@@ -3994,49 +3909,48 @@ class _CarouselCardState extends State<_CarouselCard>
                           textAlign: TextAlign.right,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
+                            fontSize: 15,
                             fontWeight: FontWeight.w900,
                             height: 1.5,
                             fontFamily: 'Vazirmatn',
-                            letterSpacing: -0.3,
+                            letterSpacing: -0.2,
                             shadows: [
                               Shadow(
                                 color: Colors.black87,
-                                blurRadius: 14,
+                                blurRadius: 12,
                                 offset: Offset(0, 2),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 14),
-                        Container(
-                          height: 1,
-                          color: Colors.white.withOpacity(0.15),
-                        ),
-                        const SizedBox(height: 12),
+                        if (excerpt.isNotEmpty) ...[
+                          const SizedBox(height: 5),
+                          Text(
+                            excerpt,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.75),
+                              fontSize: 11,
+                              fontFamily: 'Vazirmatn',
+                              shadows: const [
+                                Shadow(
+                                  color: Colors.black54,
+                                  blurRadius: 6,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 10),
                         Row(
                           children: [
-                            Icon(
-                              Icons.schedule_rounded,
-                              color: Colors.white.withOpacity(0.6),
-                              size: 12,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              date,
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.7),
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Vazirmatn',
-                              ),
-                            ),
-                            const Spacer(),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 8),
+                                  horizontal: 12, vertical: 7),
                               decoration: BoxDecoration(
-                                gradient: const LinearGradient(
+                                gradient: LinearGradient(
                                   colors: [
                                     kAccentGold,
                                     kAccentGoldDark,
@@ -4045,8 +3959,9 @@ class _CarouselCardState extends State<_CarouselCard>
                                 borderRadius: BorderRadius.circular(10),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: kAccentGold.withOpacity(0.4),
-                                    blurRadius: 14,
+                                    color: kAccentGold
+                                        .withOpacity(0.5),
+                                    blurRadius: 12,
                                     offset: const Offset(0, 4),
                                   ),
                                 ],
@@ -4055,16 +3970,15 @@ class _CarouselCardState extends State<_CarouselCard>
                                 mainAxisSize: MainAxisSize.min,
                                 children: const [
                                   Text(
-                                    'مطالعه',
+                                    'مطالعه کامل',
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w900,
                                       fontFamily: 'Vazirmatn',
-                                      letterSpacing: 0.2,
                                     ),
                                   ),
-                                  SizedBox(width: 6),
+                                  SizedBox(width: 5),
                                   Icon(
                                     Icons.arrow_back_rounded,
                                     color: Colors.white,
@@ -4088,100 +4002,43 @@ class _CarouselCardState extends State<_CarouselCard>
   }
 }
 
-/* ==================== MODERN HERO BANNER (fallback) ==================== */
+/* ==================== MODERN HERO BANNER ==================== */
 
 class ModernHeroBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final isDark = darkModeNotifier.value;
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 0),
-      height: 240,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.20),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        color: pnl,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: lineC),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.network(
-              heroImg,
-              fit: BoxFit.cover,
-              filterQuality: FilterQuality.high,
-              cacheWidth: 1080,
-              loadingBuilder: (c, ch, pr) {
-                if (pr == null) return ch;
-                return Container(
-                  color: isDark ? kDarkCard2 : const Color(0xfff3f4f6),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: accentNotifier.value,
-                      strokeWidth: 3,
-                    ),
-                  ),
-                );
-              },
-              errorBuilder: (_, __, ___) => Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [kPrimaryNavy, kPrimaryNavyDark],
-                  ),
-                ),
-                child: Icon(Icons.sports_soccer_rounded,
-                    color: Colors.white.withOpacity(0.3), size: 60),
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.85),
-                  ],
+        borderRadius: BorderRadius.circular(22),
+        child: Image.network(
+          heroImg,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          filterQuality: FilterQuality.high,
+          cacheWidth: 1080,
+          loadingBuilder: (c, ch, pr) {
+            if (pr == null) return ch;
+            return Container(
+              height: 180,
+              color: pnl2,
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: accentNotifier.value,
                 ),
               ),
-            ),
-            Positioned(
-              left: 22,
-              right: 22,
-              bottom: 20,
-              child: Row(
-                children: [
-                  Container(
-                    width: 4,
-                    height: 22,
-                    decoration: BoxDecoration(
-                      color: kAccentGold,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'تربیت بدنی و علوم ورزشی',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'Vazirmatn',
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            );
+          },
+          errorBuilder: (_, __, ___) => Container(
+            height: 180,
+            color: pnl2,
+            child: Icon(Icons.sports_soccer_rounded,
+                color: accentNotifier.value, size: 60),
+          ),
         ),
       ),
     );
@@ -4197,8 +4054,6 @@ class ModernNewsBanner extends StatefulWidget {
 }
 
 class _ModernNewsBannerState extends State<ModernNewsBanner> {
-  static const Color _newsRed = Color(0xffdc2626);
-
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List>(
@@ -4224,17 +4079,20 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Row(
                   children: [
+                    // Red vertical bar
                     Container(
                       width: 4,
                       height: 26,
                       decoration: BoxDecoration(
-                        color: _newsRed,
+                        color: kNewsRed,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                     const SizedBox(width: 10),
+                    // Live dot
                     const ModernLiveDot(),
                     const SizedBox(width: 8),
+                    // Title
                     Text(
                       'اخبار فوری',
                       style: TextStyle(
@@ -4243,49 +4101,6 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
                         fontWeight: FontWeight.w900,
                         fontFamily: 'Vazirmatn',
                         letterSpacing: -0.3,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 7, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: _newsRed.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: _newsRed.withOpacity(0.3),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Text(
-                        'LIVE',
-                        style: TextStyle(
-                          color: _newsRed,
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'Vazirmatn',
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 9, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white.withOpacity(0.06)
-                            : const Color(0xfff3f4f6),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        '${list.length} خبر',
-                        style: TextStyle(
-                          color: mutC,
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w800,
-                          fontFamily: 'Vazirmatn',
-                        ),
                       ),
                     ),
                   ],
@@ -4315,11 +4130,11 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
                             horizontal: 20, vertical: 11),
                         decoration: BoxDecoration(
                           color: isDark
-                              ? _newsRed.withOpacity(0.15)
-                              : _newsRed.withOpacity(0.06),
+                              ? kNewsRed.withOpacity(0.15)
+                              : kNewsRed.withOpacity(0.06),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: _newsRed.withOpacity(0.25),
+                            color: kNewsRed.withOpacity(0.25),
                             width: 1.2,
                           ),
                         ),
@@ -4329,7 +4144,7 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
                             Text(
                               'مشاهده همه اخبار فوری',
                               style: TextStyle(
-                                color: _newsRed,
+                                color: kNewsRed,
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w900,
                                 fontFamily: 'Vazirmatn',
@@ -4337,7 +4152,7 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
                             ),
                             const SizedBox(width: 6),
                             Icon(Icons.arrow_back_ios_new_rounded,
-                                color: _newsRed, size: 11),
+                                color: kNewsRed, size: 11),
                           ],
                         ),
                       ),
@@ -6182,7 +5997,7 @@ class _ModernLiveDotState extends State<ModernLiveDot>
                 height: 16 * scale,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: kUrgent.withOpacity(opacity * 0.5),
+                  color: kNewsRed.withOpacity(opacity * 0.5),
                 ),
               ),
               Container(
@@ -6190,7 +6005,7 @@ class _ModernLiveDotState extends State<ModernLiveDot>
                 height: 8,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
-                  color: kUrgent,
+                  color: kNewsRed,
                 ),
               ),
             ],
@@ -6217,9 +6032,6 @@ class ModernUrgentNewsCard extends StatefulWidget {
 
 class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard> {
   bool _pressed = false;
-
-  static const Color _newsRed = Color(0xffdc2626);
-  static const Color _newsRedDark = Color(0xff991b1b);
 
   int _readTimeMinutes(dynamic news) {
     try {
@@ -6277,7 +6089,7 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard> {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: _pressed
-                ? _newsRed.withOpacity(0.5)
+                ? kNewsRed.withOpacity(0.5)
                 : (isDark
                     ? kDarkBorder.withOpacity(0.6)
                     : const Color(0xffe5e7eb)),
@@ -6291,7 +6103,7 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard> {
             ),
             if (isFresh)
               BoxShadow(
-                color: _newsRed.withOpacity(0.10),
+                color: kNewsRed.withOpacity(0.10),
                 blurRadius: 12,
                 offset: const Offset(0, 2),
               ),
@@ -6307,7 +6119,7 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard> {
                 height: 3,
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [_newsRed, _newsRedDark],
+                    colors: [kNewsRed, kNewsRedDark],
                   ),
                 ),
               ),
@@ -6335,6 +6147,7 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard> {
                               color: mutC, size: 40),
                         ),
                       ),
+                      // Bottom gradient for readability
                       Positioned(
                         bottom: 0,
                         left: 0,
@@ -6353,6 +6166,8 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard> {
                           ),
                         ),
                       ),
+
+                      // "Breaking News" badge
                       Positioned(
                         top: 12,
                         right: 12,
@@ -6360,11 +6175,11 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 9, vertical: 5),
                           decoration: BoxDecoration(
-                            color: _newsRed,
+                            color: kNewsRed,
                             borderRadius: BorderRadius.circular(4),
                             boxShadow: [
                               BoxShadow(
-                                color: _newsRed.withOpacity(0.45),
+                                color: kNewsRed.withOpacity(0.45),
                                 blurRadius: 12,
                                 offset: const Offset(0, 3),
                               ),
@@ -6389,6 +6204,8 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard> {
                           ),
                         ),
                       ),
+
+                      // Category badge (if exists)
                       if (cat.isNotEmpty)
                         Positioned(
                           top: 12,
@@ -6414,6 +6231,8 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard> {
                             ),
                           ),
                         ),
+
+                      // Time badge (bottom-right)
                       Positioned(
                         bottom: 12,
                         right: 12,
@@ -6453,6 +6272,7 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Title
                     Text(
                       title,
                       maxLines: 2,
@@ -6468,6 +6288,8 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard> {
                       ),
                     ),
                     const SizedBox(height: 8),
+
+                    // Excerpt
                     if (excerpt.isNotEmpty)
                       Text(
                         excerpt,
@@ -6482,6 +6304,8 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard> {
                         ),
                       ),
                     const SizedBox(height: 12),
+
+                    // Divider
                     Container(
                       height: 1,
                       color: isDark
@@ -6489,8 +6313,11 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard> {
                           : const Color(0xfff1f5f9),
                     ),
                     const SizedBox(height: 10),
+
+                    // Bottom meta row
                     Row(
                       children: [
+                        // Read time
                         Icon(Icons.access_time_rounded,
                             color: mutC, size: 13),
                         const SizedBox(width: 4),
@@ -6503,6 +6330,8 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard> {
                           ),
                         ),
                         const Spacer(),
+
+                        // Share button
                         GestureDetector(
                           onTap: () {
                             HapticFeedback.lightImpact();
@@ -6525,6 +6354,8 @@ class _ModernUrgentNewsCardState extends State<ModernUrgentNewsCard> {
                           ),
                         ),
                         const SizedBox(width: 6),
+
+                        // Bookmark button
                         GestureDetector(
                           onTap: () {
                             HapticFeedback.lightImpact();
@@ -10162,7 +9993,7 @@ class _ModernWebPageState extends State<ModernWebPage> {
   }
 }
 
-/* ==================== URGENT NEWS DETAIL PAGE ==================== */
+/* ==================== URGENT NEWS DETAIL PAGE (Blue Theme) ==================== */
 
 class UrgentNewsDetailPage extends StatefulWidget {
   final dynamic news;
@@ -10331,9 +10162,9 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                             decoration: const BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  Color(0xffc9a961),
-                                  Color(0xffa88840),
-                                  Color(0xff7b2d26),
+                                  Color(0xff38bdf8),
+                                  Color(0xff0ea5e9),
+                                  Color(0xff0284c7),
                                 ],
                               ),
                             ),
@@ -10451,29 +10282,29 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
           end: Alignment.bottomLeft,
           colors: isDark
               ? [
-                  const Color(0xff2b1d10),
-                  const Color(0xff3d2a15),
+                  const Color(0xff082f49),
+                  const Color(0xff0c4a6e),
                   kDarkCard,
                 ]
               : [
-                  const Color(0xfffff8eb),
-                  const Color(0xfffffcf5),
+                  const Color(0xffe0f2fe),
+                  const Color(0xfff0f9ff),
                   Colors.white,
                 ],
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: const Color(0xffc9a961).withOpacity(0.5),
-          width: 1.5,
+          color: const Color(0xff0ea5e9).withOpacity(0.4),
+          width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xffa88840).withOpacity(0.25),
+            color: const Color(0xff0ea5e9).withOpacity(0.25),
             blurRadius: 28,
             offset: const Offset(0, 10),
           ),
           BoxShadow(
-            color: const Color(0xffc9a961).withOpacity(0.15),
+            color: const Color(0xff38bdf8).withOpacity(0.15),
             blurRadius: 18,
             offset: const Offset(0, 4),
           ),
@@ -10493,7 +10324,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xffa88840)
+                      const Color(0xff0ea5e9)
                           .withOpacity(isDark ? 0.4 : 0.2),
                       Colors.transparent,
                     ],
@@ -10511,7 +10342,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xffc9a961)
+                      const Color(0xff38bdf8)
                           .withOpacity(isDark ? 0.3 : 0.18),
                       Colors.transparent,
                     ],
@@ -10532,21 +10363,21 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                           begin: Alignment.topRight,
                           end: Alignment.bottomLeft,
                           colors: [
-                            Color(0xffc9a961),
-                            Color(0xffa88840),
-                            Color(0xff7b2d26),
+                            Color(0xff38bdf8),
+                            Color(0xff0ea5e9),
+                            Color(0xff0284c7),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(15),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xffa88840)
+                            color: const Color(0xff0ea5e9)
                                 .withOpacity(0.55),
                             blurRadius: 20,
                             offset: const Offset(0, 5),
                           ),
                           BoxShadow(
-                            color: const Color(0xffc9a961)
+                            color: const Color(0xff38bdf8)
                                 .withOpacity(0.4),
                             blurRadius: 12,
                             offset: const Offset(0, 2),
@@ -10566,14 +10397,14 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [
-                            Color(0xffa88840),
-                            Color(0xff7b2d26),
+                            Color(0xff0ea5e9),
+                            Color(0xff0284c7),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xffa88840)
+                            color: const Color(0xff0ea5e9)
                                 .withOpacity(0.5),
                             blurRadius: 14,
                             offset: const Offset(0, 3),
@@ -10603,15 +10434,15 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: const Color(0xffc9a961).withOpacity(0.2),
+                        color: const Color(0xff38bdf8).withOpacity(0.2),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: const Color(0xffc9a961).withOpacity(0.4),
+                          color: const Color(0xff38bdf8).withOpacity(0.4),
                         ),
                       ),
                       child: Icon(
                         Icons.newspaper_rounded,
-                        color: const Color(0xffc9a961).withOpacity(0.9),
+                        color: const Color(0xff38bdf8).withOpacity(0.9),
                         size: 20,
                       ),
                     ),
@@ -10630,7 +10461,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                     shadows: isDark
                         ? [
                             Shadow(
-                              color: const Color(0xffa88840)
+                              color: const Color(0xff0ea5e9)
                                   .withOpacity(0.2),
                               blurRadius: 12,
                             ),
@@ -10644,9 +10475,9 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        const Color(0xffa88840).withOpacity(0.6),
-                        const Color(0xffc9a961).withOpacity(0.4),
-                        const Color(0xff7b2d26).withOpacity(0.2),
+                        const Color(0xff0ea5e9).withOpacity(0.6),
+                        const Color(0xff38bdf8).withOpacity(0.4),
+                        const Color(0xff0284c7).withOpacity(0.2),
                       ],
                     ),
                   ),
@@ -10658,7 +10489,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                       child: _infoChip(
                         icon: Icons.calendar_today_rounded,
                         label: date,
-                        color: const Color(0xffa88840),
+                        color: const Color(0xff0ea5e9),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -10666,7 +10497,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                       child: _infoChip(
                         icon: Icons.access_time_rounded,
                         label: '$readTime دقیقه',
-                        color: const Color(0xffc9a961),
+                        color: const Color(0xff38bdf8),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -10674,7 +10505,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                       child: _infoChip(
                         icon: Icons.text_fields_rounded,
                         label: '$words کلمه',
-                        color: const Color(0xff7b2d26),
+                        color: const Color(0xff0284c7),
                       ),
                     ),
                   ],
@@ -10763,8 +10594,8 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [
-                            Color(0xffc9a961),
-                            Color(0xff7b2d26),
+                            Color(0xff0ea5e9),
+                            Color(0xff0284c7),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(3),
@@ -10919,14 +10750,14 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [
-                          Color(0xffc9a961),
-                          Color(0xff7b2d26),
+                          Color(0xff0ea5e9),
+                          Color(0xff0284c7),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xffa88840)
+                          color: const Color(0xff0ea5e9)
                               .withOpacity(0.4),
                           blurRadius: 12,
                           offset: const Offset(0, 3),
@@ -11316,8 +11147,8 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [
-                          Color(0xffc9a961),
-                          Color(0xff7b2d26),
+                          Color(0xff0ea5e9),
+                          Color(0xff0284c7),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(3),
@@ -11362,13 +11193,13 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                             width: 30,
                             height: 30,
                             decoration: BoxDecoration(
-                              color: const Color(0xffc9a961)
+                              color: const Color(0xff0ea5e9)
                                   .withOpacity(.12),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(
                               Icons.bolt_rounded,
-                              color: Color(0xffc9a961),
+                              color: Color(0xff0ea5e9),
                               size: 16,
                             ),
                           ),
@@ -11415,7 +11246,6 @@ class UrgentNewsListPage extends StatefulWidget {
 
 class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
   late Future<List> _future;
-  static const Color _newsRed = Color(0xffdc2626);
 
   @override
   void initState() {
@@ -11441,63 +11271,37 @@ class _UrgentNewsListPageState extends State<UrgentNewsListPage> {
       builder: (context, _, __) => Scaffold(
         backgroundColor: bgC,
         appBar: AppBar(
-          backgroundColor: bgC,
-          foregroundColor: txtC,
-          elevation: 0,
-          centerTitle: false,
-          titleSpacing: 0,
           title: Row(
             children: [
-              const SizedBox(width: 14),
               Container(
                 width: 4,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: _newsRed,
+                  color: kNewsRed,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(width: 10),
+              const ModernLiveDot(),
+              const SizedBox(width: 8),
               Text(
                 'اخبار فوری',
                 style: TextStyle(
                   color: txtC,
-                  fontSize: 17,
+                  fontSize: 16,
                   fontWeight: FontWeight.w900,
                   fontFamily: 'Vazirmatn',
                   letterSpacing: -0.3,
                 ),
               ),
-              const SizedBox(width: 8),
-              const ModernLiveDot(),
             ],
           ),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(left: 10),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _newsRed.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  'LIVE',
-                  style: TextStyle(
-                    color: _newsRed,
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
-            ),
-          ],
+          backgroundColor: bgC,
+          foregroundColor: txtC,
+          elevation: 0,
         ),
         body: RefreshIndicator(
-          color: _newsRed,
+          color: kNewsRed,
           backgroundColor: isDark ? kDarkCard : Colors.white,
           onRefresh: _refresh,
           child: FutureBuilder<List>(
@@ -12563,7 +12367,8 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               _sectionBanner(
                 icon: Icons.newspaper_rounded,
                 title: 'انتشار خبر فوری',
-                subtitle: 'خبر جدید با فایل ضمیمه حداکثر ۳۰ مگابایت',
+                subtitle:
+                    'خبر جدید با فایل ضمیمه حداکثر ۳۰ مگابایت',
                 color: kPrimaryNavy,
               ),
               const SizedBox(height: 18),
@@ -12589,7 +12394,9 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                   textAlign: TextAlign.right,
                   onChanged: (v) => setState(() {}),
                   style: TextStyle(
-                      color: txtC, fontSize: 14, fontFamily: 'Vazirmatn'),
+                      color: txtC,
+                      fontSize: 14,
+                      fontFamily: 'Vazirmatn'),
                   decoration: InputDecoration(
                     hintText: 'مثلاً: ثبت‌نام دوره جدید آغاز شد',
                     hintStyle: TextStyle(
@@ -12828,7 +12635,10 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                             decoration: BoxDecoration(
                               gradient: isCorrect
                                   ? const LinearGradient(
-                                      colors: [kSuccess, kSuccessLight])
+                                      colors: [
+                                        kSuccess,
+                                        kSuccessLight
+                                      ])
                                   : null,
                               color: isCorrect
                                   ? null
@@ -13086,15 +12896,19 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                             border: Border.all(color: lineC),
                           ),
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            crossAxisAlignment:
+                                CrossAxisAlignment.stretch,
                             children: [
                               Row(
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 3),
+                                    padding:
+                                        const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 3),
                                     decoration: BoxDecoration(
-                                      color: kSuccess.withOpacity(0.15),
+                                      color:
+                                          kSuccess.withOpacity(0.15),
                                       borderRadius:
                                           BorderRadius.circular(6),
                                     ),
@@ -13116,16 +12930,20 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                                         context: context,
                                         builder: (ctx) => AlertDialog(
                                           backgroundColor: pnl,
-                                          shape: RoundedRectangleBorder(
+                                          shape:
+                                              RoundedRectangleBorder(
                                             borderRadius:
-                                                BorderRadius.circular(20),
+                                                BorderRadius.circular(
+                                                    20),
                                           ),
                                           title: Text(
                                             'حذف سوال',
                                             style: TextStyle(
                                               color: txtC,
-                                              fontWeight: FontWeight.w900,
-                                              fontFamily: 'Vazirmatn',
+                                              fontWeight:
+                                                  FontWeight.w900,
+                                              fontFamily:
+                                                  'Vazirmatn',
                                             ),
                                           ),
                                           content: Text(
@@ -13163,7 +12981,8 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                                         ),
                                       );
                                       if (confirm == true) {
-                                        await removeQuizQuestion(q.id);
+                                        await removeQuizQuestion(
+                                            q.id);
                                         if (mounted) {
                                           showSnack(context,
                                               'سوال حذف شد');
@@ -13171,9 +12990,11 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                                       }
                                     },
                                     child: Container(
-                                      padding: const EdgeInsets.all(4),
+                                      padding:
+                                          const EdgeInsets.all(4),
                                       child: Icon(
-                                        Icons.delete_outline_rounded,
+                                        Icons
+                                            .delete_outline_rounded,
                                         color: rose,
                                         size: 18,
                                       ),
@@ -13366,7 +13187,8 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
           ],
         ),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.35), width: 1.2),
+        border:
+            Border.all(color: color.withOpacity(0.35), width: 1.2),
       ),
       child: Row(
         children: [
@@ -14766,7 +14588,9 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
             ),
           ),
           const SizedBox(height: 10),
-          ..._activityLevels.map((level) => _activityOption(level)).toList(),
+          ..._activityLevels
+              .map((level) => _activityOption(level))
+              .toList(),
           const SizedBox(height: 18),
           SizedBox(
             height: 52,
@@ -14927,7 +14751,8 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
                   fontFamily: 'Vazirmatn',
                 ),
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 8),
               ),
             ),
           ),
@@ -15192,8 +15017,10 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
                   ),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(Icons.local_fire_department_rounded,
-                    color: Colors.white, size: 24),
+                child: const Icon(
+                    Icons.local_fire_department_rounded,
+                    color: Colors.white,
+                    size: 24),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -15423,7 +15250,7 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
   }
 }
 
-/* ==================== QUIZ PAGE (WITH PERSISTENT ANSWERS) ==================== */
+/* ==================== QUIZ PAGE ==================== */
 
 class QuizPage extends StatefulWidget {
   const QuizPage({super.key});
@@ -15618,6 +15445,7 @@ class _QuizPageState extends State<QuizPage> {
   ) {
     return Column(
       children: [
+        // Progress Bar
         Container(
           margin: const EdgeInsets.fromLTRB(14, 10, 14, 6),
           child: Column(
@@ -15686,6 +15514,8 @@ class _QuizPageState extends State<QuizPage> {
             ],
           ),
         ),
+
+        // Question
         Expanded(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
@@ -15710,6 +15540,7 @@ class _QuizPageState extends State<QuizPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Question Card
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -15806,16 +15637,23 @@ class _QuizPageState extends State<QuizPage> {
           ),
         ),
         const SizedBox(height: 20),
+
+        // Options
         ...List.generate(q.options.length, (i) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: _buildOption(q, i, isAlreadyAnswered, savedAnswer),
+            child:
+                _buildOption(q, i, isAlreadyAnswered, savedAnswer),
           );
         }),
+
+        // Feedback
         if (isAlreadyAnswered) ...[
           const SizedBox(height: 16),
           _buildAnswerFeedback(q, savedAnswer ?? 0),
         ],
+
+        // Navigation Buttons
         const SizedBox(height: 20),
         Row(
           children: [
@@ -15830,7 +15668,8 @@ class _QuizPageState extends State<QuizPage> {
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: kQuizColor,
-                      side: BorderSide(color: kQuizColor, width: 1.5),
+                      side: BorderSide(
+                          color: kQuizColor, width: 1.5),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -15896,6 +15735,7 @@ class _QuizPageState extends State<QuizPage> {
             ),
           ],
         ),
+
         if (!isAlreadyAnswered) ...[
           const SizedBox(height: 12),
           Container(
@@ -16023,7 +15863,9 @@ class _QuizPageState extends State<QuizPage> {
                             ? const LinearGradient(
                                 colors: [kUrgent, kUrgentDark])
                             : null,
-                color: isAlreadyAnswered && !isCorrect && !isSelected
+                color: isAlreadyAnswered &&
+                        !isCorrect &&
+                        !isSelected
                     ? (isDark ? kDarkCard2 : kLightCard2)
                     : null,
                 borderRadius: BorderRadius.circular(10),
@@ -16052,10 +15894,11 @@ class _QuizPageState extends State<QuizPage> {
                 style: TextStyle(
                   color: textColor,
                   fontSize: 14,
-                  fontWeight: (isCorrect && isAlreadyAnswered) ||
-                          (isSelected && isAlreadyAnswered)
-                      ? FontWeight.w900
-                      : FontWeight.w700,
+                  fontWeight:
+                      (isCorrect && isAlreadyAnswered) ||
+                              (isSelected && isAlreadyAnswered)
+                          ? FontWeight.w900
+                          : FontWeight.w700,
                   height: 1.6,
                   fontFamily: 'Vazirmatn',
                 ),
@@ -16073,7 +15916,8 @@ class _QuizPageState extends State<QuizPage> {
 
   Widget _buildAnswerFeedback(QuizQuestion q, int selectedIndex) {
     final isCorrect = selectedIndex == q.correctIndex;
-    final correctLetter = ['الف', 'ب', 'پ', 'ت'][q.correctIndex % 4];
+    final correctLetter =
+        ['الف', 'ب', 'پ', 'ت'][q.correctIndex % 4];
     final correctText = q.options[q.correctIndex];
 
     final Color feedbackColor = isCorrect ? kSuccess : kUrgent;
@@ -16081,8 +15925,9 @@ class _QuizPageState extends State<QuizPage> {
     final IconData feedbackIcon = isCorrect
         ? Icons.celebration_rounded
         : Icons.sentiment_dissatisfied_rounded;
-    final String feedbackTitle =
-        isCorrect ? 'آفرین! پاسخ درست بود 🎉' : 'متأسفانه پاسخ اشتباه بود';
+    final String feedbackTitle = isCorrect
+        ? 'آفرین! پاسخ درست بود 🎉'
+        : 'متأسفانه پاسخ اشتباه بود';
     final String feedbackSubtitle = isCorrect
         ? 'توضیحات این سوال رو بخون:'
         : 'پاسخ درست رو با دقت بخون و یاد بگیر:';
@@ -16203,7 +16048,8 @@ class _QuizPageState extends State<QuizPage> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
                           children: [
                             Text(
                               'پاسخ صحیح: گزینه «$correctLetter»',
@@ -16246,7 +16092,8 @@ class _QuizPageState extends State<QuizPage> {
                       ),
                     ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
@@ -16255,7 +16102,8 @@ class _QuizPageState extends State<QuizPage> {
                               height: 28,
                               decoration: BoxDecoration(
                                 color: kInfo.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius:
+                                    BorderRadius.circular(8),
                               ),
                               child: Icon(
                                 Icons.lightbulb_rounded,
@@ -16334,7 +16182,8 @@ class _QuizPageState extends State<QuizPage> {
       resultColor = kUrgent;
       resultText = 'نیاز به تمرین بیشتر';
       resultIcon = Icons.school_rounded;
-      motivationalText = 'اشکالی نداره، با مرور توضیحات بهتر می‌شی';
+      motivationalText =
+          'اشکالی نداره، با مرور توضیحات بهتر می‌شی';
     }
 
     return SingleChildScrollView(
@@ -16342,6 +16191,7 @@ class _QuizPageState extends State<QuizPage> {
       padding: const EdgeInsets.fromLTRB(14, 20, 14, 100),
       child: Column(
         children: [
+          // Result Card
           Container(
             padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(
@@ -16371,7 +16221,10 @@ class _QuizPageState extends State<QuizPage> {
                   height: 90,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [resultColor, resultColor.withOpacity(0.7)],
+                      colors: [
+                        resultColor,
+                        resultColor.withOpacity(0.7)
+                      ],
                     ),
                     shape: BoxShape.circle,
                     boxShadow: [
@@ -16382,7 +16235,8 @@ class _QuizPageState extends State<QuizPage> {
                       ),
                     ],
                   ),
-                  child: Icon(resultIcon, color: Colors.white, size: 48),
+                  child: Icon(resultIcon,
+                      color: Colors.white, size: 48),
                 ),
                 const SizedBox(height: 20),
                 Text(
@@ -16410,7 +16264,8 @@ class _QuizPageState extends State<QuizPage> {
                   decoration: BoxDecoration(
                     color: pnl,
                     shape: BoxShape.circle,
-                    border: Border.all(color: resultColor, width: 3),
+                    border: Border.all(
+                        color: resultColor, width: 3),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -16439,6 +16294,8 @@ class _QuizPageState extends State<QuizPage> {
             ),
           ),
           const SizedBox(height: 20),
+
+          // Stats Grid
           Row(
             children: [
               Expanded(
@@ -16491,7 +16348,10 @@ class _QuizPageState extends State<QuizPage> {
               color: kWarning,
             ),
           ],
+
           const SizedBox(height: 24),
+
+          // Go to questions button
           SizedBox(
             height: 54,
             child: ElevatedButton.icon(
@@ -16535,22 +16395,6 @@ class _QuizPageState extends State<QuizPage> {
               ),
             ),
           ),
-          const SizedBox(height: 20),
-          if (answered > 0)
-            TextButton.icon(
-              onPressed: () => _confirmReset(context, answered),
-              icon: Icon(Icons.restart_alt_rounded,
-                  color: mutC, size: 16),
-              label: Text(
-                'شروع مجدد کوئیز',
-                style: TextStyle(
-                  color: mutC,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'Vazirmatn',
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -16608,66 +16452,6 @@ class _QuizPageState extends State<QuizPage> {
         ],
       ),
     );
-  }
-
-  Future<void> _confirmReset(BuildContext context, int answeredCount) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: pnl,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: rose, size: 24),
-            const SizedBox(width: 8),
-            Text(
-              'شروع مجدد کوئیز',
-              style: TextStyle(
-                color: txtC,
-                fontWeight: FontWeight.w900,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'همه پاسخ‌های قبلی شما ($answeredCount سوال) پاک می‌شوند و می‌توانید از اول پاسخ دهید. مطمئنید؟',
-          style: TextStyle(
-            color: mutC,
-            fontFamily: 'Vazirmatn',
-            height: 1.7,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('انصراف',
-                style: TextStyle(
-                    color: mutC, fontFamily: 'Vazirmatn')),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text('شروع مجدد',
-                style: TextStyle(
-                    color: rose,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn')),
-          ),
-        ],
-      ),
-    );
-    if (confirm == true) {
-      await resetQuizAnswers();
-      if (context.mounted) {
-        setState(() {
-          _currentIndex = 0;
-          _showResult = false;
-        });
-        showSnack(context, 'کوئیز از اول شروع شد');
-      }
-    }
   }
 }
 
@@ -16747,9 +16531,11 @@ class ReadingStatsPage extends StatelessWidget {
                 ? _buildEmpty()
                 : SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
+                    padding:
+                        const EdgeInsets.fromLTRB(14, 14, 14, 100),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      crossAxisAlignment:
+                          CrossAxisAlignment.stretch,
                       children: [
                         _buildStreakCard(streak),
                         const SizedBox(height: 14),
@@ -16882,7 +16668,8 @@ class ReadingStatsPage extends StatelessWidget {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 6, right: 4),
+                      padding: const EdgeInsets.only(
+                          bottom: 6, right: 4),
                       child: Text(
                         'روز',
                         style: TextStyle(
@@ -16992,7 +16779,8 @@ class ReadingStatsPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Icon(Icons.bar_chart_rounded, color: kSuccess, size: 18),
+              Icon(Icons.bar_chart_rounded,
+                  color: kSuccess, size: 18),
               const SizedBox(width: 6),
               Text(
                 'مطالعه هفته گذشته',
@@ -17044,13 +16832,16 @@ class ReadingStatsPage extends StatelessWidget {
                                     : [kSuccess, kSuccessLight],
                               )
                             : null,
-                        color:
-                            count == 0 ? lineC.withOpacity(0.5) : null,
+                        color: count == 0
+                            ? lineC.withOpacity(0.5)
+                            : null,
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: count > 0
                             ? [
                                 BoxShadow(
-                                  color: (isToday ? kTabShop : kSuccess)
+                                  color: (isToday
+                                          ? kTabShop
+                                          : kSuccess)
                                       .withOpacity(0.3),
                                   blurRadius: 10,
                                   offset: const Offset(0, 3),
@@ -17066,7 +16857,8 @@ class ReadingStatsPage extends StatelessWidget {
                         color: isToday ? kTabShop : mutC,
                         fontSize: 10.5,
                         fontWeight: isToday
-                            ? FontWeight.w900                            : FontWeight.w700,
+                            ? FontWeight.w900
+                            : FontWeight.w700,
                         fontFamily: 'Vazirmatn',
                       ),
                     ),
@@ -17189,7 +16981,10 @@ class ReadingStatsPage extends StatelessWidget {
                         child: Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [cat.c, cat.c.withOpacity(0.7)],
+                              colors: [
+                                cat.c,
+                                cat.c.withOpacity(0.7)
+                              ],
                             ),
                           ),
                         ),
@@ -17258,7 +17053,8 @@ class ReadingStatsPage extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: pnl2,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: lineC, width: 0.8),
+                      border:
+                          Border.all(color: lineC, width: 0.8),
                     ),
                     child: Row(
                       children: [
@@ -17271,15 +17067,19 @@ class ReadingStatsPage extends StatelessWidget {
                               width: 50,
                               height: 50,
                               child: CachedNetworkImage(
-                                imageUrl: article['image'].toString(),
+                                imageUrl:
+                                    article['image'].toString(),
                                 fit: BoxFit.cover,
                                 memCacheWidth: 150,
                                 placeholder: (_, __) =>
                                     Container(color: pnl),
-                                errorWidget: (_, __, ___) => Container(
+                                errorWidget: (_, __, ___) =>
+                                    Container(
                                   color: pnl,
-                                  child: Icon(Icons.article_rounded,
-                                      color: mutC, size: 20),
+                                  child: Icon(
+                                      Icons.article_rounded,
+                                      color: mutC,
+                                      size: 20),
                                 ),
                               ),
                             ),
@@ -17298,10 +17098,12 @@ class ReadingStatsPage extends StatelessWidget {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
                             children: [
                               Text(
-                                article['title']?.toString() ?? '',
+                                article['title']?.toString() ??
+                                    '',
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.right,
@@ -17476,7 +17278,8 @@ class ArticlesSkeleton extends StatelessWidget {
                       SizedBox(height: 6),
                       ShimmerBox(height: 14, width: 160),
                       SizedBox(height: 12),
-                      ShimmerBox(height: 12, width: 70, radius: 6),
+                      ShimmerBox(
+                          height: 12, width: 70, radius: 6),
                     ],
                   ),
                 ),
@@ -17522,7 +17325,8 @@ class NewsSkeleton extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: const [
-                      ShimmerBox(height: 12, width: 80, radius: 6),
+                      ShimmerBox(
+                          height: 12, width: 80, radius: 6),
                       SizedBox(height: 10),
                       ShimmerBox(height: 15),
                       SizedBox(height: 6),
@@ -17530,7 +17334,8 @@ class NewsSkeleton extends StatelessWidget {
                       SizedBox(height: 10),
                       ShimmerBox(height: 12),
                       SizedBox(height: 12),
-                      ShimmerBox(height: 30, width: 120, radius: 8),
+                      ShimmerBox(
+                          height: 30, width: 120, radius: 8),
                     ],
                   ),
                 ),
@@ -17575,9 +17380,11 @@ class ShopSkeleton extends StatelessWidget {
                       SizedBox(height: 6),
                       ShimmerBox(height: 14, width: 140),
                       SizedBox(height: 12),
-                      ShimmerBox(height: 16, width: 100, radius: 8),
+                      ShimmerBox(
+                          height: 16, width: 100, radius: 8),
                       SizedBox(height: 10),
-                      ShimmerBox(height: 26, width: 90, radius: 8),
+                      ShimmerBox(
+                          height: 26, width: 90, radius: 8),
                     ],
                   ),
                 ),
@@ -17618,7 +17425,8 @@ class SearchSkeleton extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ShimmerBox(height: 12, width: 70, radius: 6),
+                      ShimmerBox(
+                          height: 12, width: 70, radius: 6),
                       SizedBox(height: 10),
                       ShimmerBox(height: 14),
                       SizedBox(height: 6),
