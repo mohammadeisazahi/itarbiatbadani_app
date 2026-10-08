@@ -868,7 +868,6 @@ Future<void> openUrl(BuildContext context, String url,
     {String title = 'مشاهده', dynamic post}) async {
   if (url.isEmpty) return;
 
-  // 📊 ثبت آمار مطالعه
   if (post != null) {
     trackArticleRead(post);
   }
@@ -1166,7 +1165,7 @@ List<int> _toJalali(int gy, int gm, int gd) {
   return [jy, jm, jd];
 }
 
-/* ==================== LINK HELPERS (NEW) ==================== */
+/* ==================== LINK HELPERS ==================== */
 
 /// تبدیل URL خام به لینک HTML
 String autoLinkUrls(String text) {
@@ -1190,6 +1189,79 @@ String applyMarkdownLinks(String text) {
 /// ترکیب هر دو: اول markdown، بعد URL خام
 String enrichNewsContent(String raw) {
   return autoLinkUrls(applyMarkdownLinks(raw));
+}
+
+/* ==================== RICH TEXT HELPERS ==================== */
+
+/// ساخت TextSpan با پشتیبانی از لینک و رنگ مناسب دارک/لایت
+List<TextSpan> buildRichSpans(
+  String html, {
+  double fontSize = 15,
+  double height = 2.1,
+}) {
+  final spans = <TextSpan>[];
+  final linkColor = darkModeNotifier.value
+      ? const Color(0xff7dd3fc)
+      : const Color(0xff0369a1);
+
+  final linkRe = RegExp(
+    r'<a[^>]*href="([^"]+)"[^>]*>(.*?)</a>',
+    caseSensitive: false,
+    dotAll: true,
+  );
+
+  int last = 0;
+  for (final m in linkRe.allMatches(html)) {
+    if (m.start > last) {
+      final t = clean(html.substring(last, m.start));
+      if (t.isNotEmpty) {
+        spans.add(TextSpan(
+          text: t,
+          style: TextStyle(
+            color: txtC,
+            fontSize: fontSize,
+            height: height,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Vazirmatn',
+          ),
+        ));
+      }
+    }
+    final url = m.group(1) ?? '';
+    final label = clean(m.group(2) ?? url);
+    spans.add(TextSpan(
+      text: label,
+      style: TextStyle(
+        color: linkColor,
+        fontSize: fontSize,
+        height: height,
+        fontWeight: FontWeight.w800,
+        fontFamily: 'Vazirmatn',
+        decoration: TextDecoration.underline,
+        decorationColor: linkColor,
+        decorationThickness: 1.5,
+      ),
+      recognizer: TapGestureRecognizer()
+        ..onTap = () => openExternalUrl(url),
+    ));
+    last = m.end;
+  }
+  if (last < html.length) {
+    final t = clean(html.substring(last));
+    if (t.isNotEmpty) {
+      spans.add(TextSpan(
+        text: t,
+        style: TextStyle(
+          color: txtC,
+          fontSize: fontSize,
+          height: height,
+          fontWeight: FontWeight.w500,
+          fontFamily: 'Vazirmatn',
+        ),
+      ));
+    }
+  }
+  return spans;
 }
 
 /* ==================== PERSIAN TO FINGLISH (SLUG) ==================== */
@@ -1534,56 +1606,73 @@ Future<void> verifyAdmin({
   throw Exception('خطا در ورود (${r.statusCode})');
 }
 
-/* ==================== MEDIA UPLOAD ==================== */
+/* ==================== QUIZ API ==================== */
 
-Future<Map<String, dynamic>> uploadMedia({
+Future<Map<String, dynamic>> postQuizQuestion({
   required String username,
   required String appPassword,
-  required String filePath,
-  required String fileName,
+  required String question,
+  required List<String> options,
+  required int correctIndex,
+  String? explanation,
 }) async {
   final auth = _basicAuth(username, appPassword);
-  final uri = Uri.parse('$api/media');
+  final uri = Uri.parse(quizRemoteApi);
 
-  try {
-    final bytes = await File(filePath).readAsBytes();
+  final r = await http.post(
+    uri,
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': 'Basic $auth',
+    },
+    body: jsonEncode({
+      'question': question,
+      'options': options,
+      'correctIndex': correctIndex,
+      'explanation': explanation ?? '',
+    }),
+  );
 
-    final multipartFile = http.MultipartFile.fromBytes(
-      'file',
-      bytes,
-      filename: fileName,
-    );
-
-    final request = http.MultipartRequest('POST', uri);
-    request.headers['Authorization'] = 'Basic $auth';
-    request.headers['Accept'] = 'application/json';
-    request.files.add(multipartFile);
-
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
-
-    if (response.statusCode == 201 || response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data is Map) return Map<String, dynamic>.from(data);
-      throw Exception('پاسخ نامعتبر');
-    }
-    if (response.statusCode == 401) {
-      throw Exception('نام کاربری یا رمز اشتباه است.');
-    }
-    if (response.statusCode == 403) {
-      throw Exception('شما اجازه آپلود فایل ندارید.');
-    }
-    if (response.statusCode == 413) {
-      throw Exception('حجم فایل بیش از حد مجاز است.');
-    }
-    throw Exception('خطا در آپلود (${response.statusCode})');
-  } catch (e) {
-    if (e.toString().contains('Exception')) rethrow;
-    throw Exception('خطا در آپلود فایل: $e');
+  if (r.statusCode == 201 || r.statusCode == 200) {
+    final d = jsonDecode(r.body);
+    if (d is Map) return Map<String, dynamic>.from(d);
+    throw Exception('پاسخ نامعتبر');
   }
+  if (r.statusCode == 401) {
+    throw Exception('نام کاربری یا رمز اشتباه است.');
+  }
+  if (r.statusCode == 403) {
+    throw Exception('شما اجازه ارسال ندارید.');
+  }
+  throw Exception('خطا در ارسال (${r.statusCode})');
 }
 
-/* ==================== GLOSSARY API (NEW) ==================== */
+Future<void> deleteQuizQuestionRemote({
+  required String username,
+  required String appPassword,
+  required String id,
+}) async {
+  final auth = _basicAuth(username, appPassword);
+  final uri = Uri.parse('$quizRemoteApi/$id');
+  final r = await http.delete(
+    uri,
+    headers: {
+      'Accept': 'application/json',
+      'Authorization': 'Basic $auth',
+    },
+  );
+  if (r.statusCode == 200 || r.statusCode == 201) return;
+  if (r.statusCode == 401) {
+    throw Exception('نام کاربری یا رمز اشتباه است.');
+  }
+  if (r.statusCode == 403) {
+    throw Exception('شما اجازه حذف ندارید.');
+  }
+  throw Exception('خطا در حذف (${r.statusCode})');
+}
+
+/* ==================== GLOSSARY API ==================== */
 
 Future<List> getSportsGlossary() async {
   try {
@@ -1593,7 +1682,6 @@ Future<List> getSportsGlossary() async {
     if (r.statusCode == 200) {
       final data = json.decode(r.body);
       if (data is List) {
-        // کش محلی
         try {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('glossary_cache', r.body);
@@ -1603,7 +1691,6 @@ Future<List> getSportsGlossary() async {
     }
   } catch (_) {}
 
-  // fallback به کش
   try {
     final prefs = await SharedPreferences.getInstance();
     final cached = prefs.getString('glossary_cache');
@@ -1615,7 +1702,102 @@ Future<List> getSportsGlossary() async {
   return [];
 }
 
-/* ==================== PE TEACHERS API (NEW) ==================== */
+Future<Map<String, dynamic>> postGlossaryWord({
+  required String username,
+  required String appPassword,
+  required String en,
+  required String fa,
+  String? desc,
+}) async {
+  final auth = _basicAuth(username, appPassword);
+  final uri = Uri.parse(glossaryRemoteApi);
+
+  final r = await http.post(
+    uri,
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': 'Basic $auth',
+    },
+    body: jsonEncode({
+      'en': en,
+      'fa': fa,
+      'desc': desc ?? '',
+    }),
+  );
+
+  if (r.statusCode == 201 || r.statusCode == 200) {
+    final d = jsonDecode(r.body);
+    if (d is Map) return Map<String, dynamic>.from(d);
+    throw Exception('پاسخ نامعتبر');
+  }
+  if (r.statusCode == 401) {
+    throw Exception('نام کاربری یا رمز اشتباه است.');
+  }
+  if (r.statusCode == 403) {
+    throw Exception('شما اجازه ارسال ندارید.');
+  }
+  throw Exception('خطا در ارسال (${r.statusCode})');
+}
+
+Future<void> updateGlossaryWord({
+  required String username,
+  required String appPassword,
+  required String id,
+  required String en,
+  required String fa,
+  String? desc,
+}) async {
+  final auth = _basicAuth(username, appPassword);
+  final uri = Uri.parse('$glossaryRemoteApi/$id');
+  final r = await http.put(
+    uri,
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': 'Basic $auth',
+    },
+    body: jsonEncode({
+      'en': en,
+      'fa': fa,
+      'desc': desc ?? '',
+    }),
+  );
+  if (r.statusCode == 200 || r.statusCode == 201) return;
+  if (r.statusCode == 401) {
+    throw Exception('نام کاربری یا رمز اشتباه است.');
+  }
+  if (r.statusCode == 403) {
+    throw Exception('شما اجازه ویرایش ندارید.');
+  }
+  throw Exception('خطا در ویرایش (${r.statusCode})');
+}
+
+Future<void> deleteGlossaryWord({
+  required String username,
+  required String appPassword,
+  required String id,
+}) async {
+  final auth = _basicAuth(username, appPassword);
+  final uri = Uri.parse('$glossaryRemoteApi/$id');
+  final r = await http.delete(
+    uri,
+    headers: {
+      'Accept': 'application/json',
+      'Authorization': 'Basic $auth',
+    },
+  );
+  if (r.statusCode == 200 || r.statusCode == 201) return;
+  if (r.statusCode == 401) {
+    throw Exception('نام کاربری یا رمز اشتباه است.');
+  }
+  if (r.statusCode == 403) {
+    throw Exception('شما اجازه حذف ندارید.');
+  }
+  throw Exception('خطا در حذف (${r.statusCode})');
+}
+
+/* ==================== PE TEACHERS API ==================== */
 
 Future<List> getPeTeacherContent(String slug) async {
   try {
@@ -1680,18 +1862,61 @@ Future<Map<String, dynamic>> postPeTeacherContent({
     if (d is Map) return Map<String, dynamic>.from(d);
     throw Exception('پاسخ نامعتبر');
   }
-  if (r.statusCode == 401) throw Exception('نام کاربری یا رمز اشتباه است.');
-  if (r.statusCode == 403) throw Exception('شما اجازه ارسال ندارید.');
+  if (r.statusCode == 401) {
+    throw Exception('نام کاربری یا رمز اشتباه است.');
+  }
+  if (r.statusCode == 403) {
+    throw Exception('شما اجازه ارسال ندارید.');
+  }
   throw Exception('خطا در ارسال (${r.statusCode})');
+}
+
+Future<void> updatePeTeacherContent({
+  required String username,
+  required String appPassword,
+  required int id,
+  required String type,
+  required String title,
+  required String content,
+  String? fileUrl,
+  String? fileName,
+}) async {
+  final auth = _basicAuth(username, appPassword);
+  final uri = Uri.parse('$peTeachersApi/$id?type=$type');
+
+  final r = await http.put(
+    uri,
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': 'Basic $auth',
+    },
+    body: jsonEncode({
+      'type': type,
+      'title': title,
+      'content': content,
+      if (fileUrl != null) 'file_url': fileUrl,
+      if (fileName != null) 'file_name': fileName,
+    }),
+  );
+  if (r.statusCode == 200 || r.statusCode == 201) return;
+  if (r.statusCode == 401) {
+    throw Exception('نام کاربری یا رمز اشتباه است.');
+  }
+  if (r.statusCode == 403) {
+    throw Exception('شما اجازه ویرایش ندارید.');
+  }
+  throw Exception('خطا در ویرایش (${r.statusCode})');
 }
 
 Future<void> deletePeTeacherContent({
   required String username,
   required String appPassword,
   required int id,
+  required String type,
 }) async {
   final auth = _basicAuth(username, appPassword);
-  final uri = Uri.parse('$peTeachersApi/$id');
+  final uri = Uri.parse('$peTeachersApi/$id?type=$type');
   final r = await http.delete(
     uri,
     headers: {
@@ -1700,7 +1925,62 @@ Future<void> deletePeTeacherContent({
     },
   );
   if (r.statusCode == 200 || r.statusCode == 201) return;
+  if (r.statusCode == 401) {
+    throw Exception('نام کاربری یا رمز اشتباه است.');
+  }
+  if (r.statusCode == 403) {
+    throw Exception('شما اجازه حذف ندارید.');
+  }
   throw Exception('خطا در حذف (${r.statusCode})');
+}
+
+/* ==================== MEDIA UPLOAD ==================== */
+
+Future<Map<String, dynamic>> uploadMedia({
+  required String username,
+  required String appPassword,
+  required String filePath,
+  required String fileName,
+}) async {
+  final auth = _basicAuth(username, appPassword);
+  final uri = Uri.parse('$api/media');
+
+  try {
+    final bytes = await File(filePath).readAsBytes();
+
+    final multipartFile = http.MultipartFile.fromBytes(
+      'file',
+      bytes,
+      filename: fileName,
+    );
+
+    final request = http.MultipartRequest('POST', uri);
+    request.headers['Authorization'] = 'Basic $auth';
+    request.headers['Accept'] = 'application/json';
+    request.files.add(multipartFile);
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map) return Map<String, dynamic>.from(data);
+      throw Exception('پاسخ نامعتبر');
+    }
+    if (response.statusCode == 401) {
+      throw Exception('نام کاربری یا رمز اشتباه است.');
+    }
+    if (response.statusCode == 403) {
+      throw Exception('شما اجازه آپلود فایل ندارید.');
+    }
+    if (response.statusCode == 413) {
+      throw Exception('حجم فایل بیش از حد مجاز است.');
+    }
+    throw Exception('خطا در آپلود (${response.statusCode})');
+  } catch (e) {
+    if (e.toString().contains('Exception')) rethrow;
+    throw Exception('خطا در آپلود فایل: $e');
+  }
 }
 /* ==================== MAIN ==================== */
 
@@ -1745,7 +2025,8 @@ class App extends StatelessWidget {
               theme: ThemeData(
                 fontFamily: 'Vazirmatn',
                 useMaterial3: true,
-                brightness: isDark ? Brightness.dark : Brightness.light,
+                brightness:
+                    isDark ? Brightness.dark : Brightness.light,
                 scaffoldBackgroundColor: bgC,
                 splashFactory: InkSparkle.splashFactory,
                 colorScheme: ColorScheme.fromSeed(
@@ -2606,7 +2887,6 @@ class _HomeState extends State<Home> {
                     ),
                   ),
                   SliverToBoxAdapter(child: ModernCatGrid()),
-                  // ✅ بخش جدید: معلمان تربیت بدنی
                   const SliverToBoxAdapter(
                     child: PeTeachersBanner(),
                   ),
@@ -3625,7 +3905,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
                 );
               }
 
-              // ───── ۴) لغات تخصصی (NEW) ─────
+              // ───── ۴) لغات تخصصی ─────
               if (actionIndex == 2) {
                 return _actionChip(
                   icon: Icons.translate_rounded,
@@ -3668,7 +3948,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
                 );
               }
 
-              // ───── ۶) معلمان تربیت بدنی (NEW) ─────
+              // ───── ۶) معلمان تربیت بدنی ─────
               if (actionIndex == 4) {
                 return _actionChip(
                   icon: Icons.school_rounded,
@@ -8482,7 +8762,7 @@ class _BookmarksPageState extends State<BookmarksPage>
         _allPosts.addAll(list2);
       } catch (_) {}
 
-      // صفحه ۳ مقالات (در صورت وجود)
+      // صفحه ۳ مقالات
       try {
         final list3 = await getPostsPaged(perPage: 100, page: 3);
         _allPosts.addAll(list3);
@@ -10463,73 +10743,6 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
     return m < 1 ? 1 : m;
   }
 
-  /// ساخت TextSpan با پشتیبانی از لینک و رنگ مناسب دارک/لایت
-  List<TextSpan> _buildRichSpans(String html) {
-    final spans = <TextSpan>[];
-    final linkColor = darkModeNotifier.value
-        ? const Color(0xff7dd3fc)
-        : const Color(0xff0369a1);
-
-    final linkRe = RegExp(
-      r'<a[^>]*href="([^"]+)"[^>]*>(.*?)</a>',
-      caseSensitive: false,
-      dotAll: true,
-    );
-
-    int last = 0;
-    for (final m in linkRe.allMatches(html)) {
-      if (m.start > last) {
-        final t = clean(html.substring(last, m.start));
-        if (t.isNotEmpty) {
-          spans.add(TextSpan(
-            text: t,
-            style: TextStyle(
-              color: txtC,
-              fontSize: 15,
-              height: 2.1,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Vazirmatn',
-            ),
-          ));
-        }
-      }
-      final url = m.group(1) ?? '';
-      final label = clean(m.group(2) ?? url);
-      spans.add(TextSpan(
-        text: label,
-        style: TextStyle(
-          color: linkColor,
-          fontSize: 15,
-          height: 2.1,
-          fontWeight: FontWeight.w800,
-          fontFamily: 'Vazirmatn',
-          decoration: TextDecoration.underline,
-          decorationColor: linkColor,
-          decorationThickness: 1.5,
-        ),
-        recognizer: TapGestureRecognizer()
-          ..onTap = () => openExternalUrl(url),
-      ));
-      last = m.end;
-    }
-    if (last < html.length) {
-      final t = clean(html.substring(last));
-      if (t.isNotEmpty) {
-        spans.add(TextSpan(
-          text: t,
-          style: TextStyle(
-            color: txtC,
-            fontSize: 15,
-            height: 2.1,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Vazirmatn',
-          ),
-        ));
-      }
-    }
-    return spans;
-  }
-
   @override
   Widget build(BuildContext context) {
     final news = widget.news;
@@ -11074,7 +11287,7 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
                 ...paragraphs.asMap().entries.map((entry) {
                   final i = entry.key;
                   final p = entry.value;
-                  final spans = _buildRichSpans(p);
+                  final spans = buildRichSpans(p);
                   return Padding(
                     padding: EdgeInsets.only(
                         bottom:
@@ -12179,6 +12392,237 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     );
   }
 }
+
+/* ==================== LINK INSERT DIALOG ==================== */
+
+/// دیالوگ افزودن لینک — خروجی: درج متن [label](url) در جای کرسر
+Future<void> showInsertLinkDialog(
+  BuildContext context, {
+  required TextEditingController controller,
+  required String title,
+}) async {
+  final labelCtrl = TextEditingController(text: controller.selection.isValid
+      ? controller.text.substring(
+          controller.selection.start.clamp(0, controller.text.length),
+          controller.selection.end.clamp(0, controller.text.length),
+        )
+      : '');
+  final urlCtrl = TextEditingController();
+
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => Directionality(
+      textDirection: TextDirection.rtl,
+      child: Dialog(
+        backgroundColor: pnl,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xff0ea5e9),
+                          Color(0xff0284c7)
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.link_rounded,
+                        color: Colors.white, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: txtC,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    icon: Icon(Icons.close_rounded,
+                        color: mutC, size: 22),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'متن نمایشی (کلمه‌ای که لینک میشه)',
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                decoration: BoxDecoration(
+                  color: bgC,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: lineC),
+                ),
+                child: TextField(
+                  controller: labelCtrl,
+                  textDirection: TextDirection.rtl,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                      color: txtC,
+                      fontFamily: 'Vazirmatn',
+                      fontSize: 13.5),
+                  decoration: InputDecoration(
+                    hintText: 'مثلاً: معلولان',
+                    hintStyle: TextStyle(
+                        color: mutC, fontFamily: 'Vazirmatn'),
+                    filled: true,
+                    fillColor: Colors.transparent,
+                    contentPadding: const EdgeInsets.all(14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'آدرس لینک',
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                decoration: BoxDecoration(
+                  color: bgC,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: lineC),
+                ),
+                child: TextField(
+                  controller: urlCtrl,
+                  textDirection: TextDirection.ltr,
+                  textAlign: TextAlign.left,
+                  style: TextStyle(
+                      color: txtC,
+                      fontFamily: 'Vazirmatn',
+                      fontSize: 13.5),
+                  decoration: InputDecoration(
+                    hintText: 'https://example.com',
+                    hintStyle: TextStyle(
+                        color: mutC, fontFamily: 'Vazirmatn'),
+                    filled: true,
+                    fillColor: Colors.transparent,
+                    contentPadding: const EdgeInsets.all(14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text('انصراف',
+                          style: TextStyle(
+                              color: mutC,
+                              fontFamily: 'Vazirmatn',
+                              fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        if (labelCtrl.text.trim().isEmpty ||
+                            urlCtrl.text.trim().isEmpty) {
+                          showSnack(ctx, 'متن و لینک را وارد کنید.',
+                              error: true);
+                          return;
+                        }
+                        Navigator.pop(ctx, true);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff0ea5e9),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 13),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(Icons.check_rounded,
+                          size: 18),
+                      label: const Text(
+                        'درج لینک',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+
+  if (result == true) {
+    final label = labelCtrl.text.trim();
+    final url = urlCtrl.text.trim();
+    final sel = controller.selection;
+
+    // ساخت سینتکس
+    final insert = '[$label]($url)';
+
+    if (sel.isValid && sel.start >= 0 && sel.end >= 0) {
+      final newText = controller.text
+          .replaceRange(sel.start, sel.end, insert);
+      controller.value = controller.value.copyWith(
+        text: newText,
+        selection:
+            TextSelection.collapsed(offset: sel.start + insert.length),
+      );
+    } else {
+      final newText = '${controller.text}$insert';
+      controller.value = controller.value.copyWith(
+        text: newText,
+        selection: TextSelection.collapsed(offset: newText.length),
+      );
+    }
+  }
+  labelCtrl.dispose();
+  urlCtrl.dispose();
+}
 /* ==================== ADMIN PANEL ==================== */
 
 class AdminPanelPage extends StatefulWidget {
@@ -12205,7 +12649,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
   String? _uploadedFileName;
   String? _uploadedMediaId;
 
-  // Quiz design variables
+  // کوئیز
   final _quizQuestionCtrl = TextEditingController();
   final _quizExplanationCtrl = TextEditingController();
   final _quizOptionsCtrls =
@@ -12230,7 +12674,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     return generateSlug(title);
   }
 
-  /// ✅ حداکثر حجم: ۵۰ مگابایت
+  /// ✅ حداکثر ۵۰ مگابایت
   Future<void> _pickFile() async {
     HapticFeedback.selectionClick();
     try {
@@ -12387,6 +12831,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     }
   }
 
+  /// ✅ ارسال سوال به سرور
   Future<void> _addQuizQuestion() async {
     final question = _quizQuestionCtrl.text.trim();
     final options =
@@ -12404,30 +12849,45 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       }
     }
 
-    final q = QuizQuestion(
-      id: 'q_${DateTime.now().millisecondsSinceEpoch}',
-      question: question,
-      options: options,
-      correctIndex: _quizCorrectIndex,
-      explanation: _quizExplanationCtrl.text.trim().isEmpty
-          ? null
-          : _quizExplanationCtrl.text.trim(),
-    );
+    setState(() => _sending = true);
 
-    await addQuizQuestion(q);
+    try {
+      await postQuizQuestion(
+        username: widget.username,
+        appPassword: widget.password,
+        question: question,
+        options: options,
+        correctIndex: _quizCorrectIndex,
+        explanation: _quizExplanationCtrl.text.trim().isEmpty
+            ? null
+            : _quizExplanationCtrl.text.trim(),
+      );
 
-    if (!mounted) return;
-    HapticFeedback.mediumImpact();
-    showSnack(context, '✅ سوال با موفقیت اضافه شد!');
+      if (!mounted) return;
+      HapticFeedback.mediumImpact();
+      showSnack(context, '✅ سوال با موفقیت اضافه شد!');
 
-    setState(() {
-      _quizQuestionCtrl.clear();
-      _quizExplanationCtrl.clear();
-      for (final c in _quizOptionsCtrls) {
-        c.clear();
-      }
-      _quizCorrectIndex = 0;
-    });
+      setState(() {
+        _quizQuestionCtrl.clear();
+        _quizExplanationCtrl.clear();
+        for (final c in _quizOptionsCtrls) {
+          c.clear();
+        }
+        _quizCorrectIndex = 0;
+      });
+
+      // بارگذاری مجدد از سرور
+      await loadQuiz();
+    } catch (e) {
+      if (!mounted) return;
+      showSnack(
+        context,
+        e.toString().replaceFirst('Exception: ', ''),
+        error: true,
+      );
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
   }
 
   Future<void> _showEditDialog(dynamic post) async {
@@ -12533,14 +12993,61 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Text(
-                        'متن کامل خبر',
-                        style: TextStyle(
-                          color: accentNotifier.value,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'Vazirmatn',
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            'متن کامل خبر',
+                            style: TextStyle(
+                              color: accentNotifier.value,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Vazirmatn',
+                            ),
+                          ),
+                          const Spacer(),
+                          // ✅ دکمه افزودن لینک
+                          GestureDetector(
+                            onTap: () async {
+                              await showInsertLinkDialog(
+                                ctx,
+                                controller: contentCtrl,
+                                title: 'افزودن لینک به متن',
+                              );
+                              setDialogState(() {});
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xff0ea5e9),
+                                    Color(0xff0284c7),
+                                  ],
+                                ),
+                                borderRadius:
+                                    BorderRadius.circular(8),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.link_rounded,
+                                      color: Colors.white, size: 13),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'افزودن لینک',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w900,
+                                      fontFamily: 'Vazirmatn',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 6),
                       Container(
@@ -12756,6 +13263,69 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     }
   }
 
+  /// ✅ حذف سوال از سرور
+  Future<void> _deleteQuizQuestion(QuizQuestion q) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: pnl,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Text(
+          'حذف سوال',
+          style: TextStyle(
+            color: txtC,
+            fontWeight: FontWeight.w900,
+            fontFamily: 'Vazirmatn',
+          ),
+        ),
+        content: Text(
+          'آیا این سوال حذف شود؟',
+          style: TextStyle(color: mutC, fontFamily: 'Vazirmatn'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('انصراف',
+                style: TextStyle(
+                    color: mutC, fontFamily: 'Vazirmatn')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('حذف',
+                style: TextStyle(
+                    color: rose,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn')),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    try {
+      await deleteQuizQuestionRemote(
+        username: widget.username,
+        appPassword: widget.password,
+        id: q.id,
+      );
+      await removeQuizQuestion(q.id);
+      if (mounted) {
+        showSnack(context, 'سوال حذف شد');
+        await loadQuiz();
+      }
+    } catch (e) {
+      if (mounted) {
+        showSnack(
+          context,
+          e.toString().replaceFirst('Exception: ', ''),
+          error: true,
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
     _titleCtrl.dispose();
@@ -12833,10 +13403,31 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
           backgroundColor: bgC,
           foregroundColor: txtC,
           elevation: 0,
+          actions: [
+            // ✅ میان‌بر مدیریت لغات
+            IconButton(
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => GlossaryAdminPage(
+                      username: widget.username,
+                      password: widget.password,
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.translate_rounded,
+                  color: Color(0xff0f766e)),
+              tooltip: 'مدیریت لغات تخصصی',
+            ),
+          ],
         ),
         body: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(20, 20, 20, bottomInset + 120),
+          padding:
+              EdgeInsets.fromLTRB(20, 20, 20, bottomInset + 120),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -12924,23 +13515,77 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                 ),
               ],
               const SizedBox(height: 18),
-              Text(
-                'متن کامل خبر',
-                style: TextStyle(
-                  color: accentNotifier.value,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'Vazirmatn',
-                ),
+              Row(
+                children: [
+                  Text(
+                    'متن کامل خبر',
+                    style: TextStyle(
+                      color: accentNotifier.value,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                  const Spacer(),
+                  // ✅ دکمه افزودن لینک
+                  GestureDetector(
+                    onTap: () async {
+                      await showInsertLinkDialog(
+                        context,
+                        controller: _contentCtrl,
+                        title: 'افزودن لینک به متن خبر',
+                      );
+                      setState(() {});
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xff0ea5e9),
+                            Color(0xff0284c7),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xff0ea5e9)
+                                .withOpacity(0.35),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.link_rounded,
+                              color: Colors.white, size: 13),
+                          SizedBox(width: 4),
+                          Text(
+                            'افزودن لینک',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Vazirmatn',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 6),
-              // راهنمای لینک‌گذاری
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: kInfo.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: kInfo.withOpacity(0.25)),
+                  border:
+                      Border.all(color: kInfo.withOpacity(0.25)),
                 ),
                 child: Row(
                   children: [
@@ -12949,7 +13594,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'برای لینک روی یک کلمه بنویس: [متن](https://example.com)\nلینک‌های خام به‌طور خودکار فعال می‌شوند.',
+                        'می‌توانید از دکمه «افزودن لینک» استفاده کنید یا دستی بنویسید: [متن](https://example.com)\nلینک‌های خام به‌طور خودکار فعال می‌شوند.',
                         style: TextStyle(
                           color: kInfo,
                           fontSize: 10.5,
@@ -12981,8 +13626,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                     fontFamily: 'Vazirmatn',
                   ),
                   decoration: InputDecoration(
-                    hintText:
-                        'توضیحات کامل خبر...\n\nمثال لینک‌دار:\nبرای مطالعه [اینجا کلیک کنید](https://itarbiatbadani.ir) یا به https://example.com بروید.',
+                    hintText: 'توضیحات کامل خبر...',
                     hintStyle: TextStyle(
                         color: mutC, fontFamily: 'Vazirmatn'),
                     filled: true,
@@ -13052,7 +13696,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               Divider(color: lineC),
               const SizedBox(height: 20),
 
-              // ========== بخش طراحی کوئیز ==========
+              // ========== بخش کوئیز ==========
               _sectionBanner(
                 icon: Icons.quiz_rounded,
                 title: 'طراحی کوئیز ورزشی',
@@ -13161,7 +13805,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.center,
                                 children: [
-                                  // ✅ حروف جدید: الف / ب / ج / د
                                   Text(
                                     kQuizLetters[i],
                                     style: TextStyle(
@@ -13321,7 +13964,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               SizedBox(
                 height: 52,
                 child: ElevatedButton.icon(
-                  onPressed: _addQuizQuestion,
+                  onPressed: _sending ? null : _addQuizQuestion,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kQuizColor,
                     foregroundColor: Colors.white,
@@ -13330,11 +13973,17 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  icon: const Icon(Icons.add_rounded, size: 20),
+                  icon: _sending
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.add_rounded, size: 20),
                   label: const Text(
-                    'افزودن سوال به کوئیز',
+                    'افزودن سوال به کوئیز (ارسال به سرور)',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 13.5,
                       fontWeight: FontWeight.w900,
                       fontFamily: 'Vazirmatn',
                     ),
@@ -13362,7 +14011,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'هنوز سوالی اضافه نشده است',
+                              'هنوز سوالی در سرور ثبت نشده است',
                               style: TextStyle(
                                 color: mutC,
                                 fontSize: 12,
@@ -13383,7 +14032,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                               color: kQuizColor, size: 18),
                           const SizedBox(width: 8),
                           Text(
-                            'سوالات کوئیز (${questions.length})',
+                            'سوالات کوئیز در سرور (${questions.length})',
                             style: TextStyle(
                               color: txtC,
                               fontSize: 13.5,
@@ -13432,71 +14081,8 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                                   ),
                                   const Spacer(),
                                   GestureDetector(
-                                    onTap: () async {
-                                      final confirm =
-                                          await showDialog<bool>(
-                                        context: context,
-                                        builder: (ctx) => AlertDialog(
-                                          backgroundColor: pnl,
-                                          shape:
-                                              RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(
-                                                    20),
-                                          ),
-                                          title: Text(
-                                            'حذف سوال',
-                                            style: TextStyle(
-                                              color: txtC,
-                                              fontWeight:
-                                                  FontWeight.w900,
-                                              fontFamily:
-                                                  'Vazirmatn',
-                                            ),
-                                          ),
-                                          content: Text(
-                                            'آیا این سوال حذف شود؟',
-                                            style: TextStyle(
-                                                color: mutC,
-                                                fontFamily:
-                                                    'Vazirmatn'),
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(
-                                                      ctx, false),
-                                              child: Text('انصراف',
-                                                  style: TextStyle(
-                                                      color: mutC,
-                                                      fontFamily:
-                                                          'Vazirmatn')),
-                                            ),
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(
-                                                      ctx, true),
-                                              child: Text('حذف',
-                                                  style: TextStyle(
-                                                      color: rose,
-                                                      fontWeight:
-                                                          FontWeight
-                                                              .w900,
-                                                      fontFamily:
-                                                          'Vazirmatn')),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                      if (confirm == true) {
-                                        await removeQuizQuestion(
-                                            q.id);
-                                        if (mounted) {
-                                          showSnack(context,
-                                              'سوال حذف شد');
-                                        }
-                                      }
-                                    },
+                                    onTap: () =>
+                                        _deleteQuizQuestion(q),
                                     child: Container(
                                       padding:
                                           const EdgeInsets.all(4),
@@ -13970,6 +14556,533 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     );
   }
 }
+/* ==================== GLOSSARY ADMIN PAGE ==================== */
+
+class GlossaryAdminPage extends StatefulWidget {
+  final String username;
+  final String password;
+  const GlossaryAdminPage({
+    super.key,
+    required this.username,
+    required this.password,
+  });
+
+  @override
+  State<GlossaryAdminPage> createState() => _GlossaryAdminPageState();
+}
+
+class _GlossaryAdminPageState extends State<GlossaryAdminPage> {
+  final _enCtrl = TextEditingController();
+  final _faCtrl = TextEditingController();
+  final _descCtrl = TextEditingController();
+
+  List<dynamic> _items = [];
+  bool _loading = true;
+  bool _sending = false;
+  String? _editingId;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _enCtrl.dispose();
+    _faCtrl.dispose();
+    _descCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final list = await getSportsGlossary();
+      if (mounted) {
+        setState(() {
+          _items = list;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _items = [];
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _submit() async {
+    final en = _enCtrl.text.trim();
+    final fa = _faCtrl.text.trim();
+    final desc = _descCtrl.text.trim();
+
+    if (en.isEmpty || fa.isEmpty) {
+      showSnack(context, 'کلمه انگلیسی و فارسی را وارد کنید.',
+          error: true);
+      return;
+    }
+
+    setState(() => _sending = true);
+
+    try {
+      if (_editingId != null) {
+        await updateGlossaryWord(
+          username: widget.username,
+          appPassword: widget.password,
+          id: _editingId!,
+          en: en,
+          fa: fa,
+          desc: desc.isEmpty ? null : desc,
+        );
+        if (!mounted) return;
+        showSnack(context, '✅ لغت ویرایش شد!');
+      } else {
+        await postGlossaryWord(
+          username: widget.username,
+          appPassword: widget.password,
+          en: en,
+          fa: fa,
+          desc: desc.isEmpty ? null : desc,
+        );
+        if (!mounted) return;
+        showSnack(context, '✅ لغت اضافه شد!');
+      }
+
+      _enCtrl.clear();
+      _faCtrl.clear();
+      _descCtrl.clear();
+      setState(() => _editingId = null);
+
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      showSnack(context, e.toString().replaceFirst('Exception: ', ''),
+          error: true);
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<void> _delete(dynamic item) async {
+    final id = item['id']?.toString() ?? '';
+    if (id.isEmpty) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: pnl,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        title: Text('حذف لغت',
+            style: TextStyle(
+                color: txtC,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Vazirmatn')),
+        content: Text(
+          'آیا «${item['en']}» حذف شود؟',
+          style: TextStyle(color: mutC, fontFamily: 'Vazirmatn'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('انصراف',
+                style: TextStyle(color: mutC, fontFamily: 'Vazirmatn')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('حذف',
+                style: TextStyle(
+                    color: rose,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn')),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    try {
+      await deleteGlossaryWord(
+        username: widget.username,
+        appPassword: widget.password,
+        id: id,
+      );
+      if (mounted) {
+        showSnack(context, 'لغت حذف شد.');
+        await _load();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      showSnack(context, e.toString().replaceFirst('Exception: ', ''),
+          error: true);
+    }
+  }
+
+  void _startEdit(dynamic item) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _editingId = item['id']?.toString();
+      _enCtrl.text = item['en']?.toString() ?? '';
+      _faCtrl.text = item['fa']?.toString() ?? '';
+      _descCtrl.text = item['desc']?.toString() ?? '';
+    });
+  }
+
+  void _cancelEdit() {
+    setState(() {
+      _editingId = null;
+      _enCtrl.clear();
+      _faCtrl.clear();
+      _descCtrl.clear();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Scaffold(
+        backgroundColor: bgC,
+        appBar: AppBar(
+          title: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xff0f766e), Color(0xff14b8a6)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.translate_rounded,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Text('مدیریت لغات تخصصی',
+                  style: TextStyle(
+                      color: txtC,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Vazirmatn')),
+            ],
+          ),
+          backgroundColor: bgC,
+          foregroundColor: txtC,
+          elevation: 0,
+        ),
+        body: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: [
+                    const Color(0xff0f766e).withOpacity(0.15),
+                    const Color(0xff0f766e).withOpacity(0.05),
+                  ]),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                      color: const Color(0xff0f766e).withOpacity(0.35),
+                      width: 1.2),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xff0f766e), Color(0xff14b8a6)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.translate_rounded,
+                          color: Colors.white, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('لغات تخصصی ورزشی',
+                              style: TextStyle(
+                                  color: Color(0xff0f766e),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                  fontFamily: 'Vazirmatn')),
+                          const SizedBox(height: 2),
+                          Text('افزودن، ویرایش و حذف لغات',
+                              style: TextStyle(
+                                  color: mutC,
+                                  fontSize: 10.5,
+                                  fontFamily: 'Vazirmatn')),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              if (_editingId != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: kWarning.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: kWarning.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit_rounded, color: kWarning, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text('در حال ویرایش',
+                            style: TextStyle(
+                                color: kWarning,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                fontFamily: 'Vazirmatn')),
+                      ),
+                      TextButton(
+                        onPressed: _cancelEdit,
+                        child: Text('لغو',
+                            style: TextStyle(
+                                color: kWarning,
+                                fontFamily: 'Vazirmatn',
+                                fontWeight: FontWeight.w900)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              _label('کلمه انگلیسی'),
+              const SizedBox(height: 8),
+              _field(_enCtrl, 'مثلاً: Aerobic', ltr: true),
+              const SizedBox(height: 14),
+
+              _label('معادل فارسی'),
+              const SizedBox(height: 8),
+              _field(_faCtrl, 'مثلاً: هوازی', rtl: true),
+              const SizedBox(height: 14),
+
+              _label('توضیحات (اختیاری)'),
+              const SizedBox(height: 8),
+              _field(_descCtrl, 'توضیح کوتاه...', rtl: true, maxLines: 3),
+              const SizedBox(height: 18),
+
+              SizedBox(
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: _sending ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xff0f766e),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                  icon: _sending
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : Icon(_editingId != null
+                          ? Icons.save_rounded
+                          : Icons.add_rounded),
+                  label: Text(
+                    _editingId != null ? 'ذخیره تغییرات' : 'افزودن لغت',
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn'),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 30),
+              Divider(color: lineC),
+              const SizedBox(height: 14),
+
+              Row(
+                children: [
+                  Icon(Icons.list_alt_rounded,
+                      color: const Color(0xff0f766e), size: 18),
+                  const SizedBox(width: 8),
+                  Text('لغات موجود',
+                      style: TextStyle(
+                          color: txtC,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Vazirmatn')),
+                  const SizedBox(width: 6),
+                  if (!_loading)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xff0f766e).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text('${_items.length}',
+                          style: const TextStyle(
+                              color: Color(0xff0f766e),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Vazirmatn')),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              if (_loading)
+                const Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (_items.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: pnl2,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: lineC),
+                  ),
+                  child: Text('هنوز لغتی اضافه نشده',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: mutC,
+                          fontSize: 12,
+                          fontFamily: 'Vazirmatn')),
+                )
+              else
+                ..._items.map((item) => _itemCard(item)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _label(String text) => Text(text,
+      style: TextStyle(
+          color: txtC,
+          fontSize: 13,
+          fontWeight: FontWeight.w900,
+          fontFamily: 'Vazirmatn'));
+
+  Widget _field(TextEditingController c, String hint,
+      {bool ltr = false, bool rtl = false, int maxLines = 1}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: pnl,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: lineC),
+      ),
+      child: TextField(
+        controller: c,
+        maxLines: maxLines,
+        textDirection: ltr ? TextDirection.ltr : TextDirection.rtl,
+        textAlign: ltr ? TextAlign.left : TextAlign.right,
+        style: TextStyle(
+            color: txtC, fontSize: 13.5, fontFamily: 'Vazirmatn'),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: mutC, fontFamily: 'Vazirmatn'),
+          filled: true,
+          fillColor: Colors.transparent,
+          contentPadding: const EdgeInsets.all(14),
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none),
+        ),
+      ),
+    );
+  }
+
+  Widget _itemCard(dynamic item) {
+    final en = item['en']?.toString() ?? '';
+    final fa = item['fa']?.toString() ?? '';
+    final desc = item['desc']?.toString() ?? '';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: pnl,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: lineC),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xff0f766e).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(en,
+                    style: const TextStyle(
+                        color: Color(0xff0f766e),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn')),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(fa,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                        color: txtC,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn')),
+              ),
+              IconButton(
+                onPressed: () => _startEdit(item),
+                icon: const Icon(Icons.edit_rounded,
+                    color: Color(0xff0f766e), size: 20),
+                visualDensity: VisualDensity.compact,
+              ),
+              IconButton(
+                onPressed: () => _delete(item),
+                icon: Icon(Icons.delete_outline_rounded,
+                    color: rose, size: 20),
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
+          if (desc.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(desc,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                    color: mutC,
+                    fontSize: 11.5,
+                    height: 1.7,
+                    fontFamily: 'Vazirmatn')),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 /* ==================== NOTIFICATIONS PAGE ==================== */
 
 class NotificationsPage extends StatefulWidget {
@@ -18243,8 +19356,7 @@ class ErrorBox extends StatelessWidget {
     );
   }
 }
-
-/* ==================== SPORTS GLOSSARY PAGE (NEW) ==================== */
+/* ==================== SPORTS GLOSSARY PAGE ==================== */
 
 class SportsGlossaryPage extends StatefulWidget {
   const SportsGlossaryPage({super.key});
@@ -18366,7 +19478,6 @@ class _SportsGlossaryPageState extends State<SportsGlossaryPage> {
         ),
         body: Column(
           children: [
-            // Search bar
             Container(
               margin: const EdgeInsets.fromLTRB(14, 8, 14, 8),
               decoration: BoxDecoration(
@@ -18407,7 +19518,6 @@ class _SportsGlossaryPageState extends State<SportsGlossaryPage> {
                 ),
               ),
             ),
-            // Count chip
             if (!_loading)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -18587,7 +19697,7 @@ class _SportsGlossaryPageState extends State<SportsGlossaryPage> {
   }
 }
 
-/* ==================== PE TEACHERS BANNER (NEW) ==================== */
+/* ==================== PE TEACHERS BANNER (PREMIUM) ==================== */
 
 class PeTeachersBanner extends StatelessWidget {
   const PeTeachersBanner({super.key});
@@ -18596,115 +19706,264 @@ class PeTeachersBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
       valueListenable: darkModeNotifier,
-      builder: (context, _, __) => Container(
+      builder: (context, isDark, __) => Container(
         margin: const EdgeInsets.fromLTRB(14, 24, 14, 8),
-        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topRight,
             end: Alignment.bottomLeft,
-            colors: [
-              const Color(0xff0369a1).withOpacity(0.15),
-              const Color(0xff0ea5e9).withOpacity(0.05),
-            ],
+            colors: isDark
+                ? [
+                    const Color(0xff082f49),
+                    const Color(0xff0c4a6e).withOpacity(0.85),
+                    kDarkCard,
+                  ]
+                : [
+                    const Color(0xffe0f2fe),
+                    const Color(0xfff0f9ff),
+                    Colors.white,
+                  ],
           ),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
-              color: const Color(0xff0ea5e9).withOpacity(0.4),
-              width: 1.2),
+            color: const Color(0xff0ea5e9)
+                .withOpacity(isDark ? 0.45 : 0.35),
+            width: 1.5,
+          ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xff0ea5e9).withOpacity(0.15),
+              color: const Color(0xff0ea5e9)
+                  .withOpacity(isDark ? 0.2 : 0.15),
+              blurRadius: 28,
+              offset: const Offset(0, 10),
+            ),
+            BoxShadow(
+              color: const Color(0xff38bdf8)
+                  .withOpacity(isDark ? 0.08 : 0.12),
               blurRadius: 18,
-              offset: const Offset(0, 6),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (_) => const PeTeachersHubPage()),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xff0284c7),
-                          Color(0xff38bdf8)
+              Positioned(
+                top: -50,
+                left: -50,
+                child: Container(
+                  width: 160,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xff0ea5e9)
+                            .withOpacity(isDark ? 0.25 : 0.12),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -60,
+                right: -60,
+                child: Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xff38bdf8)
+                            .withOpacity(isDark ? 0.2 : 0.1),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                const PeTeachersHubPage(),
+                          ),
+                        );
+                      },
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Color(0xff0284c7),
+                                  Color(0xff38bdf8),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xff0284c7)
+                                      .withOpacity(0.5),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 6),
+                                ),
+                                BoxShadow(
+                                  color: const Color(0xff38bdf8)
+                                      .withOpacity(0.35),
+                                  blurRadius: 28,
+                                  spreadRadius: -4,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.sports_rounded,
+                              color: Colors.white,
+                              size: 30,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'معلمان تربیت بدنی',
+                                  style: TextStyle(
+                                    color: txtC,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w900,
+                                    fontFamily: 'Vazirmatn',
+                                    letterSpacing: -0.3,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 5,
+                                      height: 5,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xff0ea5e9),
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(
+                                                    0xff0ea5e9)
+                                                .withOpacity(0.7),
+                                            blurRadius: 6,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Flexible(
+                                      child: Text(
+                                        'منابع تخصصی برای معلمان ورزش',
+                                        maxLines: 1,
+                                        overflow:
+                                            TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: mutC,
+                                          fontSize: 11,
+                                          fontFamily: 'Vazirmatn',
+                                          fontWeight:
+                                              FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: const Color(0xff0284c7)
+                                  .withOpacity(
+                                      isDark ? 0.25 : 0.12),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: const Color(0xff0284c7)
+                                    .withOpacity(0.35),
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              color: Color(0xff0ea5e9),
+                              size: 14,
+                            ),
+                          ),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xff0284c7)
-                              .withOpacity(0.4),
-                          blurRadius: 14,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
-                    child: const Icon(Icons.sports_rounded,
-                        color: Colors.white, size: 26),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 16),
+                    GridView.count(
+                      crossAxisCount: 3,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      childAspectRatio: 0.95,
                       children: [
-                        Text(
-                          'معلمان تربیت بدنی',
-                          style: TextStyle(
-                            color: txtC,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'Vazirmatn',
-                          ),
+                        _PeCard(
+                          label: 'فایل‌ها',
+                          icon: Icons.folder_rounded,
+                          color: const Color(0xff0284c7),
+                          index: 0,
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'فایل‌ها، تمرین، بخشنامه، نمونه سوال و ابزارها',
-                          style: TextStyle(
-                            color: mutC,
-                            fontSize: 11,
-                            fontFamily: 'Vazirmatn',
-                          ),
+                        _PeCard(
+                          label: 'تمرین و بازی',
+                          icon: Icons.sports_soccer_rounded,
+                          color: const Color(0xff059669),
+                          index: 1,
+                        ),
+                        _PeCard(
+                          label: 'مقالات',
+                          icon: Icons.article_rounded,
+                          color: const Color(0xff7c3aed),
+                          index: 2,
+                        ),
+                        _PeCard(
+                          label: 'بخشنامه‌ها',
+                          icon: Icons.campaign_rounded,
+                          color: const Color(0xffc1121f),
+                          index: 3,
+                        ),
+                        _PeCard(
+                          label: 'نمونه سؤالات',
+                          icon: Icons.quiz_rounded,
+                          color: const Color(0xffd97706),
+                          index: 4,
+                        ),
+                        _PeCard(
+                          label: 'ابزارها',
+                          icon: Icons.handyman_rounded,
+                          color: const Color(0xff0f766e),
+                          index: 5,
                         ),
                       ],
                     ),
-                  ),
-                  Icon(Icons.arrow_back_ios_new_rounded,
-                      color: accentNotifier.value, size: 14),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: const [
-                  _MiniChip(
-                      'فایل‌ها',
-                      Icons.folder_rounded,
-                      Color(0xff0284c7)),
-                  _MiniChip('تمرین و بازی',
-                      Icons.sports_soccer_rounded, Color(0xff059669)),
-                  _MiniChip('مقالات', Icons.article_rounded,
-                      Color(0xff7c3aed)),
-                  _MiniChip('بخشنامه‌ها', Icons.campaign_rounded,
-                      Color(0xffc1121f)),
-                  _MiniChip('نمونه سؤالات', Icons.quiz_rounded,
-                      Color(0xffd97706)),
-                  _MiniChip('ابزارها', Icons.handyman_rounded,
-                      Color(0xff0f766e)),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -18714,45 +19973,185 @@ class PeTeachersBanner extends StatelessWidget {
   }
 }
 
-class _MiniChip extends StatelessWidget {
+/* ==================== PE CARD (PREMIUM) ==================== */
+
+class _PeCard extends StatefulWidget {
   final String label;
   final IconData icon;
   final Color color;
-  const _MiniChip(this.label, this.icon, this.color);
+  final int index;
+  const _PeCard({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.index,
+  });
+
+  @override
+  State<_PeCard> createState() => _PeCardState();
+}
+
+class _PeCardState extends State<_PeCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 140),
+    );
+    _scale = Tween<double>(begin: 1.0, end: 0.93).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 13),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 10.5,
-              fontWeight: FontWeight.w900,
-              fontFamily: 'Vazirmatn',
+    final isDark = darkModeNotifier.value;
+    return GestureDetector(
+      onTapDown: (_) => _ctrl.forward(),
+      onTapUp: (_) => _ctrl.reverse(),
+      onTapCancel: () => _ctrl.reverse(),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PeTeachersHubPage(
+              initialTab: widget.index,
             ),
           ),
-        ],
+        );
+      },
+      child: ScaleTransition(
+        scale: _scale,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                widget.color.withOpacity(isDark ? 0.25 : 0.13),
+                widget.color.withOpacity(isDark ? 0.08 : 0.04),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: widget.color.withOpacity(isDark ? 0.5 : 0.35),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.color
+                    .withOpacity(isDark ? 0.2 : 0.12),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                top: -20,
+                right: -20,
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        widget.color
+                            .withOpacity(isDark ? 0.35 : 0.2),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            widget.color,
+                            widget.color.withOpacity(0.75),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(13),
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                widget.color.withOpacity(0.45),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                          BoxShadow(
+                            color: widget.color
+                                .withOpacity(isDark ? 0.4 : 0.25),
+                            blurRadius: 20,
+                            spreadRadius: -4,
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        widget.icon,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 2),
+                      child: Text(
+                        widget.label,
+                        maxLines: 2,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: txtC,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          height: 1.35,
+                          fontFamily: 'Vazirmatn',
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-/* ==================== PE TEACHERS HUB PAGE (NEW) ==================== */
+/* ==================== PE TEACHERS HUB PAGE ==================== */
 
 class PeTeachersHubPage extends StatefulWidget {
-  const PeTeachersHubPage({super.key});
+  final int initialTab;
+  const PeTeachersHubPage({super.key, this.initialTab = 0});
   @override
   State<PeTeachersHubPage> createState() => _PeTeachersHubPageState();
 }
@@ -18764,7 +20163,12 @@ class _PeTeachersHubPageState extends State<PeTeachersHubPage>
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: kPeTeacherTabs.length, vsync: this);
+    _tab = TabController(
+      length: kPeTeacherTabs.length,
+      vsync: this,
+      initialIndex:
+          widget.initialTab.clamp(0, kPeTeacherTabs.length - 1),
+    );
   }
 
   @override
@@ -19156,7 +20560,6 @@ class _PeTabContentState extends State<_PeTabContent> {
     );
   }
 }
-
 /* ==================== PE ADMIN LOGIN ==================== */
 
 class PeAdminLoginPage extends StatefulWidget {
@@ -19405,7 +20808,8 @@ class _PeAdminLoginPageState extends State<PeAdminLoginPage> {
     );
   }
 }
-/* ==================== PE ADMIN PANEL PAGE (FULL) ==================== */
+
+/* ==================== PE ADMIN PANEL PAGE ==================== */
 
 class PeAdminPanelPage extends StatefulWidget {
   final String username;
@@ -19423,22 +20827,18 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
     with SingleTickerProviderStateMixin {
   late TabController _tab;
 
-  // فرم ورودی
   final _titleCtrl = TextEditingController();
   final _contentCtrl = TextEditingController();
   bool _sending = false;
 
-  // فایل
   PlatformFile? _selectedFile;
   bool _uploadingFile = false;
   String? _uploadedFileUrl;
   String? _uploadedFileName;
 
-  // محتوای هر تب
   final Map<String, List<dynamic>> _itemsByType = {};
   final Map<String, bool> _loadingByType = {};
 
-  // در حال ویرایش
   int? _editingId;
 
   @override
@@ -19455,6 +20855,7 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
     if (!_itemsByType.containsKey(slug)) {
       _loadType(slug);
     }
+    if (mounted) setState(() {});
   }
 
   @override
@@ -19590,34 +20991,40 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
     setState(() => _sending = true);
 
     try {
-      // آپلود فایل در صورت وجود
       final ok = await _uploadFileIfNeeded();
       if (!ok) {
         if (mounted) setState(() => _sending = false);
         return;
       }
 
-      // ارسال به سرور
+      // ✅ ارسال به سرور
       if (_editingId != null) {
-        // ویرایش — فعلاً پشتیبانی نمیشه، دوباره ایجاد میکنه
-        // (میتوانی endpoint update اضافه کنی)
+        await updatePeTeacherContent(
+          username: widget.username,
+          appPassword: widget.password,
+          id: _editingId!,
+          type: _currentSlug,
+          title: title,
+          content: content,
+          fileUrl: _uploadedFileUrl,
+          fileName: _uploadedFileName,
+        );
+        if (!mounted) return;
+        showSnack(context, '✅ محتوا ویرایش شد!');
+      } else {
+        await postPeTeacherContent(
+          username: widget.username,
+          appPassword: widget.password,
+          type: _currentSlug,
+          title: title,
+          content: content,
+          fileUrl: _uploadedFileUrl,
+          fileName: _uploadedFileName,
+        );
+        if (!mounted) return;
+        showSnack(context, '✅ محتوا با موفقیت اضافه شد!');
       }
 
-      await postPeTeacherContent(
-        username: widget.username,
-        appPassword: widget.password,
-        type: _currentSlug,
-        title: title,
-        content: content,
-        fileUrl: _uploadedFileUrl,
-        fileName: _uploadedFileName,
-      );
-
-      if (!mounted) return;
-      HapticFeedback.mediumImpact();
-      showSnack(context, '✅ محتوا با موفقیت اضافه شد!');
-
-      // ریست فرم
       _titleCtrl.clear();
       _contentCtrl.clear();
       setState(() {
@@ -19692,6 +21099,7 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
         username: widget.username,
         appPassword: widget.password,
         id: id,
+        type: _currentSlug,
       );
       if (!mounted) return;
       showSnack(context, 'محتوا حذف شد.');
@@ -19716,7 +21124,8 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
       _uploadedFileName = item['file_name']?.toString();
       _selectedFile = null;
     });
-    showSnack(context, 'برای ویرایش، اطلاعات بارگذاری شد. تغییرات را اعمال و دکمه افزودن را بزنید.');
+    showSnack(context,
+        'برای ویرایش، اطلاعات بارگذاری شد. تغییرات را اعمال و دکمه افزودن را بزنید.');
   }
 
   void _cancelEdit() {
@@ -19892,13 +21301,11 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
           _sectionBanner(
             icon: Icons.sports_rounded,
             title: 'مدیریت «$label»',
-            subtitle:
-                'افزودن، ویرایش و حذف محتوا در این بخش',
+            subtitle: 'افزودن، ویرایش و حذف محتوا در این بخش',
             color: color,
           ),
           const SizedBox(height: 18),
 
-          // ویرایش فعال
           if (isCurrent && _editingId != null) ...[
             Container(
               padding: const EdgeInsets.all(10),
@@ -19915,7 +21322,7 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'در حال ویرایش — شناسه ${_editingId}',
+                      'در حال ویرایش — شناسه $_editingId',
                       style: TextStyle(
                         color: kWarning,
                         fontSize: 11,
@@ -19938,7 +21345,6 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
             const SizedBox(height: 12),
           ],
 
-          // عنوان
           Text(
             'عنوان',
             style: TextStyle(
@@ -19979,15 +21385,68 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
           ),
           const SizedBox(height: 16),
 
-          // متن
-          Text(
-            'توضیحات',
-            style: TextStyle(
-              color: color,
-              fontSize: 13.5,
-              fontWeight: FontWeight.w900,
-              fontFamily: 'Vazirmatn',
-            ),
+          Row(
+            children: [
+              Text(
+                'توضیحات',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+              const Spacer(),
+              // ✅ دکمه افزودن لینک
+              GestureDetector(
+                onTap: () async {
+                  await showInsertLinkDialog(
+                    context,
+                    controller: _contentCtrl,
+                    title: 'افزودن لینک به توضیحات',
+                  );
+                  setState(() {});
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xff0ea5e9),
+                        Color(0xff0284c7),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xff0ea5e9)
+                            .withOpacity(0.35),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.link_rounded,
+                          color: Colors.white, size: 13),
+                      SizedBox(width: 4),
+                      Text(
+                        'افزودن لینک',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Container(
@@ -20023,7 +21482,6 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
           ),
           const SizedBox(height: 16),
 
-          // فایل
           Text(
             'فایل ضمیمه (اختیاری، حداکثر ۵۰ مگابایت)',
             style: TextStyle(
@@ -20044,13 +21502,11 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
 
           const SizedBox(height: 20),
 
-          // دکمه ارسال
           SizedBox(
             height: 54,
             child: ElevatedButton.icon(
-              onPressed: _sending || _uploadingFile
-                  ? null
-                  : _submit,
+              onPressed:
+                  _sending || _uploadingFile ? null : _submit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: color,
                 foregroundColor: Colors.white,
@@ -20074,7 +21530,9 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
                     ? 'در حال آپلود فایل...'
                     : (_sending
                         ? 'در حال ارسال...'
-                        : 'افزودن به «$label»'),
+                        : (_editingId != null
+                            ? 'ذخیره تغییرات'
+                            : 'افزودن به «$label»')),
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w900,
@@ -20088,11 +21546,9 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
           Divider(color: lineC),
           const SizedBox(height: 14),
 
-          // لیست محتوا
           Row(
             children: [
-              Icon(Icons.list_alt_rounded,
-                  color: color, size: 18),
+              Icon(Icons.list_alt_rounded, color: color, size: 18),
               const SizedBox(width: 8),
               Text(
                 'محتوای موجود ($label)',
@@ -20165,8 +21621,6 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
       ),
     );
   }
-
-  // ==================== WIDGETS ====================
 
   Widget _sectionBanner({
     required IconData icon,
@@ -20312,7 +21766,8 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
       decoration: BoxDecoration(
         color: pnl,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.4), width: 1.2),
+        border:
+            Border.all(color: color.withOpacity(0.4), width: 1.2),
       ),
       child: Row(
         children: [
