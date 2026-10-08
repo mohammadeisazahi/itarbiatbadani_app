@@ -19697,7 +19697,7 @@ class _SportsGlossaryPageState extends State<SportsGlossaryPage> {
   }
 }
 
-/* ==================== PE TEACHERS BANNER (PREMIUM) ==================== */
+/* ==================== PE TEACHERS BANNER (FIXED) ==================== */
 
 class PeTeachersBanner extends StatelessWidget {
   const PeTeachersBanner({super.key});
@@ -19745,225 +19745,169 @@ class PeTeachersBanner extends StatelessWidget {
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Stack(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            // ✅ کلید حل مشکل: جلوگیری از بزرگ شدن بی‌دلیل
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Positioned(
-                top: -50,
-                left: -50,
-                child: Container(
-                  width: 160,
-                  height: 160,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        const Color(0xff0ea5e9)
-                            .withOpacity(isDark ? 0.25 : 0.12),
-                        Colors.transparent,
-                      ],
+              // ===== هدر =====
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const PeTeachersHubPage(),
                     ),
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: -60,
-                right: -60,
-                child: Container(
-                  width: 140,
-                  height: 140,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        const Color(0xff38bdf8)
-                            .withOpacity(isDark ? 0.2 : 0.1),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  );
+                },
+                child: Row(
                   children: [
-                    GestureDetector(
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                const PeTeachersHubPage(),
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xff0284c7),
+                            Color(0xff38bdf8),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xff0284c7)
+                                .withOpacity(0.5),
+                            blurRadius: 16,
+                            offset: const Offset(0, 5),
                           ),
-                        );
-                      },
-                      child: Row(
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.sports_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Color(0xff0284c7),
-                                  Color(0xff38bdf8),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(18),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xff0284c7)
-                                      .withOpacity(0.5),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 6),
-                                ),
-                                BoxShadow(
-                                  color: const Color(0xff38bdf8)
-                                      .withOpacity(0.35),
-                                  blurRadius: 28,
-                                  spreadRadius: -4,
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.sports_rounded,
-                              color: Colors.white,
-                              size: 30,
+                          Text(
+                            'معلمان تربیت بدنی',
+                            style: TextStyle(
+                              color: txtC,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Vazirmatn',
+                              letterSpacing: -0.3,
                             ),
                           ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'معلمان تربیت بدنی',
-                                  style: TextStyle(
-                                    color: txtC,
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w900,
-                                    fontFamily: 'Vazirmatn',
-                                    letterSpacing: -0.3,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 5,
-                                      height: 5,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xff0ea5e9),
-                                        shape: BoxShape.circle,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: const Color(
-                                                    0xff0ea5e9)
-                                                .withOpacity(0.7),
-                                            blurRadius: 6,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 5),
-                                    Flexible(
-                                      child: Text(
-                                        'منابع تخصصی برای معلمان ورزش',
-                                        maxLines: 1,
-                                        overflow:
-                                            TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: mutC,
-                                          fontSize: 11,
-                                          fontFamily: 'Vazirmatn',
-                                          fontWeight:
-                                              FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: const Color(0xff0284c7)
-                                  .withOpacity(
-                                      isDark ? 0.25 : 0.12),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: const Color(0xff0284c7)
-                                    .withOpacity(0.35),
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              color: Color(0xff0ea5e9),
-                              size: 14,
+                          const SizedBox(height: 2),
+                          Text(
+                            'منابع تخصصی برای معلمان ورزش',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: mutC,
+                              fontSize: 10.5,
+                              fontFamily: 'Vazirmatn',
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    GridView.count(
-                      crossAxisCount: 3,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 10,
-                      crossAxisSpacing: 10,
-                      childAspectRatio: 0.95,
-                      children: [
-                        _PeCard(
-                          label: 'فایل‌ها',
-                          icon: Icons.folder_rounded,
-                          color: const Color(0xff0284c7),
-                          index: 0,
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: const Color(0xff0284c7)
+                            .withOpacity(isDark ? 0.25 : 0.12),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xff0284c7)
+                              .withOpacity(0.35),
                         ),
-                        _PeCard(
-                          label: 'تمرین و بازی',
-                          icon: Icons.sports_soccer_rounded,
-                          color: const Color(0xff059669),
-                          index: 1,
-                        ),
-                        _PeCard(
-                          label: 'مقالات',
-                          icon: Icons.article_rounded,
-                          color: const Color(0xff7c3aed),
-                          index: 2,
-                        ),
-                        _PeCard(
-                          label: 'بخشنامه‌ها',
-                          icon: Icons.campaign_rounded,
-                          color: const Color(0xffc1121f),
-                          index: 3,
-                        ),
-                        _PeCard(
-                          label: 'نمونه سؤالات',
-                          icon: Icons.quiz_rounded,
-                          color: const Color(0xffd97706),
-                          index: 4,
-                        ),
-                        _PeCard(
-                          label: 'ابزارها',
-                          icon: Icons.handyman_rounded,
-                          color: const Color(0xff0f766e),
-                          index: 5,
-                        ),
-                      ],
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: Color(0xff0ea5e9),
+                        size: 13,
+                      ),
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 14),
+
+              // ===== گرید ۲×۳ (بدون GridView) =====
+              Row(
+                children: [
+                  Expanded(
+                    child: _PeCard(
+                      label: 'فایل‌ها',
+                      icon: Icons.folder_rounded,
+                      color: const Color(0xff0284c7),
+                      index: 0,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _PeCard(
+                      label: 'تمرین و بازی',
+                      icon: Icons.sports_soccer_rounded,
+                      color: const Color(0xff059669),
+                      index: 1,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _PeCard(
+                      label: 'مقالات',
+                      icon: Icons.article_rounded,
+                      color: const Color(0xff7c3aed),
+                      index: 2,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _PeCard(
+                      label: 'بخشنامه‌ها',
+                      icon: Icons.campaign_rounded,
+                      color: const Color(0xffc1121f),
+                      index: 3,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _PeCard(
+                      label: 'نمونه سؤالات',
+                      icon: Icons.quiz_rounded,
+                      color: const Color(0xffd97706),
+                      index: 4,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _PeCard(
+                      label: 'ابزارها',
+                      icon: Icons.handyman_rounded,
+                      color: const Color(0xff0f766e),
+                      index: 5,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -19973,7 +19917,7 @@ class PeTeachersBanner extends StatelessWidget {
   }
 }
 
-/* ==================== PE CARD (PREMIUM) ==================== */
+/* ==================== PE CARD (FIXED) ==================== */
 
 class _PeCard extends StatefulWidget {
   final String label;
@@ -20017,6 +19961,7 @@ class _PeCardState extends State<_PeCard>
   @override
   Widget build(BuildContext context) {
     final isDark = darkModeNotifier.value;
+
     return GestureDetector(
       onTapDown: (_) => _ctrl.forward(),
       onTapUp: (_) => _ctrl.reverse(),
@@ -20034,112 +19979,78 @@ class _PeCardState extends State<_PeCard>
       },
       child: ScaleTransition(
         scale: _scale,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                widget.color.withOpacity(isDark ? 0.25 : 0.13),
-                widget.color.withOpacity(isDark ? 0.08 : 0.04),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: widget.color.withOpacity(isDark ? 0.5 : 0.35),
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: widget.color
-                    .withOpacity(isDark ? 0.2 : 0.12),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+        // ✅ استفاده از AspectRatio برای کنترل اندازه دقیق
+        child: AspectRatio(
+          aspectRatio: 0.92,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  widget.color.withOpacity(isDark ? 0.28 : 0.14),
+                  widget.color.withOpacity(isDark ? 0.08 : 0.04),
+                ],
               ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                top: -20,
-                right: -20,
-                child: Container(
-                  width: 60,
-                  height: 60,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color:
+                    widget.color.withOpacity(isDark ? 0.5 : 0.35),
+                width: 1.2,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // آیکون
+                Container(
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                       colors: [
-                        widget.color
-                            .withOpacity(isDark ? 0.35 : 0.2),
-                        Colors.transparent,
+                        widget.color,
+                        widget.color.withOpacity(0.75),
                       ],
+                    ),
+                    borderRadius: BorderRadius.circular(11),
+                    boxShadow: [
+                      BoxShadow(
+                        color: widget.color.withOpacity(0.45),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    widget.icon,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                // متن
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    widget.label,
+                    maxLines: 2,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: txtC,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w900,
+                      height: 1.25,
+                      fontFamily: 'Vazirmatn',
+                      letterSpacing: -0.2,
                     ),
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            widget.color,
-                            widget.color.withOpacity(0.75),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(13),
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                widget.color.withOpacity(0.45),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                          BoxShadow(
-                            color: widget.color
-                                .withOpacity(isDark ? 0.4 : 0.25),
-                            blurRadius: 20,
-                            spreadRadius: -4,
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        widget.icon,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 2),
-                      child: Text(
-                        widget.label,
-                        maxLines: 2,
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: txtC,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          height: 1.35,
-                          fontFamily: 'Vazirmatn',
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
