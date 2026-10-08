@@ -20809,7 +20809,7 @@ class _PeAdminLoginPageState extends State<PeAdminLoginPage> {
   }
 }
 
-/* ==================== PE ADMIN PANEL PAGE ==================== */
+/* ==================== PE ADMIN PANEL PAGE (FINAL) ==================== */
 
 class PeAdminPanelPage extends StatefulWidget {
   final String username;
@@ -20827,18 +20827,22 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
     with SingleTickerProviderStateMixin {
   late TabController _tab;
 
+  // فرم
   final _titleCtrl = TextEditingController();
   final _contentCtrl = TextEditingController();
   bool _sending = false;
 
+  // فایل
   PlatformFile? _selectedFile;
   bool _uploadingFile = false;
   String? _uploadedFileUrl;
   String? _uploadedFileName;
 
+  // محتوا بر اساس تب
   final Map<String, List<dynamic>> _itemsByType = {};
   final Map<String, bool> _loadingByType = {};
 
+  // ویرایش
   int? _editingId;
 
   @override
@@ -20849,12 +20853,24 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
     _loadType(kPeTeacherTabs[0]['slug'] as String);
   }
 
+  /// ✅ هنگام تغییر تب، فرم پاک می‌شود + محتوای تب جدید لود می‌شود
   void _onTabChanged() {
     if (_tab.indexIsChanging) return;
     final slug = kPeTeacherTabs[_tab.index]['slug'] as String;
+
+    // لود محتوای تب جدید (اگر قبلاً لود نشده)
     if (!_itemsByType.containsKey(slug)) {
       _loadType(slug);
     }
+
+    // ✅ پاک کردن فرم هنگام تغییر تب
+    _titleCtrl.clear();
+    _contentCtrl.clear();
+    _selectedFile = null;
+    _uploadedFileUrl = null;
+    _uploadedFileName = null;
+    _editingId = null;
+
     if (mounted) setState(() {});
   }
 
@@ -21010,6 +21026,7 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
           fileName: _uploadedFileName,
         );
         if (!mounted) return;
+        HapticFeedback.mediumImpact();
         showSnack(context, '✅ محتوا ویرایش شد!');
       } else {
         await postPeTeacherContent(
@@ -21022,6 +21039,7 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
           fileName: _uploadedFileName,
         );
         if (!mounted) return;
+        HapticFeedback.mediumImpact();
         showSnack(context, '✅ محتوا با موفقیت اضافه شد!');
       }
 
@@ -21124,11 +21142,14 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
       _uploadedFileName = item['file_name']?.toString();
       _selectedFile = null;
     });
-    showSnack(context,
-        'برای ویرایش، اطلاعات بارگذاری شد. تغییرات را اعمال و دکمه افزودن را بزنید.');
+    showSnack(
+      context,
+      '✏️ حالت ویرایش فعال شد. تغییرات را اعمال و ذخیره کنید.',
+    );
   }
 
   void _cancelEdit() {
+    HapticFeedback.lightImpact();
     setState(() {
       _editingId = null;
       _titleCtrl.clear();
@@ -21216,6 +21237,15 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
           backgroundColor: bgC,
           foregroundColor: txtC,
           elevation: 0,
+          actions: [
+            if (_editingId != null)
+              IconButton(
+                onPressed: _cancelEdit,
+                icon: Icon(Icons.cancel_rounded,
+                    color: kWarning, size: 22),
+                tooltip: 'لغو ویرایش',
+              ),
+          ],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(52),
             child: Container(
@@ -21308,41 +21338,81 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
 
           if (isCurrent && _editingId != null) ...[
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: kWarning.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-                border:
-                    Border.all(color: kWarning.withOpacity(0.3)),
+                gradient: LinearGradient(
+                  colors: [
+                    kWarning.withOpacity(0.15),
+                    kWarning.withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: kWarning.withOpacity(0.4), width: 1.2),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.edit_rounded,
-                      color: kWarning, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'در حال ویرایش — شناسه $_editingId',
-                      style: TextStyle(
-                        color: kWarning,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        fontFamily: 'Vazirmatn',
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [kWarning, Color(0xfff59e0b)],
                       ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.edit_rounded,
+                        color: Colors.white, size: 18),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'حالت ویرایش فعال',
+                          style: TextStyle(
+                            color: kWarning,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'تغییرات را اعمال و ذخیره کنید',
+                          style: TextStyle(
+                            color: mutC,
+                            fontSize: 10.5,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  TextButton(
-                    onPressed: _cancelEdit,
-                    child: Text('لغو',
-                        style: TextStyle(
-                            color: kWarning,
-                            fontFamily: 'Vazirmatn',
-                            fontWeight: FontWeight.w900)),
+                  GestureDetector(
+                    onTap: _cancelEdit,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: kWarning.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: kWarning.withOpacity(0.35)),
+                      ),
+                      child: Text('لغو',
+                          style: TextStyle(
+                              color: kWarning,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Vazirmatn')),
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
           ],
 
           Text(
@@ -21397,7 +21467,6 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
                 ),
               ),
               const Spacer(),
-              // ✅ دکمه افزودن لینک
               GestureDetector(
                 onTap: () async {
                   await showInsertLinkDialog(
@@ -21405,7 +21474,7 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
                     controller: _contentCtrl,
                     title: 'افزودن لینک به توضیحات',
                   );
-                  setState(() {});
+                  if (mounted) setState(() {});
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -21467,7 +21536,8 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
                 fontFamily: 'Vazirmatn',
               ),
               decoration: InputDecoration(
-                hintText: 'توضیحات کامل...',
+                hintText:
+                    'توضیحات کامل...\n\nمی‌توانید از [متن](لینک) برای لینک‌گذاری استفاده کنید.',
                 hintStyle: TextStyle(
                     color: mutC, fontFamily: 'Vazirmatn'),
                 filled: true,
@@ -21493,9 +21563,9 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
           ),
           const SizedBox(height: 8),
 
-          if (_uploadedFileUrl != null) ...[
-            _buildUploadedFileCard(color),
-          ] else if (_selectedFile == null)
+          if (_uploadedFileUrl != null && _selectedFile == null)
+            _buildUploadedFileCard(color)
+          else if (_selectedFile == null)
             _buildFilePickerButton(color)
           else
             _buildSelectedFileCard(color),
@@ -21508,7 +21578,8 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
               onPressed:
                   _sending || _uploadingFile ? null : _submit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: color,
+                backgroundColor:
+                    _editingId != null ? kWarning : color,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -21524,7 +21595,12 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
                         color: Colors.white,
                       ),
                     )
-                  : const Icon(Icons.send_rounded, size: 20),
+                  : Icon(
+                      _editingId != null
+                          ? Icons.save_rounded
+                          : Icons.send_rounded,
+                      size: 20,
+                    ),
               label: Text(
                 _uploadingFile
                     ? 'در حال آپلود فایل...'
@@ -21836,6 +21912,7 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
         .split('.')
         .last;
     final icon = _fileIcon(ext);
+    final isEditing = _editingId != null;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -21865,11 +21942,16 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
               children: [
                 Row(
                   children: [
-                    Icon(Icons.check_circle_rounded,
-                        color: kSuccess, size: 14),
+                    Icon(
+                      isEditing
+                          ? Icons.info_rounded
+                          : Icons.check_circle_rounded,
+                      color: kSuccess,
+                      size: 14,
+                    ),
                     const SizedBox(width: 4),
                     Text(
-                      'فایل آماده است',
+                      isEditing ? 'فایل فعلی' : 'فایل آماده است',
                       style: TextStyle(
                         color: kSuccess,
                         fontSize: 11.5,
@@ -21920,14 +22002,21 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
     final fileUrl = item['file_url']?.toString() ?? '';
     final fileName = item['file_name']?.toString() ?? '';
     final date = item['date']?.toString() ?? '';
+    final itemId = int.tryParse(item['id']?.toString() ?? '');
+    final isBeingEdited = itemId != null && _editingId == itemId;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: pnl,
+        color: isBeingEdited ? kWarning.withOpacity(0.06) : pnl,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: lineC),
+        border: Border.all(
+          color: isBeingEdited
+              ? kWarning.withOpacity(0.5)
+              : lineC,
+          width: isBeingEdited ? 1.5 : 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -21938,11 +22027,18 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
+                  color: isBeingEdited
+                      ? kWarning.withOpacity(0.15)
+                      : color.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.description_rounded,
-                    color: color, size: 18),
+                child: Icon(
+                  isBeingEdited
+                      ? Icons.edit_rounded
+                      : Icons.description_rounded,
+                  color: isBeingEdited ? kWarning : color,
+                  size: 18,
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -21978,8 +22074,13 @@ class _PeAdminPanelPageState extends State<PeAdminPanelPage>
               ),
               IconButton(
                 onPressed: () => _startEdit(item),
-                icon: Icon(Icons.edit_rounded,
-                    color: color, size: 20),
+                icon: Icon(
+                  isBeingEdited
+                      ? Icons.edit_off_rounded
+                      : Icons.edit_rounded,
+                  color: isBeingEdited ? kWarning : color,
+                  size: 20,
+                ),
                 tooltip: 'ویرایش',
                 visualDensity: VisualDensity.compact,
               ),
