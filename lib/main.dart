@@ -14081,8 +14081,8 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                               _adSaving ? null : _clearAd,
                           style: OutlinedButton.styleFrom(
                             foregroundColor: rose,
-                            side: const BorderSide(color: rose),
-                            shape: RoundedRectangleBorder(
+                            side: BorderSide(color: rose),
+                              shape: RoundedRectangleBorder(
                               borderRadius:
                                   BorderRadius.circular(14),
                             ),
