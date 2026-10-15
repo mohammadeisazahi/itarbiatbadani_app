@@ -16,6 +16,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/* ==================== CONSTANTS ==================== */
+
 const String site = 'https://itarbiatbadani.ir';
 const String api = '$site/wp-json/wp/v2';
 const String wcKey = 'YOUR_WC_KEY';
@@ -27,10 +29,16 @@ const String heroImg =
     '$site/wp-content/uploads/2025/08/file_00000000b12862439589872d238e031b-1.png';
 const int perPageSize = 10;
 
+/// Endpoint کوئیز
 const String quizRemoteApi = '$site/wp-json/itarbiat/v1/quiz';
-const String glossaryRemoteApi = '$site/wp-json/itarbiat/v1/glossary';
-const String peTeachersApi = '$site/wp-json/itarbiat/v1/pe-teachers';
 
+/// Endpoint لغات تخصصی
+const String glossaryRemoteApi = '$site/wp-json/itarbiat/v1/glossary';
+
+/// نامک برگه تبلیغ در وردپرس (خودکار توسط اپ ساخته می‌شود)
+const String adBannerSlug = 'app-banner';
+
+/// حروف گزینه‌های کوئیز
 const List<String> kQuizLetters = ['الف', 'ب', 'ج', 'د'];
 
 /* ==================== RESPONSIVE HELPER ==================== */
@@ -58,45 +66,8 @@ class R {
 
   static double r(double v) => v * (_d / _base);
 }
+/* ==================== NOTIFIERS ==================== */
 
-const List<Map<String, dynamic>> kPeTeacherTabs = [
-  {
-    'slug': 'files',
-    'label': 'فایل‌ها',
-    'icon': Icons.folder_rounded,
-    'color': Color(0xff0284c7),
-  },
-  {
-    'slug': 'exercises',
-    'label': 'تمرین و بازی',
-    'icon': Icons.sports_soccer_rounded,
-    'color': Color(0xff059669),
-  },
-  {
-    'slug': 'articles',
-    'label': 'مقالات',
-    'icon': Icons.article_rounded,
-    'color': Color(0xff7c3aed),
-  },
-  {
-    'slug': 'circulars',
-    'label': 'بخشنامه‌ها',
-    'icon': Icons.campaign_rounded,
-    'color': Color(0xffc1121f),
-  },
-  {
-    'slug': 'questions',
-    'label': 'نمونه سؤالات',
-    'icon': Icons.quiz_rounded,
-    'color': Color(0xffd97706),
-  },
-  {
-    'slug': 'tools',
-    'label': 'ابزارها',
-    'icon': Icons.handyman_rounded,
-    'color': Color(0xff0f766e),
-  },
-];
 final _storage = const FlutterSecureStorage();
 final darkModeNotifier = ValueNotifier<bool>(true);
 final themeModeNotifier = ValueNotifier<String>('auto');
@@ -112,6 +83,8 @@ final readArticlesNotifier =
 final readingStatsNotifier = ValueNotifier<Map<String, dynamic>>({});
 final accentNotifier = ValueNotifier<Color>(const Color(0xff1a2b47));
 final adBannerNotifier = ValueNotifier<Map<String, dynamic>?>(null);
+
+/* ==================== COLOR SYSTEM ==================== */
 
 const Color kPrimaryNavy = Color(0xff1a2b47);
 const Color kPrimaryNavyLight = Color(0xff2c4470);
@@ -175,6 +148,8 @@ const List<Color> accentPalette = [
   Color(0xff0f1a2e),
 ];
 
+/* ==================== THEME COLOR GETTERS ==================== */
+
 Color get bgC => darkModeNotifier.value ? kDarkBg : kLightBg;
 Color get bgGrad1 => darkModeNotifier.value ? kDarkBg : kLightBg;
 Color get bgGrad2 => darkModeNotifier.value
@@ -218,6 +193,8 @@ Color get chipBg => darkModeNotifier.value
 Color get chipFg =>
     darkModeNotifier.value ? kAccentGold : kPrimaryNavy;
 
+/* ==================== CATEGORY MODEL ==================== */
+
 class Cat {
   final String n;
   final String s;
@@ -225,7 +202,6 @@ class Cat {
   final Color c;
   const Cat(this.n, this.s, this.i, this.c);
 }
-
 const cats = <Cat>[
   Cat('رشته تربیت بدنی و علوم ورزشی',
       'physical-education-sport-sciences',
@@ -290,6 +266,8 @@ class QuizQuestion {
         explanation: m['explanation']?.toString(),
       );
 }
+
+/* ==================== QUIZ LOADING ==================== */
 
 Future<void> loadQuiz() async {
   try {
@@ -454,9 +432,9 @@ Future<void> saveAccentColor(Color c) async {
   } catch (_) {}
 }
 
-/* ==================== AD BANNER ==================== */
+/* ==================== AD BANNER (LOCAL CACHE) ==================== */
 
-Future<void> loadAdBanner() async {
+Future<void> loadAdBannerLocal() async {
   try {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString('ad_banner');
@@ -715,7 +693,7 @@ Future<void> clearAllNotifications() async {
   } catch (_) {}
 }
 
-/// ✅ حذف اعلان مربوط به یک خبر (وقتی خبر حذف می‌شود)
+/// حذف اعلان مربوط به یک خبر (وقتی خبر حذف می‌شود)
 Future<void> removeNotificationByNewsId(String newsId) async {
   final list = inAppNotificationsNotifier.value
       .where((e) => e['id'].toString() != newsId)
@@ -964,6 +942,8 @@ Future<void> sharePostWithImage(
   }
 }
 
+/* ==================== SNACK ==================== */
+
 void showSnack(BuildContext context, String msg, {bool error = false}) {
   if (!context.mounted) return;
   final isDark = darkModeNotifier.value;
@@ -1119,6 +1099,8 @@ String pAuthorAvatar(dynamic p) {
   return '';
 }
 
+/* ==================== JALALI DATE ==================== */
+
 String pDate(dynamic p) {
   try {
     final d = DateTime.parse(p['date']).toLocal();
@@ -1182,7 +1164,7 @@ List<int> _toJalali(int gy, int gm, int gd) {
   return [jy, jm, jd];
 }
 
-/* ==================== LINK HELPERS ==================== */
+/* ==================== LINK ENRICHMENT ==================== */
 
 String autoLinkUrls(String text) {
   final urlRe = RegExp(r'(https?://[^\s<>"]+)');
@@ -1205,7 +1187,7 @@ String enrichNewsContent(String raw) {
   return autoLinkUrls(applyMarkdownLinks(raw));
 }
 
-/* ==================== RICH TEXT HELPERS ==================== */
+/* ==================== RICH TEXT SPANS ==================== */
 
 List<TextSpan> buildRichSpans(
   String html, {
@@ -1277,7 +1259,7 @@ List<TextSpan> buildRichSpans(
   return spans;
 }
 
-/* ==================== PERSIAN TO FINGLISH (SLUG) ==================== */
+/* ==================== PERSIAN TO SLUG ==================== */
 
 String persianToFinglish(String input) {
   if (input.isEmpty) return '';
@@ -1338,7 +1320,7 @@ String generateSlug(String title) {
   }
   return slug;
 }
-/* ==================== API & CACHE ==================== */
+/* ==================== API CACHE ==================== */
 
 final Map<String, List> _postsCache = {};
 final Map<String, int> _postsCacheTime = {};
@@ -1347,6 +1329,8 @@ const int _cacheNewsSeconds = 30;
 const int _cachePostsSeconds = 300;
 const int _cacheProductsSeconds = 1800;
 const int _cacheCategoriesSeconds = 86400;
+
+/* ==================== POSTS ==================== */
 
 Future<List> getPostsPaged({
   int perPage = perPageSize,
@@ -1387,6 +1371,8 @@ Future<List> getPostsPaged({
   }
 }
 
+/* ==================== PRODUCTS ==================== */
+
 Future<List> getProductsPaged(
     {int perPage = perPageSize, int page = 1}) async {
   final u =
@@ -1422,6 +1408,8 @@ Future<List> getProductsPaged(
   }
 }
 
+/* ==================== CATEGORY ID ==================== */
+
 Future<int?> getCatIdBySlug(String slug) async {
   try {
     final r = await http.get(Uri.parse('$api/categories?slug=$slug'));
@@ -1432,6 +1420,8 @@ Future<int?> getCatIdBySlug(String slug) async {
   } catch (_) {}
   return null;
 }
+
+/* ==================== SEARCH ==================== */
 
 Future<List> searchExact(String query, {String? categorySlug}) async {
   var url = '$api/posts?search=${Uri.encodeComponent(query)}'
@@ -1478,6 +1468,8 @@ Future<List> searchExact(String query, {String? categorySlug}) async {
   return filtered;
 }
 
+/* ==================== PRICE FORMAT ==================== */
+
 String formatPrice(String price) {
   if (price.isEmpty) return '';
   final n = int.tryParse(price);
@@ -1494,7 +1486,10 @@ String formatPrice(String price) {
 /* ==================== NEWS API ==================== */
 
 String _newNewsUrl({int perPage = 10, int page = 1}) {
-  return '$api/new_news?per_page=$perPage&page=$page&orderby=date&order=desc&_embed=wp:featuredmedia,wp:term,author&_fields=id,link,title,date,excerpt,content,_embedded,_links';
+  return '$api/new_news?per_page=$perPage&page=$page'
+      '&orderby=date&order=desc'
+      '&_embed=wp:featuredmedia,wp:term,author'
+      '&_fields=id,link,title,date,excerpt,content,_embedded,_links';
 }
 
 Future<List> getNewNewsList() async {
@@ -1506,12 +1501,14 @@ Future<List> getNewNewsList() async {
     return [];
   }
 }
-/* ==================== ADMIN API ==================== */
+/* ==================== ADMIN AUTH ==================== */
 
 String _basicAuth(String user, String pass) {
   final clean = pass.replaceAll(' ', '');
   return base64Encode(utf8.encode('$user:$clean'));
 }
+
+/* ==================== NEWS ADMIN API ==================== */
 
 Future<Map<String, dynamic>> postNewNews({
   required String username,
@@ -1616,6 +1613,153 @@ Future<void> verifyAdmin({
   if (r.statusCode == 200) return;
   if (r.statusCode == 401) throw Exception('نام کاربری یا رمز اشتباه است.');
   throw Exception('خطا در ورود (${r.statusCode})');
+}
+
+/* ==================== AD BANNER API ==================== */
+
+/// ذخیره تبلیغ در وردپرس (از پنل ادمین اپ)
+Future<void> saveAdBannerToServer({
+  required String username,
+  required String appPassword,
+  required String title,
+  required String link,
+  String? imageUrl,
+}) async {
+  final auth = _basicAuth(username, appPassword);
+
+  // چک کن برگه قبلاً ساخته شده یا نه
+  final checkUrl = '$api/pages?slug=$adBannerSlug&_fields=id';
+  final checkResp = await http.get(Uri.parse(checkUrl));
+
+  int? existingId;
+  if (checkResp.statusCode == 200) {
+    final list = json.decode(checkResp.body) as List;
+    if (list.isNotEmpty) existingId = list[0]['id'];
+  }
+
+  // محتوای برگه
+  String content = link;
+  if (imageUrl != null && imageUrl.isNotEmpty) {
+    content = '<img src="$imageUrl" alt="$title" />\n$link';
+  }
+
+  final body = jsonEncode({
+    'title': title.isEmpty ? 'تبلیغ' : title,
+    'content': content,
+    'slug': adBannerSlug,
+    'status': 'publish',
+  });
+
+  http.Response r;
+  if (existingId != null) {
+    r = await http.put(
+      Uri.parse('$api/pages/$existingId'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Basic $auth',
+      },
+      body: body,
+    );
+  } else {
+    r = await http.post(
+      Uri.parse('$api/pages'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Basic $auth',
+      },
+      body: body,
+    );
+  }
+
+  if (r.statusCode == 200 || r.statusCode == 201) return;
+  if (r.statusCode == 401) {
+    throw Exception('نام کاربری یا رمز اشتباه است.');
+  }
+  if (r.statusCode == 403) {
+    throw Exception('شما اجازه ذخیره تبلیغ ندارید.');
+  }
+  throw Exception('خطا در ذخیره تبلیغ (${r.statusCode})');
+}
+
+/// حذف تبلیغ از سرور
+Future<void> deleteAdBannerFromServer({
+  required String username,
+  required String appPassword,
+}) async {
+  final auth = _basicAuth(username, appPassword);
+  final checkUrl = '$api/pages?slug=$adBannerSlug&_fields=id';
+  final checkResp = await http.get(Uri.parse(checkUrl));
+  if (checkResp.statusCode != 200) return;
+
+  final list = json.decode(checkResp.body) as List;
+  if (list.isEmpty) return;
+
+  await http.delete(
+    Uri.parse('$api/pages/${list[0]['id']}?force=true'),
+    headers: {
+      'Accept': 'application/json',
+      'Authorization': 'Basic $auth',
+    },
+  );
+}
+
+/// خوندن تبلیغ از سرور (برای همه کاربرا)
+Future<void> loadAdBannerFromServer() async {
+  try {
+    final url = '$api/pages?slug=$adBannerSlug'
+        '&_embed=wp:featuredmedia&_fields=title,content,_embedded';
+    final r = await http
+        .get(Uri.parse(url))
+        .timeout(const Duration(seconds: 10));
+
+    if (r.statusCode == 200) {
+      final list = json.decode(r.body);
+      if (list is List && list.isNotEmpty) {
+        final page = list[0];
+        final title = clean(page['title']?['rendered'] ?? '');
+        final rawContent = page['content']?['rendered'] ?? '';
+
+        // استخراج لینک
+        String link = '';
+        final urlMatch =
+            RegExp(r'https?://[^\s<>"]+').firstMatch(rawContent);
+        if (urlMatch != null) link = urlMatch.group(0) ?? '';
+
+        // استخراج تصویر
+        String imageUrl = '';
+        final media = page['_embedded']?['wp:featuredmedia'];
+        if (media is List && media.isNotEmpty) {
+          imageUrl = media[0]?['source_url']?.toString() ?? '';
+        }
+        if (imageUrl.isEmpty) {
+          final imgMatch =
+              RegExp(r'<img[^>]+src="([^"]+)"').firstMatch(rawContent);
+          if (imgMatch != null) imageUrl = imgMatch.group(1) ?? '';
+        }
+
+        if (imageUrl.isNotEmpty || title.isNotEmpty) {
+          final adData = {
+            'imageUrl': imageUrl,
+            'title': title,
+            'link': link,
+          };
+          adBannerNotifier.value = adData;
+
+          // ذخیره محلی برای آفلاین
+          try {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('ad_banner', json.encode(adData));
+          } catch (_) {}
+          return;
+        }
+      }
+    }
+  } catch (_) {}
+
+  // fallback: خوندن از حافظه محلی
+  await loadAdBannerLocal();
 }
 
 /* ==================== QUIZ API ==================== */
@@ -1809,143 +1953,6 @@ Future<void> deleteGlossaryWord({
   throw Exception('خطا در حذف (${r.statusCode})');
 }
 
-/* ==================== PE TEACHERS API ==================== */
-
-Future<List> getPeTeacherContent(String slug) async {
-  try {
-    final r = await http
-        .get(Uri.parse('$peTeachersApi?type=$slug'))
-        .timeout(const Duration(seconds: 10));
-    if (r.statusCode == 200) {
-      final data = json.decode(r.body);
-      if (data is List) {
-        try {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('pe_cache_$slug', r.body);
-        } catch (_) {}
-        return data;
-      }
-    }
-  } catch (_) {}
-
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final cached = prefs.getString('pe_cache_$slug');
-    if (cached != null && cached.isNotEmpty) {
-      return json.decode(cached) as List;
-    }
-  } catch (_) {}
-
-  return [];
-}
-
-Future<Map<String, dynamic>> postPeTeacherContent({
-  required String username,
-  required String appPassword,
-  required String type,
-  required String title,
-  required String content,
-  String? fileUrl,
-  String? fileName,
-}) async {
-  final auth = _basicAuth(username, appPassword);
-  final uri = Uri.parse(peTeachersApi);
-
-  final body = {
-    'type': type,
-    'title': title,
-    'content': content,
-    if (fileUrl != null) 'file_url': fileUrl,
-    if (fileName != null) 'file_name': fileName,
-  };
-
-  final r = await http.post(
-    uri,
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Authorization': 'Basic $auth',
-    },
-    body: jsonEncode(body),
-  );
-
-  if (r.statusCode == 201 || r.statusCode == 200) {
-    final d = jsonDecode(r.body);
-    if (d is Map) return Map<String, dynamic>.from(d);
-    throw Exception('پاسخ نامعتبر');
-  }
-  if (r.statusCode == 401) {
-    throw Exception('نام کاربری یا رمز اشتباه است.');
-  }
-  if (r.statusCode == 403) {
-    throw Exception('شما اجازه ارسال ندارید.');
-  }
-  throw Exception('خطا در ارسال (${r.statusCode})');
-}
-
-Future<void> updatePeTeacherContent({
-  required String username,
-  required String appPassword,
-  required int id,
-  required String type,
-  required String title,
-  required String content,
-  String? fileUrl,
-  String? fileName,
-}) async {
-  final auth = _basicAuth(username, appPassword);
-  final uri = Uri.parse('$peTeachersApi/$id?type=$type');
-
-  final r = await http.put(
-    uri,
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Authorization': 'Basic $auth',
-    },
-    body: jsonEncode({
-      'type': type,
-      'title': title,
-      'content': content,
-      if (fileUrl != null) 'file_url': fileUrl,
-      if (fileName != null) 'file_name': fileName,
-    }),
-  );
-  if (r.statusCode == 200 || r.statusCode == 201) return;
-  if (r.statusCode == 401) {
-    throw Exception('نام کاربری یا رمز اشتباه است.');
-  }
-  if (r.statusCode == 403) {
-    throw Exception('شما اجازه ویرایش ندارید.');
-  }
-  throw Exception('خطا در ویرایش (${r.statusCode})');
-}
-
-Future<void> deletePeTeacherContent({
-  required String username,
-  required String appPassword,
-  required int id,
-  required String type,
-}) async {
-  final auth = _basicAuth(username, appPassword);
-  final uri = Uri.parse('$peTeachersApi/$id?type=$type');
-  final r = await http.delete(
-    uri,
-    headers: {
-      'Accept': 'application/json',
-      'Authorization': 'Basic $auth',
-    },
-  );
-  if (r.statusCode == 200 || r.statusCode == 201) return;
-  if (r.statusCode == 401) {
-    throw Exception('نام کاربری یا رمز اشتباه است.');
-  }
-  if (r.statusCode == 403) {
-    throw Exception('شما اجازه حذف ندارید.');
-  }
-  throw Exception('خطا در حذف (${r.statusCode})');
-}
-
 /* ==================== MEDIA UPLOAD ==================== */
 
 Future<Map<String, dynamic>> uploadMedia({
@@ -1999,7 +2006,6 @@ Future<Map<String, dynamic>> uploadMedia({
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔒 قفل کردن جهت به حالت عمودی برای جلوگیری از به‌هم‌ریختن در Landscape
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -2020,13 +2026,16 @@ void main() async {
     await loadReadingStats();
     await loadQuiz();
     await loadQuizAnswers();
-    await loadAdBanner();
+    await loadAdBannerLocal();
     Future.delayed(const Duration(seconds: 2), () {
+      loadAdBannerFromServer();
       checkForNewNotifications();
     });
   } catch (_) {}
   runApp(const App());
 }
+
+/* ==================== APP ==================== */
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -2313,6 +2322,8 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
+/* ==================== DOTS LOADER ==================== */
+
 class _DotsLoader extends StatefulWidget {
   const _DotsLoader();
   @override
@@ -2364,7 +2375,7 @@ class _DotsLoaderState extends State<_DotsLoader>
     );
   }
 }
-/* ==================== ROOT (WITH DEEP LINKING) ==================== */
+/* ==================== ROOT ==================== */
 
 class Root extends StatefulWidget {
   const Root({super.key});
@@ -2452,7 +2463,8 @@ class _RootState extends State<Root> {
 
         final newsUrl =
             '$api/new_news?slug=${Uri.encodeComponent(slug)}'
-            '&_embed=wp:featuredmedia,wp:term,author&_fields=id,link,title,date,excerpt,content,_embedded,_links';
+            '&_embed=wp:featuredmedia,wp:term,author'
+            '&_fields=id,link,title,date,excerpt,content,_embedded,_links';
         final newsResponse = await http.get(Uri.parse(newsUrl));
         if (newsResponse.statusCode == 200) {
           final newsList = json.decode(newsResponse.body) as List;
@@ -2500,7 +2512,7 @@ class _RootState extends State<Root> {
   }
 }
 
-/* ==================== PREMIUM NAV BAR ==================== */
+/* ==================== MODERN NAV BAR ==================== */
 
 class _ModernNavBar extends StatelessWidget {
   final int currentIndex;
@@ -2815,6 +2827,7 @@ class _HomeState extends State<Home> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {
         precacheImage(NetworkImage(heroImg), context);
+        loadAdBannerFromServer();
         checkForNewNotifications();
       } catch (_) {}
     });
@@ -2835,6 +2848,7 @@ class _HomeState extends State<Home> {
     });
     try {
       await _f;
+      await loadAdBannerFromServer();
       await checkForNewNotifications();
     } catch (_) {}
   }
@@ -3010,6 +3024,7 @@ Widget ModernHeader(BuildContext context, [String? t]) {
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
       child: Row(
         children: [
+          // لوگو
           Container(
             width: 48,
             height: 48,
@@ -3053,6 +3068,7 @@ Widget ModernHeader(BuildContext context, [String? t]) {
             ),
           ),
           const SizedBox(width: 12),
+          // عنوان
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -3108,7 +3124,7 @@ Widget ModernHeader(BuildContext context, [String? t]) {
             ),
           ),
 
-          // 🔔 اعلان‌ها (اصلاح‌شده — بج داخل IgnorePointer)
+          // 🔔 اعلان‌ها (اصلاح‌شده)
           ValueListenableBuilder<List<Map<String, dynamic>>>(
             valueListenable: inAppNotificationsNotifier,
             builder: (c, list, __) {
@@ -3198,6 +3214,8 @@ Widget ModernHeader(BuildContext context, [String? t]) {
     ),
   );
 }
+
+/* ==================== HEADER ICON BUTTON ==================== */
 
 class _HeaderIconButton extends StatelessWidget {
   final IconData icon;
@@ -4916,7 +4934,7 @@ class AdBannerWidget extends StatelessWidget {
     );
   }
 }
-/* ==================== MODERN SERVICES SECTION (بدون منابع استخدامی) ==================== */
+/* ==================== MODERN SERVICES SECTION ==================== */
 
 class ModernServicesSection extends StatefulWidget {
   const ModernServicesSection({super.key});
@@ -7263,7 +7281,7 @@ class _FollowedCategoriesSectionState
     );
   }
 }
-/* ==================== PREMIUM ARTICLES PAGE ==================== */
+/* ==================== ARTICLES PAGE ==================== */
 
 class ArticlesPage extends StatefulWidget {
   const ArticlesPage({super.key});
@@ -7819,7 +7837,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
   }
 }
 
-/* ==================== PREMIUM NEWS PAGE ==================== */
+/* ==================== NEWS PAGE ==================== */
 
 class NewsPage extends StatefulWidget {
   const NewsPage({super.key});
@@ -8584,7 +8602,8 @@ class _PremiumNewsCardState extends State<_PremiumNewsCard> {
                       fontFamily: 'Vazirmatn',
                     ),
                   ),
-                  if (excerpt.isNotEmpty) ...[                    const SizedBox(height: 8),
+                  if (excerpt.isNotEmpty) ...[
+                    const SizedBox(height: 8),
                     Text(
                       excerpt,
                       maxLines: 2,
@@ -8646,7 +8665,7 @@ class _PremiumNewsCardState extends State<_PremiumNewsCard> {
     );
   }
 }
-/* ==================== PREMIUM SHOP PAGE ==================== */
+/* ==================== SHOP PAGE ==================== */
 
 class ShopPage extends StatefulWidget {
   const ShopPage({super.key});
@@ -8851,7 +8870,7 @@ class _ShopPageState extends State<ShopPage> {
   }
 }
 
-/* ==================== PREMIUM BOOKMARKS PAGE (3 TABS) ==================== */
+/* ==================== BOOKMARKS PAGE (3 TABS) ==================== */
 
 class BookmarksPage extends StatefulWidget {
   const BookmarksPage({super.key});
@@ -9344,7 +9363,7 @@ class _BookmarksPageState extends State<BookmarksPage>
     }
   }
 }
-/* ==================== PREMIUM SEARCH PAGE ==================== */
+/* ==================== SEARCH PAGE ==================== */
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -10229,7 +10248,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 }
 
-/* ==================== PREMIUM ACCOUNT PAGE ==================== */
+/* ==================== ACCOUNT PAGE ==================== */
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -12301,7 +12320,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                'برای مدیریت اخبار و کوئیز وارد شوید',
+                'برای مدیریت اخبار، کوئیز و تبلیغات وارد شوید',
                 style: TextStyle(
                   color: mutC,
                   fontSize: 12.5,
@@ -13504,11 +13523,9 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     final title = _adTitleCtrl.text.trim();
     final link = _adLinkCtrl.text.trim();
 
-    if (title.isEmpty &&
-        _adImageUrl == null &&
-        _adImageFile == null) {
-      await saveAdBanner(null);
-      if (mounted) showSnack(context, 'تبلیغ پاک شد');
+    if (title.isEmpty && _adImageUrl == null && _adImageFile == null) {
+      showSnack(context, 'حداقل متن یا تصویر را وارد کنید.',
+          error: true);
       return;
     }
 
@@ -13517,7 +13534,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     try {
       String? imageUrl = _adImageUrl;
 
-      if (_adImageFile != null && _adImageUrl == null) {
+      if (_adImageFile != null) {
         final result = await uploadMedia(
           username: widget.username,
           appPassword: widget.password,
@@ -13527,6 +13544,16 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         imageUrl = result['source_url']?.toString();
       }
 
+      // ذخیره در سرور (برای همه کاربرا)
+      await saveAdBannerToServer(
+        username: widget.username,
+        appPassword: widget.password,
+        title: title,
+        link: link,
+        imageUrl: imageUrl,
+      );
+
+      // ذخیره محلی هم برای آفلاین
       await saveAdBanner({
         'imageUrl': imageUrl ?? '',
         'title': title,
@@ -13534,7 +13561,8 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       });
 
       if (!mounted) return;
-      showSnack(context, '✅ تبلیغ ذخیره شد');
+      HapticFeedback.mediumImpact();
+      showSnack(context, '✅ تبلیغ برای همه کاربرا ذخیره شد');
       setState(() {
         _adImageFile = null;
         _adImageUrl = imageUrl;
@@ -13556,12 +13584,12 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         backgroundColor: pnl,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20)),
-        title: Text('پاک کردن تبلیغ',
+        title: Text('حذف تبلیغ',
             style: TextStyle(
                 color: txtC,
                 fontWeight: FontWeight.w900,
                 fontFamily: 'Vazirmatn')),
-        content: Text('آیا تبلیغ حذف شود؟',
+        content: Text('آیا تبلیغ برای همه کاربرا حذف شود؟',
             style: TextStyle(
                 color: mutC, fontFamily: 'Vazirmatn')),
         actions: [
@@ -13583,14 +13611,31 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       ),
     );
     if (confirm != true) return;
-    await saveAdBanner(null);
-    _adTitleCtrl.clear();
-    _adLinkCtrl.clear();
-    setState(() {
-      _adImageFile = null;
-      _adImageUrl = null;
-    });
-    if (mounted) showSnack(context, 'تبلیغ حذف شد');
+
+    setState(() => _adSaving = true);
+
+    try {
+      await deleteAdBannerFromServer(
+        username: widget.username,
+        appPassword: widget.password,
+      );
+      await saveAdBanner(null);
+      _adTitleCtrl.clear();
+      _adLinkCtrl.clear();
+      setState(() {
+        _adImageFile = null;
+        _adImageUrl = null;
+      });
+      if (mounted) showSnack(context, '✅ تبلیغ حذف شد');
+    } catch (e) {
+      if (mounted) {
+        showSnack(context,
+            e.toString().replaceFirst('Exception: ', ''),
+            error: true);
+      }
+    } finally {
+      if (mounted) setState(() => _adSaving = false);
+    }
   }
 
   @override
@@ -13969,7 +14014,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                 icon: Icons.campaign_rounded,
                 title: 'تبلیغات بالای صفحه',
                 subtitle:
-                    'بنر تبلیغاتی زیر اسلایدر — عکس و متن با لینک',
+                    'بنر تبلیغاتی زیر اسلایدر — برای همه کاربران نمایش داده می‌شود',
                 color: kAccentGold,
               ),
               const SizedBox(height: 18),
@@ -14082,7 +14127,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: rose,
                             side: BorderSide(color: rose),
-                              shape: RoundedRectangleBorder(
+                            shape: RoundedRectangleBorder(
                               borderRadius:
                                   BorderRadius.circular(14),
                             ),
@@ -14133,7 +14178,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                         label: Text(
                           _adSaving
                               ? 'در حال ذخیره...'
-                              : 'ذخیره تبلیغ',
+                              : 'ذخیره تبلیغ (برای همه)',
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w900,
@@ -16162,7 +16207,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 }
-
 /* ==================== FOLLOWED CATEGORIES PAGE ==================== */
 
 class FollowedCategoriesPage extends StatefulWidget {
@@ -16588,6 +16632,7 @@ class _FollowedCategoriesPageState
     }
   }
 }
+
 /* ==================== BMI CALCULATOR PAGE ==================== */
 
 class BMICalculatorPage extends StatefulWidget {
@@ -17559,7 +17604,6 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
     );
   }
 }
-
 /* ==================== QUIZ PAGE ==================== */
 
 class QuizPage extends StatefulWidget {
@@ -18752,6 +18796,7 @@ class _QuizPageState extends State<QuizPage> {
     );
   }
 }
+
 /* ==================== READING STATS PAGE ==================== */
 
 class ReadingStatsPage extends StatelessWidget {
@@ -19882,7 +19927,7 @@ class _SportsGlossaryPageState extends State<SportsGlossaryPage> {
   }
 }
 
-/* ==================== SKELETON: ARTICLES ==================== */
+/* ==================== SKELETONS ==================== */
 
 class ArticlesSkeleton extends StatelessWidget {
   const ArticlesSkeleton({super.key});
@@ -19929,8 +19974,6 @@ class ArticlesSkeleton extends StatelessWidget {
     );
   }
 }
-
-/* ==================== SKELETON: NEWS ==================== */
 
 class NewsSkeleton extends StatelessWidget {
   const NewsSkeleton({super.key});
@@ -19986,8 +20029,6 @@ class NewsSkeleton extends StatelessWidget {
   }
 }
 
-/* ==================== SKELETON: SHOP ==================== */
-
 class ShopSkeleton extends StatelessWidget {
   const ShopSkeleton({super.key});
 
@@ -20035,8 +20076,6 @@ class ShopSkeleton extends StatelessWidget {
   }
 }
 
-/* ==================== SKELETON: SEARCH ==================== */
-
 class SearchSkeleton extends StatelessWidget {
   const SearchSkeleton({super.key});
 
@@ -20080,8 +20119,6 @@ class SearchSkeleton extends StatelessWidget {
     );
   }
 }
-
-/* ==================== SHIMMER BOX ==================== */
 
 class ShimmerBox extends StatefulWidget {
   final double height;
@@ -20148,8 +20185,6 @@ class _ShimmerBoxState extends State<ShimmerBox>
   }
 }
 
-/* ==================== POST SKELETON ==================== */
-
 class PostSkeleton extends StatelessWidget {
   const PostSkeleton({super.key});
 
@@ -20186,8 +20221,6 @@ class PostSkeleton extends StatelessWidget {
     );
   }
 }
-
-/* ==================== FEATURED SKELETON ==================== */
 
 class FeaturedSkeleton extends StatelessWidget {
   const FeaturedSkeleton({super.key});
@@ -20232,7 +20265,7 @@ class FeaturedSkeleton extends StatelessWidget {
   }
 }
 
-/* ==================== EMPTY WIDGET ==================== */
+/* ==================== EMPTY & ERROR ==================== */
 
 class EmptyWidget extends StatelessWidget {
   final String text;
@@ -20277,8 +20310,6 @@ class EmptyWidget extends StatelessWidget {
     );
   }
 }
-
-/* ==================== ERROR BOX ==================== */
 
 class ErrorBox extends StatelessWidget {
   final String message;
