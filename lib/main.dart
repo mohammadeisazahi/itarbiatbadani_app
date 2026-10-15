@@ -27,19 +27,38 @@ const String heroImg =
     '$site/wp-content/uploads/2025/08/file_00000000b12862439589872d238e031b-1.png';
 const int perPageSize = 10;
 
-/// Endpoint کوئیز
 const String quizRemoteApi = '$site/wp-json/itarbiat/v1/quiz';
-
-/// Endpoint لغات تخصصی
 const String glossaryRemoteApi = '$site/wp-json/itarbiat/v1/glossary';
-
-/// Endpoint بخش معلمان تربیت بدنی
 const String peTeachersApi = '$site/wp-json/itarbiat/v1/pe-teachers';
 
-/// حروف گزینه‌های کوئیز — ترتیب الف / ب / ج / د
 const List<String> kQuizLetters = ['الف', 'ب', 'ج', 'د'];
 
-/// تب‌های بخش معلمان تربیت بدنی
+/* ==================== RESPONSIVE HELPER ==================== */
+
+class R {
+  static late double _w;
+  static late double _h;
+  static late double _d;
+  static const double _base = 375;
+
+  static void init(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    _w = size.width.clamp(320, 500);
+    _h = size.height.clamp(560, 950);
+    _d = size.shortestSide.clamp(320, 500);
+  }
+
+  static double w(double v) => v * (_w / _base);
+  static double h(double v) => v * (_h / 812);
+
+  static double sp(double v) {
+    final s = _w / _base;
+    return v * (s < 0.9 ? 0.9 : (s > 1.25 ? 1.25 : s));
+  }
+
+  static double r(double v) => v * (_d / _base);
+}
+
 const List<Map<String, dynamic>> kPeTeacherTabs = [
   {
     'slug': 'files',
@@ -78,7 +97,6 @@ const List<Map<String, dynamic>> kPeTeacherTabs = [
     'color': Color(0xff0f766e),
   },
 ];
-
 final _storage = const FlutterSecureStorage();
 final darkModeNotifier = ValueNotifier<bool>(true);
 final themeModeNotifier = ValueNotifier<String>('auto');
@@ -93,21 +111,18 @@ final readArticlesNotifier =
     ValueNotifier<List<Map<String, dynamic>>>([]);
 final readingStatsNotifier = ValueNotifier<Map<String, dynamic>>({});
 final accentNotifier = ValueNotifier<Color>(const Color(0xff1a2b47));
-/* ==================== REFINED COLOR SYSTEM V2 ==================== */
+final adBannerNotifier = ValueNotifier<Map<String, dynamic>?>(null);
 
-/// 🎨 رنگ‌های اصلی برند
 const Color kPrimaryNavy = Color(0xff1a2b47);
 const Color kPrimaryNavyLight = Color(0xff2c4470);
 const Color kPrimaryNavyDark = Color(0xff0f1a2e);
 const Color kPrimaryNavySoft = Color(0xff4a6fa5);
 
-/// 🎨 طلایی
 const Color kAccentGold = Color(0xffc9a961);
 const Color kAccentGoldLight = Color(0xffe0c987);
 const Color kAccentGoldDark = Color(0xffa88840);
 const Color kAccentGoldSoft = Color(0xfff0e4c0);
 
-/// 🎨 رنگ‌های معنایی
 const Color kUrgent = Color(0xffc1121f);
 const Color kUrgentDark = Color(0xff9a0e17);
 const Color kSuccess = Color(0xff059669);
@@ -116,28 +131,23 @@ const Color kWarning = Color(0xffd97706);
 const Color kInfo = Color(0xff2563eb);
 const Color kInfoLight = Color(0xff60a5fa);
 
-/// 🎨 رنگ اخبار فوری
 const Color kNewsRed = Color(0xffdc2626);
 const Color kNewsRedDark = Color(0xff991b1b);
 
-/// 🎨 رنگ آبی روشن اخبار
 const Color kNewsBlue = Color(0xff0ea5e9);
 const Color kNewsBlueLight = Color(0xff38bdf8);
 const Color kNewsBlueDark = Color(0xff0284c7);
 const Color kNewsBlueSoft = Color(0xffe0f2fe);
 
-/// 🎨 رنگ تب‌ها
 const Color kTabHome = Color(0xff1a2b47);
 const Color kTabArticles = Color(0xff1e40af);
 const Color kTabNews = Color(0xffc1121f);
 const Color kTabShop = Color(0xffd97706);
 const Color kTabAccount = Color(0xff0d9488);
 
-/// 🎨 رنگ کوئیز
 const Color kQuizColor = Color(0xff7b2d26);
 const Color kQuizColorDark = Color(0xff5c1f19);
 
-/// 🌙 سطوح تیره
 const Color kDarkBg = Color(0xff0a121e);
 const Color kDarkCard = Color(0xff1a2538);
 const Color kDarkCard2 = Color(0xff25334a);
@@ -146,7 +156,6 @@ const Color kDarkBorder = Color(0xff344864);
 const Color kDarkText = Color(0xfff0f4f8);
 const Color kDarkTextMuted = Color(0xff94a3b8);
 
-/// ☀️ سطوح روشن
 const Color kLightBg = Color(0xfff5f7fa);
 const Color kLightCard = Color(0xffffffff);
 const Color kLightCard2 = Color(0xffeef2f7);
@@ -166,21 +175,16 @@ const List<Color> accentPalette = [
   Color(0xff0f1a2e),
 ];
 
-/* ==================== THEME COLORS ==================== */
-
-/// 🎨 پس‌زمینه‌ها
 Color get bgC => darkModeNotifier.value ? kDarkBg : kLightBg;
 Color get bgGrad1 => darkModeNotifier.value ? kDarkBg : kLightBg;
 Color get bgGrad2 => darkModeNotifier.value
     ? const Color(0xff141d2e)
     : const Color(0xffeef2f7);
 
-/// 🎨 کارت‌ها
 Color get pnl => darkModeNotifier.value ? kDarkCard : kLightCard;
 Color get pnl2 => darkModeNotifier.value ? kDarkCard2 : kLightCard2;
 Color get pnl3 => darkModeNotifier.value ? kDarkCard3 : kLightCard3;
 
-/// 🎨 متن‌ها
 Color get txtC => darkModeNotifier.value ? kDarkText : kLightText;
 Color get mutC =>
     darkModeNotifier.value ? kDarkTextMuted : kLightTextMuted;
@@ -188,7 +192,6 @@ Color get inkSoft => darkModeNotifier.value
     ? const Color(0xffa0aec0)
     : const Color(0xff4a5568);
 
-/// 🎨 رنگ‌های اصلی
 Color get accentGreen => accentNotifier.value;
 Color get accentGreen2 => kAccentGold;
 Color get accentBlue => kPrimaryNavySoft;
@@ -197,29 +200,23 @@ Color get gold => kAccentGold;
 Color get rose => kUrgent;
 Color get purple => const Color(0xff6d28d9);
 
-/// 🎨 مرزها
 Color get lineC => darkModeNotifier.value ? kDarkBorder : kLightBorder;
 Color get softLine => darkModeNotifier.value
     ? const Color(0xff1c242e)
     : const Color(0xffefece5);
 
-/// 🎨 نوار پایین
 Color get navBg => darkModeNotifier.value ? kDarkCard : kLightCard;
 
-/// 🎨 Skeleton
 Color get skeletonBase =>
     darkModeNotifier.value ? kDarkCard : const Color(0xffeae7e0);
 Color get skeletonHi =>
     darkModeNotifier.value ? kDarkCard2 : const Color(0xfff5f3ed);
 
-/// 🎨 چیپ‌ها
 Color get chipBg => darkModeNotifier.value
     ? kPrimaryNavy.withOpacity(0.35)
     : kAccentGold.withOpacity(0.18);
 Color get chipFg =>
     darkModeNotifier.value ? kAccentGold : kPrimaryNavy;
-
-/* ==================== MODELS ==================== */
 
 class Cat {
   final String n;
@@ -230,37 +227,31 @@ class Cat {
 }
 
 const cats = <Cat>[
-  Cat('رشته تربیت بدنی و علوم ورزشی', 'physical-education-sport-sciences',
+  Cat('رشته تربیت بدنی و علوم ورزشی',
+      'physical-education-sport-sciences',
       Icons.sports_soccer_rounded, kPrimaryNavy),
   Cat('علوم ورزشی', 'sports-science', Icons.science_rounded,
       Color(0xff4a148c)),
-  Cat('منابع آزمون‌ها', 'sports-science-exam-resources',
+  Cat('منابع آزمون‌های علوم ورزشی',
+      'sports-science-exam-resources',
       Icons.menu_book_rounded, kAccentGold),
-  Cat('تغذیه ورزشی', 'sports-nutrition', Icons.restaurant_rounded,
-      Color(0xff046a38)),
-  Cat('اخبار و رویدادها', 'sports-news-and-events',
-      Icons.newspaper_rounded, Color(0xff7b2d26)),
-  Cat('ورزش همگانی', 'public-exercise-health-and-wellness',
-      Icons.favorite_rounded, Color(0xff00695c)),
-  Cat('پژوهش در تربیت بدنی', 'research-in-physical-education',
-      Icons.search_rounded, Color(0xff003d7a)),
-  Cat('تربیت بدنی و آموزش', 'physical-education-and-training',
-      Icons.school_rounded, kPrimaryNavyLight),
-  Cat('منابع و کتب مرجع',
-      'introduction-to-sources-and-reference-books',
-      Icons.library_books_rounded, Color(0xff5c4033)),
-  Cat('اصول ورزش',
-      'principles-of-exercise-and-physical-activity',
-      Icons.fitness_center_rounded, Color(0xff8b6914)),
   Cat('آزمون‌های استخدامی', 'employment-tests',
       Icons.assignment_rounded, Color(0xff8b2d26)),
-  Cat('معرفی رشته‌ها', 'introduction-to-sports-disciplines',
-      Icons.sports_handball_rounded, Color(0xff1d4ed8)),
-  Cat('ورزش گروه‌های ویژه',
-      'exercise-for-special-groups-and-needs',
-      Icons.accessibility_new_rounded, Color(0xff6d28d9)),
-  Cat('تکنولوژی در ورزش', 'technology-and-innovation-in-sports',
-      Icons.memory_rounded, Color(0xff0f766e)),
+  Cat('معلمان تربیت بدنی', 'physical-education-teachers',
+      Icons.school_rounded, Color(0xff0369a1)),
+  Cat('پژوهش در تربیت بدنی', 'research-in-physical-education',
+      Icons.search_rounded, Color(0xff003d7a)),
+  Cat('اخبار و رویدادها', 'sports-news-and-events',
+      Icons.newspaper_rounded, Color(0xff7b2d26)),
+  Cat('ورزش همگانی، سلامت و تغذیه',
+      'public-exercise-health-and-wellness',
+      Icons.favorite_rounded, Color(0xff00695c)),
+  Cat('هنرستان و کنکور؛ از مدرسه تا دانشگاه',
+      'vocational-school-entrance-exam',
+      Icons.school_rounded, Color(0xff1d4ed8)),
+  Cat('آسیب‌شناسی و حرکات اصلاحی',
+      'pathology-and-corrective-movements',
+      Icons.healing_rounded, Color(0xff6d28d9)),
 ];
 /* ==================== QUIZ MODEL ==================== */
 
@@ -300,9 +291,7 @@ class QuizQuestion {
       );
 }
 
-/// 🔄 دریافت از سرور + کش محلی
 Future<void> loadQuiz() async {
-  // ۱) تلاش برای دریافت از سرور
   try {
     final r = await http
         .get(Uri.parse(quizRemoteApi))
@@ -314,7 +303,6 @@ Future<void> loadQuiz() async {
             .map((e) =>
                 QuizQuestion.fromMap(Map<String, dynamic>.from(e)))
             .toList();
-        // کش محلی برای آفلاین
         try {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('quiz_questions', r.body);
@@ -324,7 +312,6 @@ Future<void> loadQuiz() async {
     }
   } catch (_) {}
 
-  // ۲) fallback: حافظه محلی
   try {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString('quiz_questions');
@@ -410,7 +397,6 @@ Future<void> resetQuizAnswers() async {
     await prefs.remove('quiz_answers');
   } catch (_) {}
 }
-
 /* ==================== THEME MODE ==================== */
 
 Future<void> loadThemeMode() async {
@@ -468,6 +454,31 @@ Future<void> saveAccentColor(Color c) async {
   } catch (_) {}
 }
 
+/* ==================== AD BANNER ==================== */
+
+Future<void> loadAdBanner() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString('ad_banner');
+    if (data != null && data.isNotEmpty) {
+      adBannerNotifier.value =
+          Map<String, dynamic>.from(json.decode(data) as Map);
+    }
+  } catch (_) {}
+}
+
+Future<void> saveAdBanner(Map<String, dynamic>? data) async {
+  adBannerNotifier.value = data;
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    if (data == null) {
+      await prefs.remove('ad_banner');
+    } else {
+      await prefs.setString('ad_banner', json.encode(data));
+    }
+  } catch (_) {}
+}
+
 /* ==================== BOOKMARKS ==================== */
 
 Future<void> loadBookmarks() async {
@@ -499,7 +510,8 @@ Future<void> toggleBookmark(String id) async {
   }
   bookmarkNotifier.value = set;
   try {
-    await _storage.write(key: 'bookmarks', value: json.encode(set.toList()));
+    await _storage.write(
+        key: 'bookmarks', value: json.encode(set.toList()));
   } catch (_) {}
 }
 
@@ -703,6 +715,14 @@ Future<void> clearAllNotifications() async {
   } catch (_) {}
 }
 
+/// ✅ حذف اعلان مربوط به یک خبر (وقتی خبر حذف می‌شود)
+Future<void> removeNotificationByNewsId(String newsId) async {
+  final list = inAppNotificationsNotifier.value
+      .where((e) => e['id'].toString() != newsId)
+      .toList();
+  inAppNotificationsNotifier.value = list;
+  await _saveInAppNotifications();
+}
 /* ==================== READING STATS ==================== */
 
 Future<void> trackArticleRead(dynamic post, {String? fromCategory}) async {
@@ -810,7 +830,7 @@ Future<void> _updateReadingStats() async {
       }
     }
 
-    final stats = {
+    readingStatsNotifier.value = {
       'totalRead': totalRead,
       'weekCount': weekCount,
       'monthCount': monthCount,
@@ -820,8 +840,6 @@ Future<void> _updateReadingStats() async {
       'categoryCount': categoryCount,
       'dailyCount': dailyCount,
     };
-
-    readingStatsNotifier.value = stats;
   } catch (_) {}
 }
 
@@ -862,6 +880,7 @@ Future<void> clearReadingStats() async {
     readingStatsNotifier.value = {};
   } catch (_) {}
 }
+
 /* ==================== NAVIGATION ==================== */
 
 Future<void> openUrl(BuildContext context, String url,
@@ -945,7 +964,6 @@ Future<void> sharePostWithImage(
   }
 }
 
-/// ✅ اسنک‌بار اصلاح‌شده برای حالت تاریک
 void showSnack(BuildContext context, String msg, {bool error = false}) {
   if (!context.mounted) return;
   final isDark = darkModeNotifier.value;
@@ -989,7 +1007,6 @@ void showSnack(BuildContext context, String msg, {bool error = false}) {
       ),
     );
 }
-
 /* ==================== TEXT HELPERS ==================== */
 
 String clean(String v) => v
@@ -1167,7 +1184,6 @@ List<int> _toJalali(int gy, int gm, int gd) {
 
 /* ==================== LINK HELPERS ==================== */
 
-/// تبدیل URL خام به لینک HTML
 String autoLinkUrls(String text) {
   final urlRe = RegExp(r'(https?://[^\s<>"]+)');
   return text.replaceAllMapped(urlRe, (m) {
@@ -1176,7 +1192,6 @@ String autoLinkUrls(String text) {
   });
 }
 
-/// تبدیل سینتکس [متن](url) به لینک HTML
 String applyMarkdownLinks(String text) {
   final re = RegExp(r'\[([^\]]+)\]\((https?://[^\s)]+)\)');
   return text.replaceAllMapped(
@@ -1186,14 +1201,12 @@ String applyMarkdownLinks(String text) {
   );
 }
 
-/// ترکیب هر دو: اول markdown، بعد URL خام
 String enrichNewsContent(String raw) {
   return autoLinkUrls(applyMarkdownLinks(raw));
 }
 
 /* ==================== RICH TEXT HELPERS ==================== */
 
-/// ساخت TextSpan با پشتیبانی از لینک و رنگ مناسب دارک/لایت
 List<TextSpan> buildRichSpans(
   String html, {
   double fontSize = 15,
@@ -1493,7 +1506,6 @@ Future<List> getNewNewsList() async {
     return [];
   }
 }
-
 /* ==================== ADMIN API ==================== */
 
 String _basicAuth(String user, String pass) {
@@ -1986,6 +1998,13 @@ Future<Map<String, dynamic>> uploadMedia({
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 🔒 قفل کردن جهت به حالت عمودی برای جلوگیری از به‌هم‌ریختن در Landscape
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -2001,6 +2020,7 @@ void main() async {
     await loadReadingStats();
     await loadQuiz();
     await loadQuizAnswers();
+    await loadAdBanner();
     Future.delayed(const Duration(seconds: 2), () {
       checkForNewNotifications();
     });
@@ -2041,10 +2061,22 @@ class App extends StatelessWidget {
                   },
                 ),
               ),
-              builder: (c, ch) => Directionality(
-                textDirection: TextDirection.rtl,
-                child: ch ?? const SizedBox(),
-              ),
+              builder: (c, ch) {
+                R.init(c);
+                final mq = MediaQuery.of(c);
+                return MediaQuery(
+                  data: mq.copyWith(
+                    textScaler: mq.textScaler.clamp(
+                      minScaleFactor: 0.9,
+                      maxScaleFactor: 1.15,
+                    ),
+                  ),
+                  child: Directionality(
+                    textDirection: TextDirection.rtl,
+                    child: ch ?? const SizedBox(),
+                  ),
+                );
+              },
               home: const SplashScreen(),
             );
           },
@@ -2165,8 +2197,8 @@ class _SplashScreenState extends State<SplashScreen>
                     child: ScaleTransition(
                       scale: _logoScale,
                       child: Container(
-                        width: 140,
-                        height: 140,
+                        width: R.w(140),
+                        height: R.w(140),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: LinearGradient(
@@ -2229,7 +2261,7 @@ class _SplashScreenState extends State<SplashScreen>
                             'تربیت بدنی و علوم ورزشی',
                             style: TextStyle(
                               color: txtC,
-                              fontSize: 22,
+                              fontSize: R.sp(22),
                               fontWeight: FontWeight.w900,
                               fontFamily: 'Vazirmatn',
                               letterSpacing: 0.3,
@@ -2507,7 +2539,7 @@ class _ModernNavBar extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(28),
           child: SizedBox(
-            height: 78,
+            height: R.w(78),
             child: Row(
               children: List.generate(_items.length, (i) {
                 final selected = i == currentIndex;
@@ -2875,6 +2907,9 @@ class _HomeState extends State<Home> {
                   SliverToBoxAdapter(
                     child: HeroCarousel(postsFuture: _f),
                   ),
+                  const SliverToBoxAdapter(
+                    child: AdBannerWidget(),
+                  ),
                   SliverToBoxAdapter(
                     child: ModernNewsBanner(
                         key: _bannerKey, future: _newsFuture),
@@ -2887,9 +2922,6 @@ class _HomeState extends State<Home> {
                     ),
                   ),
                   SliverToBoxAdapter(child: ModernCatGrid()),
-                  const SliverToBoxAdapter(
-                    child: PeTeachersBanner(),
-                  ),
                   SliverToBoxAdapter(child: ModernSocial()),
                   const SliverToBoxAdapter(child: SizedBox(height: 140)),
                 ],
@@ -3075,70 +3107,84 @@ Widget ModernHeader(BuildContext context, [String? t]) {
               ],
             ),
           ),
-          // 🔔 اعلان‌ها
+
+          // 🔔 اعلان‌ها (اصلاح‌شده — بج داخل IgnorePointer)
           ValueListenableBuilder<List<Map<String, dynamic>>>(
             valueListenable: inAppNotificationsNotifier,
             builder: (c, list, __) {
               final unread =
                   list.where((e) => e['read'] != true).length;
-              return Stack(
-                children: [
-                  _HeaderIconButton(
-                    icon: Icons.notifications_outlined,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const NotificationsPage()),
+              return SizedBox(
+                width: 40,
+                height: 40,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    _HeaderIconButton(
+                      icon: Icons.notifications_outlined,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) =>
+                                const NotificationsPage()),
+                      ),
                     ),
-                  ),
-                  if (unread > 0)
-                    Positioned(
-                      top: 4,
-                      right: 4,
-                      child: Container(
-                        constraints: const BoxConstraints(
-                          minWidth: 18,
-                          minHeight: 18,
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 5, vertical: 1),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [kUrgent, kUrgentDark],
-                          ),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: pnl, width: 1.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: kUrgent.withOpacity(0.5),
-                              blurRadius: 8,
+                    if (unread > 0)
+                      Positioned(
+                        top: -3,
+                        right: -3,
+                        child: IgnorePointer(
+                          child: Container(
+                            constraints: const BoxConstraints(
+                              minWidth: 18,
+                              minHeight: 18,
                             ),
-                          ],
-                        ),
-                        child: Text(
-                          unread > 9 ? '۹+' : '$unread',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'Vazirmatn',
-                            height: 1.1,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [kUrgent, kUrgentDark],
+                              ),
+                              borderRadius:
+                                  BorderRadius.circular(999),
+                              border: Border.all(
+                                  color: pnl, width: 1.5),
+                              boxShadow: [
+                                BoxShadow(
+                                  color:
+                                      kUrgent.withOpacity(0.5),
+                                  blurRadius: 8,
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              unread > 9 ? '۹+' : '$unread',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w900,
+                                fontFamily: 'Vazirmatn',
+                                height: 1.1,
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               );
             },
           ),
           const SizedBox(width: 4),
+
           // 🌗 تغییر تم
           _HeaderIconButton(
             icon: Icons.brightness_6_rounded,
             onTap: () => _showThemeModePicker(context),
           ),
           const SizedBox(width: 4),
+
           // 🔍 جستجو
           _HeaderIconButton(
             icon: Icons.search_rounded,
@@ -3258,7 +3304,7 @@ class _LiveNewsTickerState extends State<LiveNewsTicker> {
 
     return Container(
       margin: const EdgeInsets.fromLTRB(14, 4, 14, 10),
-      height: 44,
+      height: R.w(44),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isDark
@@ -3666,7 +3712,7 @@ Widget _themeOption({
     },
   );
 }
-/* ==================== CATEGORY CHIPS BAR (FINAL) ==================== */
+/* ==================== CATEGORY CHIPS BAR ==================== */
 
 class CategoryChipsBar extends StatefulWidget {
   const CategoryChipsBar({super.key});
@@ -3684,21 +3730,19 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
         final followedCats =
             cats.where((cat) => followed.contains(cat.s)).toList();
 
-        // ترتیب جدید:
-        // 0) دسته‌های من (اول)
+        // 0) دسته‌های من
         // 1..N) دسته‌های دنبال‌شده
         // N+1) کوئیز ورزشی
         // N+2) تناسب اندام
         // N+3) لغات تخصصی
         // N+4) آمار مطالعه
-        // N+5) معلمان تربیت بدنی
-        // N+6) نشان‌شده‌ها
-        const actionCount = 6;
+        // N+5) نشان‌شده‌ها
+        const actionCount = 5;
         final total = 1 + followedCats.length + actionCount;
 
         return Container(
           margin: const EdgeInsets.only(top: 4, bottom: 6),
-          height: 44,
+          height: R.w(44),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -3706,7 +3750,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
             itemCount: total,
             separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (c, i) {
-              // ───── ۰) دسته‌های من (اول) ─────
+              // ───── ۰) دسته‌های من ─────
               if (i == 0) {
                 final count = followed.length;
                 final hasItems = count > 0;
@@ -3948,25 +3992,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
                 );
               }
 
-              // ───── ۶) معلمان تربیت بدنی ─────
-              if (actionIndex == 4) {
-                return _actionChip(
-                  icon: Icons.school_rounded,
-                  label: 'معلمان تربیت بدنی',
-                  color: const Color(0xff0369a1),
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) =>
-                              const PeTeachersHubPage()),
-                    );
-                  },
-                );
-              }
-
-              // ───── ۷) نشان‌شده‌ها ─────
+              // ───── ۶) نشان‌شده‌ها ─────
               return _actionChip(
                 icon: Icons.bookmark_rounded,
                 label: 'نشان‌شده‌ها',
@@ -4044,7 +4070,7 @@ class _CategoryChipsBarState extends State<CategoryChipsBar> {
     );
   }
 }
-/* ==================== COMPACT HERO CAROUSEL ==================== */
+/* ==================== HERO CAROUSEL ==================== */
 
 class HeroCarousel extends StatefulWidget {
   final Future<List>? postsFuture;
@@ -4055,7 +4081,15 @@ class HeroCarousel extends StatefulWidget {
 }
 
 class _HeroCarouselState extends State<HeroCarousel> {
-  final _pageCtrl = PageController(viewportFraction: 0.92);
+  late final PageController _pageCtrl = PageController(
+    viewportFraction: MediaQueryData.fromView(
+                WidgetsBinding.instance.platformDispatcher.views.first)
+            .size
+            .width >
+        400
+        ? 0.75
+        : 0.92,
+  );
   Timer? _timer;
   Timer? _progressTimer;
   int _current = 0;
@@ -4106,14 +4140,14 @@ class _HeroCarouselState extends State<HeroCarousel> {
       builder: (c, s) {
         if (s.connectionState == ConnectionState.waiting) {
           return Container(
-            height: 260,
+            height: R.w(260),
             margin: const EdgeInsets.fromLTRB(14, 16, 14, 12),
             decoration: BoxDecoration(
               color: pnl,
               borderRadius: BorderRadius.circular(22),
               border: Border.all(color: lineC),
             ),
-            child: const ShimmerBox(height: 260, radius: 22),
+            child: ShimmerBox(height: R.w(260), radius: 22),
           );
         }
         final posts = (s.data ?? []).take(5).toList();
@@ -4135,7 +4169,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
           child: Column(
             children: [
               SizedBox(
-                height: 260,
+                height: R.w(260),
                 child: PageView.builder(
                   controller: _pageCtrl,
                   onPageChanged: (i) {
@@ -4227,7 +4261,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
   }
 }
 
-/* ==================== COMPACT CAROUSEL CARD ==================== */
+/* ==================== CAROUSEL CARD ==================== */
 
 class _CarouselCard extends StatefulWidget {
   final dynamic post;
@@ -4349,7 +4383,6 @@ class _CarouselCardState extends State<_CarouselCard>
                           color: Colors.white.withOpacity(0.3),
                           size: 60),
                     ),
-
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -4365,7 +4398,6 @@ class _CarouselCardState extends State<_CarouselCard>
                       ),
                     ),
                   ),
-
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -4383,7 +4415,6 @@ class _CarouselCardState extends State<_CarouselCard>
                       ),
                     ),
                   ),
-
                   Positioned(
                     left: 14,
                     right: 14,
@@ -4488,7 +4519,6 @@ class _CarouselCardState extends State<_CarouselCard>
                       ],
                     ),
                   ),
-
                   Positioned(
                     left: 16,
                     right: 16,
@@ -4757,7 +4787,136 @@ class _ModernNewsBannerState extends State<ModernNewsBanner> {
     );
   }
 }
-/* ==================== MODERN SERVICES SECTION ==================== */
+
+/* ==================== AD BANNER WIDGET ==================== */
+
+class AdBannerWidget extends StatelessWidget {
+  const AdBannerWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<Map<String, dynamic>?>(
+      valueListenable: adBannerNotifier,
+      builder: (context, ad, _) {
+        if (ad == null) return const SizedBox.shrink();
+        final imageUrl = ad['imageUrl']?.toString() ?? '';
+        final title = ad['title']?.toString() ?? '';
+        final link = ad['link']?.toString() ?? '';
+        if (imageUrl.isEmpty && title.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final isDark = darkModeNotifier.value;
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+          child: GestureDetector(
+            onTap: link.isEmpty
+                ? null
+                : () {
+                    HapticFeedback.selectionClick();
+                    openExternalUrl(link);
+                  },
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topRight,
+                  end: Alignment.bottomLeft,
+                  colors: isDark
+                      ? [kDarkCard, kDarkCard2]
+                      : [Colors.white, kLightCard2],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: kAccentGold.withOpacity(0.5),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: kAccentGold.withOpacity(0.15),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (imageUrl.isNotEmpty)
+                      CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        memCacheWidth: 1080,
+                        placeholder: (_, __) =>
+                            Container(height: 160, color: pnl2),
+                        errorWidget: (_, __, ___) => Container(
+                          height: 160,
+                          color: pnl2,
+                          child: Icon(
+                            Icons.image_not_supported_rounded,
+                            color: mutC,
+                            size: 40,
+                          ),
+                        ),
+                      ),
+                    if (title.isNotEmpty)
+                      Padding(
+                        padding: EdgeInsets.all(
+                            imageUrl.isEmpty ? 16 : 14),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 4,
+                              height: 18,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    kAccentGold,
+                                    kPrimaryNavy
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                title,
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                  color: txtC,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                  height: 1.6,
+                                  fontFamily: 'Vazirmatn',
+                                ),
+                              ),
+                            ),
+                            if (link.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              const Icon(
+                                Icons.arrow_back_ios_new_rounded,
+                                color: kAccentGold,
+                                size: 14,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+/* ==================== MODERN SERVICES SECTION (بدون منابع استخدامی) ==================== */
 
 class ModernServicesSection extends StatefulWidget {
   const ModernServicesSection({super.key});
@@ -4801,12 +4960,6 @@ class _ModernServicesSectionState extends State<ModernServicesSection> {
       'icon': Icons.auto_stories_rounded,
       'color': kAccentGold,
       'url': '$site/manabe-konkur-doctori-tarbiat-badani/',
-    },
-    {
-      'title': 'منابع استخدامی',
-      'icon': Icons.assignment_rounded,
-      'color': kUrgent,
-      'url': '$site/employment-tests/',
     },
     {
       'title': 'دانشگاه‌های برتر',
@@ -4884,7 +5037,7 @@ class _ModernServicesSectionState extends State<ModernServicesSection> {
             ),
           ),
           SizedBox(
-            height: 118,
+            height: R.w(118),
             child: ListView.separated(
               controller: _scrollCtrl,
               scrollDirection: Axis.horizontal,
@@ -4911,7 +5064,7 @@ class _ModernServicesSectionState extends State<ModernServicesSection> {
             title: item['title'] as String);
       },
       child: Container(
-        width: 110,
+        width: R.w(110),
         decoration: BoxDecoration(
           color: pnl,
           borderRadius: BorderRadius.circular(20),
@@ -4976,7 +5129,7 @@ class _ModernServicesSectionState extends State<ModernServicesSection> {
   }
 }
 
-/* ==================== PREMIUM POST CARD ==================== */
+/* ==================== MODERN POST CARD ==================== */
 
 class ModernPostCard extends StatefulWidget {
   final dynamic post;
@@ -5256,10 +5409,6 @@ class _ModernPostCardState extends State<ModernPostCard>
                                   child: Container(
                                     padding:
                                         const EdgeInsets.all(3),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.transparent,
-                                      shape: BoxShape.circle,
-                                    ),
                                     child: Icon(
                                       Icons.ios_share_rounded,
                                       color: mutC,
@@ -5750,10 +5899,6 @@ class SidePostCard extends StatelessWidget {
                         },
                         child: Container(
                           padding: const EdgeInsets.all(3),
-                          decoration: const BoxDecoration(
-                            color: Colors.transparent,
-                            shape: BoxShape.circle,
-                          ),
                           child: Icon(
                             Icons.ios_share_rounded,
                             color: mutC,
@@ -5865,7 +6010,8 @@ class SidePostCard extends StatelessWidget {
     );
   }
 }
-/* ==================== PREMIUM PRODUCT CARD ==================== */
+
+/* ==================== MODERN PRODUCT CARD ==================== */
 
 class ModernProductCard extends StatelessWidget {
   final dynamic product;
@@ -6051,10 +6197,6 @@ class ModernProductCard extends StatelessWidget {
                         },
                         child: Container(
                           padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Colors.transparent,
-                            shape: BoxShape.circle,
-                          ),
                           child: Icon(
                             Icons.ios_share_rounded,
                             color: mutC,
@@ -6182,7 +6324,6 @@ class ModernProductCard extends StatelessWidget {
     );
   }
 }
-
 /* ==================== MODERN CAT GRID ==================== */
 
 class ModernCatGrid extends StatelessWidget {
@@ -6197,11 +6338,11 @@ class ModernCatGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         padding: EdgeInsets.zero,
         itemCount: cats.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
-          mainAxisExtent: 125,
+          mainAxisExtent: R.w(125),
         ),
         itemBuilder: (c, i) {
           final cat = cats[i];
@@ -7677,6 +7818,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
     );
   }
 }
+
 /* ==================== PREMIUM NEWS PAGE ==================== */
 
 class NewsPage extends StatefulWidget {
@@ -8442,8 +8584,7 @@ class _PremiumNewsCardState extends State<_PremiumNewsCard> {
                       fontFamily: 'Vazirmatn',
                     ),
                   ),
-                  if (excerpt.isNotEmpty) ...[
-                    const SizedBox(height: 8),
+                  if (excerpt.isNotEmpty) ...[                    const SizedBox(height: 8),
                     Text(
                       excerpt,
                       maxLines: 2,
@@ -8739,16 +8880,13 @@ class _BookmarksPageState extends State<BookmarksPage>
     super.dispose();
   }
 
-  /// ✅ رفع باگ: پاک کردن کش + دریافت صفحات بیشتر
   Future<void> _loadAll() async {
     setState(() => _loading = true);
 
-    // پاک کردن کش تا مطمئن شویم همه مقالات دریافت می‌شوند
     _postsCache.clear();
     _postsCacheTime.clear();
 
     try {
-      // صفحه ۱ مقالات
       try {
         final list = await getPostsPaged(perPage: 100, page: 1);
         _allPosts
@@ -8756,19 +8894,16 @@ class _BookmarksPageState extends State<BookmarksPage>
           ..addAll(list);
       } catch (_) {}
 
-      // صفحه ۲ مقالات
       try {
         final list2 = await getPostsPaged(perPage: 100, page: 2);
         _allPosts.addAll(list2);
       } catch (_) {}
 
-      // صفحه ۳ مقالات
       try {
         final list3 = await getPostsPaged(perPage: 100, page: 3);
         _allPosts.addAll(list3);
       } catch (_) {}
 
-      // اخبار فوری
       try {
         final news = await getNewNewsList();
         _allNews
@@ -8776,7 +8911,6 @@ class _BookmarksPageState extends State<BookmarksPage>
           ..addAll(news);
       } catch (_) {}
 
-      // محصولات
       try {
         final products =
             await getProductsPaged(perPage: 100, page: 1);
@@ -10094,6 +10228,7 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 }
+
 /* ==================== PREMIUM ACCOUNT PAGE ==================== */
 
 class AccountPage extends StatefulWidget {
@@ -10654,7 +10789,7 @@ class _ModernWebPageState extends State<ModernWebPage> {
     );
   }
 }
-/* ==================== URGENT NEWS DETAIL PAGE (Blue Theme) ==================== */
+/* ==================== URGENT NEWS DETAIL PAGE ==================== */
 
 class UrgentNewsDetailPage extends StatefulWidget {
   final dynamic news;
@@ -10721,7 +10856,6 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
     super.dispose();
   }
 
-  /// محتوای خام (بدون حذف HTML — برای پردازش لینک‌ها)
   String _rawHtml(dynamic news) {
     try {
       return news['content']?['rendered'] ?? '';
@@ -12395,18 +12529,20 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
 
 /* ==================== LINK INSERT DIALOG ==================== */
 
-/// دیالوگ افزودن لینک — خروجی: درج متن [label](url) در جای کرسر
 Future<void> showInsertLinkDialog(
   BuildContext context, {
   required TextEditingController controller,
   required String title,
 }) async {
-  final labelCtrl = TextEditingController(text: controller.selection.isValid
-      ? controller.text.substring(
-          controller.selection.start.clamp(0, controller.text.length),
-          controller.selection.end.clamp(0, controller.text.length),
-        )
-      : '');
+  final labelCtrl = TextEditingController(
+      text: controller.selection.isValid
+          ? controller.text.substring(
+              controller.selection.start
+                  .clamp(0, controller.text.length),
+              controller.selection.end
+                  .clamp(0, controller.text.length),
+            )
+          : '');
   final urlCtrl = TextEditingController();
 
   final result = await showDialog<bool>(
@@ -12600,8 +12736,6 @@ Future<void> showInsertLinkDialog(
     final label = labelCtrl.text.trim();
     final url = urlCtrl.text.trim();
     final sel = controller.selection;
-
-    // ساخت سینتکس
     final insert = '[$label]($url)';
 
     if (sel.isValid && sel.start >= 0 && sel.end >= 0) {
@@ -12656,10 +12790,27 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       List.generate(4, (_) => TextEditingController());
   int _quizCorrectIndex = 0;
 
+  // تبلیغ
+  final _adTitleCtrl = TextEditingController();
+  final _adLinkCtrl = TextEditingController();
+  PlatformFile? _adImageFile;
+  String? _adImageUrl;
+  bool _adSaving = false;
+
   @override
   void initState() {
     super.initState();
     _newsFuture = getNewNewsList();
+    _loadAdData();
+  }
+
+  void _loadAdData() {
+    final ad = adBannerNotifier.value;
+    if (ad != null) {
+      _adTitleCtrl.text = ad['title']?.toString() ?? '';
+      _adLinkCtrl.text = ad['link']?.toString() ?? '';
+      _adImageUrl = ad['imageUrl']?.toString();
+    }
   }
 
   void _reloadList() {
@@ -12674,7 +12825,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     return generateSlug(title);
   }
 
-  /// ✅ حداکثر ۵۰ مگابایت
   Future<void> _pickFile() async {
     HapticFeedback.selectionClick();
     try {
@@ -12758,7 +12908,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     }
   }
 
-  /// ✅ انتشار خبر با پشتیبانی لینک
   Future<void> _publish() async {
     final title = _titleCtrl.text.trim();
     final content = _contentCtrl.text.trim();
@@ -12777,7 +12926,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         return;
       }
 
-      // پردازش لینک‌ها: [متن](url) و URL خام
       String finalContent = enrichNewsContent(content);
 
       if (_uploadedFileUrl != null) {
@@ -12831,7 +12979,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     }
   }
 
-  /// ✅ ارسال سوال به سرور
   Future<void> _addQuizQuestion() async {
     final question = _quizQuestionCtrl.text.trim();
     final options =
@@ -12876,7 +13023,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         _quizCorrectIndex = 0;
       });
 
-      // بارگذاری مجدد از سرور
       await loadQuiz();
     } catch (e) {
       if (!mounted) return;
@@ -13005,7 +13151,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                             ),
                           ),
                           const Spacer(),
-                          // ✅ دکمه افزودن لینک
                           GestureDetector(
                             onTap: () async {
                               await showInsertLinkDialog(
@@ -13250,8 +13395,9 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         appPassword: widget.password,
         postId: post['id'],
       );
+      await removeNotificationByNewsId(post['id'].toString());
       if (!mounted) return;
-      showSnack(context, 'خبر حذف شد.');
+      showSnack(context, 'خبر و اعلان مربوطه حذف شد.');
       _reloadList();
     } catch (e) {
       if (!mounted) return;
@@ -13263,7 +13409,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     }
   }
 
-  /// ✅ حذف سوال از سرور
   Future<void> _deleteQuizQuestion(QuizQuestion q) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -13326,12 +13471,136 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     }
   }
 
+  // ==================== AD ====================
+
+  Future<void> _pickAdImage() async {
+    HapticFeedback.selectionClick();
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        allowMultiple: false,
+        type: FileType.image,
+        withData: false,
+        withReadStream: false,
+      );
+      if (result == null || result.files.isEmpty) return;
+      final file = result.files.first;
+      if (file.path == null) return;
+      if (file.size > 5 * 1024 * 1024) {
+        showSnack(context,
+            'حجم تصویر نباید بیش از ۵ مگابایت باشد.',
+            error: true);
+        return;
+      }
+      setState(() {
+        _adImageFile = file;
+        _adImageUrl = null;
+      });
+    } catch (e) {
+      showSnack(context, 'خطا: $e', error: true);
+    }
+  }
+
+  Future<void> _saveAd() async {
+    final title = _adTitleCtrl.text.trim();
+    final link = _adLinkCtrl.text.trim();
+
+    if (title.isEmpty &&
+        _adImageUrl == null &&
+        _adImageFile == null) {
+      await saveAdBanner(null);
+      if (mounted) showSnack(context, 'تبلیغ پاک شد');
+      return;
+    }
+
+    setState(() => _adSaving = true);
+
+    try {
+      String? imageUrl = _adImageUrl;
+
+      if (_adImageFile != null && _adImageUrl == null) {
+        final result = await uploadMedia(
+          username: widget.username,
+          appPassword: widget.password,
+          filePath: _adImageFile!.path!,
+          fileName: _adImageFile!.name,
+        );
+        imageUrl = result['source_url']?.toString();
+      }
+
+      await saveAdBanner({
+        'imageUrl': imageUrl ?? '',
+        'title': title,
+        'link': link,
+      });
+
+      if (!mounted) return;
+      showSnack(context, '✅ تبلیغ ذخیره شد');
+      setState(() {
+        _adImageFile = null;
+        _adImageUrl = imageUrl;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      showSnack(context,
+          e.toString().replaceFirst('Exception: ', ''),
+          error: true);
+    } finally {
+      if (mounted) setState(() => _adSaving = false);
+    }
+  }
+
+  Future<void> _clearAd() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: pnl,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        title: Text('پاک کردن تبلیغ',
+            style: TextStyle(
+                color: txtC,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Vazirmatn')),
+        content: Text('آیا تبلیغ حذف شود؟',
+            style: TextStyle(
+                color: mutC, fontFamily: 'Vazirmatn')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('انصراف',
+                style: TextStyle(
+                    color: mutC, fontFamily: 'Vazirmatn')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('حذف',
+                style: TextStyle(
+                    color: rose,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn')),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    await saveAdBanner(null);
+    _adTitleCtrl.clear();
+    _adLinkCtrl.clear();
+    setState(() {
+      _adImageFile = null;
+      _adImageUrl = null;
+    });
+    if (mounted) showSnack(context, 'تبلیغ حذف شد');
+  }
+
   @override
   void dispose() {
     _titleCtrl.dispose();
     _contentCtrl.dispose();
     _quizQuestionCtrl.dispose();
     _quizExplanationCtrl.dispose();
+    _adTitleCtrl.dispose();
+    _adLinkCtrl.dispose();
     for (final c in _quizOptionsCtrls) {
       c.dispose();
     }
@@ -13404,7 +13673,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
           foregroundColor: txtC,
           elevation: 0,
           actions: [
-            // ✅ میان‌بر مدیریت لغات
             IconButton(
               onPressed: () {
                 HapticFeedback.selectionClick();
@@ -13431,12 +13699,12 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ========== بخش اخبار فوری ==========
+              // ========== اخبار فوری ==========
               _sectionBanner(
                 icon: Icons.newspaper_rounded,
                 title: 'انتشار خبر فوری',
                 subtitle:
-                    'خبر جدید با فایل ضمیمه حداکثر ۵۰ مگابایت',
+                    'خبر جدید با فایل ضمیمه اختیاری (حداکثر ۵۰ مگابایت)',
                 color: kPrimaryNavy,
               ),
               const SizedBox(height: 18),
@@ -13527,7 +13795,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                     ),
                   ),
                   const Spacer(),
-                  // ✅ دکمه افزودن لینک
                   GestureDetector(
                     onTap: () async {
                       await showInsertLinkDialog(
@@ -13594,7 +13861,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'می‌توانید از دکمه «افزودن لینک» استفاده کنید یا دستی بنویسید: [متن](https://example.com)\nلینک‌های خام به‌طور خودکار فعال می‌شوند.',
+                        'می‌توانید از دکمه «افزودن لینک» استفاده کنید یا دستی بنویسید: [متن](https://example.com)',
                         style: TextStyle(
                           color: kInfo,
                           fontSize: 10.5,
@@ -13641,7 +13908,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               ),
               const SizedBox(height: 18),
               Text(
-                'فایل ضمیمه (اختیاری)',
+                'تصویر/فایل ضمیمه (اختیاری)',
                 style: TextStyle(
                   color: accentNotifier.value,
                   fontSize: 13.5,
@@ -13692,11 +13959,198 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                   ),
                 ),
               ),
+
+              // ========== تبلیغات ==========
               const SizedBox(height: 30),
               Divider(color: lineC),
               const SizedBox(height: 20),
 
-              // ========== بخش کوئیز ==========
+              _sectionBanner(
+                icon: Icons.campaign_rounded,
+                title: 'تبلیغات بالای صفحه',
+                subtitle:
+                    'بنر تبلیغاتی زیر اسلایدر — عکس و متن با لینک',
+                color: kAccentGold,
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'متن تبلیغ (اختیاری)',
+                style: TextStyle(
+                  color: kAccentGold,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: pnl,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: lineC),
+                ),
+                child: TextField(
+                  controller: _adTitleCtrl,
+                  textDirection: TextDirection.rtl,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                      color: txtC,
+                      fontSize: 14,
+                      fontFamily: 'Vazirmatn'),
+                  decoration: InputDecoration(
+                    hintText: 'مثلاً: تخفیف ویژه دوره‌های آموزشی',
+                    hintStyle: TextStyle(
+                        color: mutC, fontFamily: 'Vazirmatn'),
+                    filled: true,
+                    fillColor: Colors.transparent,
+                    contentPadding: const EdgeInsets.all(15),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'لینک تبلیغ (اختیاری)',
+                style: TextStyle(
+                  color: kAccentGold,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: pnl,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: lineC),
+                ),
+                child: TextField(
+                  controller: _adLinkCtrl,
+                  textDirection: TextDirection.ltr,
+                  textAlign: TextAlign.left,
+                  style: TextStyle(
+                      color: txtC,
+                      fontSize: 13,
+                      fontFamily: 'Vazirmatn'),
+                  decoration: InputDecoration(
+                    hintText: 'https://example.com',
+                    hintStyle: TextStyle(
+                        color: mutC, fontFamily: 'Vazirmatn'),
+                    prefixIcon: const Icon(Icons.link_rounded,
+                        color: kAccentGold),
+                    filled: true,
+                    fillColor: Colors.transparent,
+                    contentPadding: const EdgeInsets.all(15),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'تصویر تبلیغ (اختیاری)',
+                style: TextStyle(
+                  color: kAccentGold,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (_adImageUrl != null && _adImageFile == null)
+                _buildAdImagePreview()
+              else if (_adImageFile == null)
+                _buildAdImagePicker()
+              else
+                _buildAdImageSelected(),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  if (adBannerNotifier.value != null) ...[
+                    Expanded(
+                      child: SizedBox(
+                        height: 52,
+                        child: OutlinedButton.icon(
+                          onPressed:
+                              _adSaving ? null : _clearAd,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: rose,
+                            side: const BorderSide(color: rose),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(14),
+                            ),
+                          ),
+                          icon: const Icon(
+                              Icons.delete_outline_rounded,
+                              size: 18),
+                          label: const Text(
+                            'حذف تبلیغ',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Vazirmatn',
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
+                  Expanded(
+                    flex: 2,
+                    child: SizedBox(
+                      height: 52,
+                      child: ElevatedButton.icon(
+                        onPressed: _adSaving ? null : _saveAd,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: kAccentGold,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(14),
+                          ),
+                        ),
+                        icon: _adSaving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child:
+                                    CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.save_rounded,
+                                size: 18),
+                        label: Text(
+                          _adSaving
+                              ? 'در حال ذخیره...'
+                              : 'ذخیره تبلیغ',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // ========== کوئیز ==========
+              const SizedBox(height: 30),
+              Divider(color: lineC),
+              const SizedBox(height: 20),
+
               _sectionBanner(
                 icon: Icons.quiz_rounded,
                 title: 'طراحی کوئیز ورزشی',
@@ -13945,7 +14399,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                   ),
                   decoration: InputDecoration(
                     hintText:
-                        'مثلاً: کلسیم نقش کلیدی در استحکام استخوان‌ها دارد. منابع خوب کلسیم شامل شیر، ماست، پنیر و سبزیجات برگ سبز است.',
+                        'مثلاً: کلسیم نقش کلیدی در استحکام استخوان‌ها دارد...',
                     hintStyle: TextStyle(
                         color: mutC,
                         fontFamily: 'Vazirmatn',
@@ -13991,8 +14445,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // ========== لیست سوالات کوئیز ==========
               ValueListenableBuilder<List<QuizQuestion>>(
                 valueListenable: quizNotifier,
                 builder: (c, questions, __) {
@@ -14141,6 +14593,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                 },
               ),
 
+              // ========== اخبار منتشر شده ==========
               const SizedBox(height: 30),
               Divider(color: lineC),
               const SizedBox(height: 14),
@@ -14513,9 +14966,9 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.check_circle_rounded,
+                            const Icon(Icons.check_circle_rounded,
                                 color: kSuccess, size: 10),
-                            SizedBox(width: 3),
+                            const SizedBox(width: 3),
                             Text(
                               'آپلود شده',
                               style: TextStyle(
@@ -14549,6 +15002,212 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                 color: rose,
                 size: 20,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdImagePicker() {
+    return GestureDetector(
+      onTap: _pickAdImage,
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: kAccentGold.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+              color: kAccentGold.withOpacity(0.4), width: 1.5),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [kAccentGold, kAccentGoldDark],
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                  Icons.add_photo_alternate_rounded,
+                  color: Colors.white,
+                  size: 26),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'انتخاب تصویر تبلیغ',
+              style: TextStyle(
+                color: txtC,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'حداکثر ۵ مگابایت',
+              style: TextStyle(
+                color: mutC,
+                fontSize: 10.5,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdImageSelected() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: pnl,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: kAccentGold, width: 1.5),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [kAccentGold, kAccentGoldDark],
+              ),
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+            ),
+            child: const Icon(Icons.image_rounded,
+                color: Colors.white, size: 24),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _adImageFile!.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: txtC,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _formatSize(_adImageFile!.size),
+                  style: TextStyle(
+                    color: mutC,
+                    fontSize: 10.5,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () => setState(() {
+              _adImageFile = null;
+              _adImageUrl = null;
+            }),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: rose.withOpacity(0.15),
+                shape: BoxShape.circle,
+                border: Border.all(color: rose.withOpacity(0.3)),
+              ),
+              child: Icon(Icons.close_rounded,
+                  color: rose, size: 20),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdImagePreview() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: pnl,
+        borderRadius: BorderRadius.circular(14),
+        border:
+            Border.all(color: kSuccess.withOpacity(0.4), width: 1.2),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: SizedBox(
+              width: 60,
+              height: 60,
+              child: CachedNetworkImage(
+                imageUrl: _adImageUrl!,
+                fit: BoxFit.cover,
+                memCacheWidth: 200,
+                placeholder: (_, __) => Container(color: pnl2),
+                errorWidget: (_, __, ___) => Container(
+                  color: pnl2,
+                  child: Icon(Icons.broken_image_rounded,
+                      color: mutC, size: 24),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.check_circle_rounded,
+                        color: kSuccess, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      'تصویر فعلی تبلیغ',
+                      style: TextStyle(
+                        color: kSuccess,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'برای تغییر، تصویر جدید انتخاب کنید',
+                  style: TextStyle(
+                    color: mutC,
+                    fontSize: 10.5,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: _pickAdImage,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: kAccentGold.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                    color: kAccentGold.withOpacity(0.3)),
+              ),
+              child: const Icon(Icons.swap_horiz_rounded,
+                  color: kAccentGold, size: 18),
             ),
           ),
         ],
@@ -16900,7 +17559,8 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
     );
   }
 }
-/* ==================== QUIZ PAGE (FINAL) ==================== */
+
+/* ==================== QUIZ PAGE ==================== */
 
 class QuizPage extends StatefulWidget {
   const QuizPage({super.key});
@@ -16920,7 +17580,6 @@ class _QuizPageState extends State<QuizPage> {
     });
   }
 
-  /// ✅ پرش به اولین سوال بی‌جواب
   void _jumpToFirstUnanswered() {
     final qs = quizNotifier.value;
     if (qs.isEmpty) return;
@@ -17198,7 +17857,6 @@ class _QuizPageState extends State<QuizPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // کارت سوال
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -17296,7 +17954,6 @@ class _QuizPageState extends State<QuizPage> {
         ),
         const SizedBox(height: 20),
 
-        // گزینه‌ها: الف / ب / ج / د
         ...List.generate(q.options.length, (i) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
@@ -17304,13 +17961,11 @@ class _QuizPageState extends State<QuizPage> {
           );
         }),
 
-        // بازخورد
         if (isAlreadyAnswered) ...[
           const SizedBox(height: 16),
           _buildAnswerFeedback(q, savedAnswer ?? 0),
         ],
 
-        // ===== دکمه‌های قبلی / بعدی =====
         const SizedBox(height: 20),
         Row(
           children: [
@@ -18097,7 +18752,6 @@ class _QuizPageState extends State<QuizPage> {
     );
   }
 }
-
 /* ==================== READING STATS PAGE ==================== */
 
 class ReadingStatsPage extends StatelessWidget {
@@ -18886,6 +19540,348 @@ class ReadingStatsPage extends StatelessWidget {
     }
   }
 }
+
+/* ==================== SPORTS GLOSSARY PAGE ==================== */
+
+class SportsGlossaryPage extends StatefulWidget {
+  const SportsGlossaryPage({super.key});
+  @override
+  State<SportsGlossaryPage> createState() =>
+      _SportsGlossaryPageState();
+}
+
+class _SportsGlossaryPageState extends State<SportsGlossaryPage> {
+  final _searchCtrl = TextEditingController();
+  List<dynamic> _items = [];
+  List<dynamic> _filtered = [];
+  bool _loading = true;
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    _searchCtrl.addListener(() {
+      final q = _searchCtrl.text.trim().toLowerCase();
+      setState(() {
+        _query = q;
+        _applyFilter();
+      });
+    });
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final list = await getSportsGlossary();
+      if (mounted) {
+        setState(() {
+          _items = list;
+          _applyFilter();
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _items = [];
+          _filtered = [];
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  void _applyFilter() {
+    if (_query.isEmpty) {
+      _filtered = List.from(_items);
+      return;
+    }
+    _filtered = _items.where((item) {
+      final en = (item['en'] ?? '').toString().toLowerCase();
+      final fa = (item['fa'] ?? '').toString().toLowerCase();
+      final desc = (item['desc'] ?? '').toString().toLowerCase();
+      return en.contains(_query) ||
+          fa.contains(_query) ||
+          desc.contains(_query);
+    }).toList();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Scaffold(
+        backgroundColor: bgC,
+        appBar: AppBar(
+          title: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xff0f766e),
+                      Color(0xff14b8a6)
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xff0f766e)
+                          .withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.translate_rounded,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'لغات تخصصی',
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: bgC,
+          foregroundColor: txtC,
+          elevation: 0,
+        ),
+        body: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+              decoration: BoxDecoration(
+                color: pnl,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: lineC),
+              ),
+              child: TextField(
+                controller: _searchCtrl,
+                style: TextStyle(
+                  color: txtC,
+                  fontFamily: 'Vazirmatn',
+                  fontSize: 13,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'جستجو در لغات...',
+                  hintStyle: TextStyle(
+                      color: mutC, fontFamily: 'Vazirmatn'),
+                  prefixIcon: const Icon(Icons.search_rounded,
+                      color: Color(0xff0f766e)),
+                  suffixIcon: _query.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(Icons.close_rounded,
+                              color: mutC, size: 18),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: Colors.transparent,
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 14),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+            if (!_loading)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xff0f766e)
+                            .withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${_filtered.length} لغت',
+                        style: const TextStyle(
+                          color: Color(0xff0f766e),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: _loading
+                  ? const ArticlesSkeleton()
+                  : _filtered.isEmpty
+                      ? _buildEmpty()
+                      : ListView.separated(
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(
+                              14, 0, 14, 100),
+                          itemCount: _filtered.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (c, i) =>
+                              _buildCard(_filtered[i]),
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard(dynamic item) {
+    final en = item['en']?.toString() ?? '';
+    final fa = item['fa']?.toString() ?? '';
+    final desc = item['desc']?.toString() ?? '';
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: pnl,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: lineC),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xff0f766e).withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xff0f766e).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  en,
+                  style: const TextStyle(
+                    color: Color(0xff0f766e),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  fa,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: txtC,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (desc.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: pnl2,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                desc,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: mutC,
+                  fontSize: 12,
+                  height: 1.7,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: const Color(0xff0f766e).withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.translate_rounded,
+                  color: Color(0xff0f766e), size: 48),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              _query.isEmpty
+                  ? 'هنوز لغتی اضافه نشده'
+                  : 'نتیجه‌ای پیدا نشد',
+              style: TextStyle(
+                color: txtC,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _query.isEmpty
+                  ? 'به‌زودی از طرف مدیریت، لغات تخصصی اضافه می‌شود'
+                  : 'کلمه دیگری را امتحان کنید',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: mutC,
+                fontSize: 12,
+                height: 1.7,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /* ==================== SKELETON: ARTICLES ==================== */
 
 class ArticlesSkeleton extends StatelessWidget {
@@ -19352,2713 +20348,6 @@ class ErrorBox extends StatelessWidget {
             ],
           ],
         ),
-      ),
-    );
-  }
-}
-/* ==================== SPORTS GLOSSARY PAGE ==================== */
-
-class SportsGlossaryPage extends StatefulWidget {
-  const SportsGlossaryPage({super.key});
-  @override
-  State<SportsGlossaryPage> createState() =>
-      _SportsGlossaryPageState();
-}
-
-class _SportsGlossaryPageState extends State<SportsGlossaryPage> {
-  final _searchCtrl = TextEditingController();
-  List<dynamic> _items = [];
-  List<dynamic> _filtered = [];
-  bool _loading = true;
-  String _query = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-    _searchCtrl.addListener(() {
-      final q = _searchCtrl.text.trim().toLowerCase();
-      setState(() {
-        _query = q;
-        _applyFilter();
-      });
-    });
-  }
-
-  Future<void> _load() async {
-    setState(() => _loading = true);
-    try {
-      final list = await getSportsGlossary();
-      if (mounted) {
-        setState(() {
-          _items = list;
-          _applyFilter();
-          _loading = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _items = [];
-          _filtered = [];
-          _loading = false;
-        });
-      }
-    }
-  }
-
-  void _applyFilter() {
-    if (_query.isEmpty) {
-      _filtered = List.from(_items);
-      return;
-    }
-    _filtered = _items.where((item) {
-      final en = (item['en'] ?? '').toString().toLowerCase();
-      final fa = (item['fa'] ?? '').toString().toLowerCase();
-      final desc = (item['desc'] ?? '').toString().toLowerCase();
-      return en.contains(_query) ||
-          fa.contains(_query) ||
-          desc.contains(_query);
-    }).toList();
-  }
-
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => Scaffold(
-        backgroundColor: bgC,
-        appBar: AppBar(
-          title: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xff0f766e),
-                      Color(0xff14b8a6)
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xff0f766e)
-                          .withOpacity(0.4),
-                      blurRadius: 12,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.translate_rounded,
-                    color: Colors.white, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'لغات تخصصی',
-                style: TextStyle(
-                  color: txtC,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'Vazirmatn',
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: bgC,
-          foregroundColor: txtC,
-          elevation: 0,
-        ),
-        body: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.fromLTRB(14, 8, 14, 8),
-              decoration: BoxDecoration(
-                color: pnl,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: lineC),
-              ),
-              child: TextField(
-                controller: _searchCtrl,
-                style: TextStyle(
-                  color: txtC,
-                  fontFamily: 'Vazirmatn',
-                  fontSize: 13,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'جستجو در لغات...',
-                  hintStyle: TextStyle(
-                      color: mutC, fontFamily: 'Vazirmatn'),
-                  prefixIcon: const Icon(Icons.search_rounded,
-                      color: Color(0xff0f766e)),
-                  suffixIcon: _query.isNotEmpty
-                      ? IconButton(
-                          icon: Icon(Icons.close_rounded,
-                              color: mutC, size: 18),
-                          onPressed: () {
-                            _searchCtrl.clear();
-                          },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: Colors.transparent,
-                  contentPadding:
-                      const EdgeInsets.symmetric(vertical: 14),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ),
-            if (!_loading)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xff0f766e)
-                            .withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '${_filtered.length} لغت',
-                        style: const TextStyle(
-                          color: Color(0xff0f766e),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: _loading
-                  ? const ArticlesSkeleton()
-                  : _filtered.isEmpty
-                      ? _buildEmpty()
-                      : ListView.separated(
-                          physics: const BouncingScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(
-                              14, 0, 14, 100),
-                          itemCount: _filtered.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 10),
-                          itemBuilder: (c, i) =>
-                              _buildCard(_filtered[i]),
-                        ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCard(dynamic item) {
-    final en = item['en']?.toString() ?? '';
-    final fa = item['fa']?.toString() ?? '';
-    final desc = item['desc']?.toString() ?? '';
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: pnl,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: lineC),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xff0f766e).withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xff0f766e).withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  en,
-                  style: const TextStyle(
-                    color: Color(0xff0f766e),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  fa,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: txtC,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (desc.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: pnl2,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                desc,
-                textAlign: TextAlign.right,
-                style: TextStyle(
-                  color: mutC,
-                  fontSize: 12,
-                  height: 1.7,
-                  fontFamily: 'Vazirmatn',
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmpty() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: const Color(0xff0f766e).withOpacity(0.12),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.translate_rounded,
-                  color: Color(0xff0f766e), size: 48),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              _query.isEmpty
-                  ? 'هنوز لغتی اضافه نشده'
-                  : 'نتیجه‌ای پیدا نشد',
-              style: TextStyle(
-                color: txtC,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _query.isEmpty
-                  ? 'به‌زودی از طرف مدیریت، لغات تخصصی اضافه می‌شود'
-                  : 'کلمه دیگری را امتحان کنید',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: mutC,
-                fontSize: 12,
-                height: 1.7,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/* ==================== PE TEACHERS BANNER (FIXED) ==================== */
-
-class PeTeachersBanner extends StatelessWidget {
-  const PeTeachersBanner({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, isDark, __) => Container(
-        margin: const EdgeInsets.fromLTRB(14, 24, 14, 8),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: isDark
-                ? [
-                    const Color(0xff082f49),
-                    const Color(0xff0c4a6e).withOpacity(0.85),
-                    kDarkCard,
-                  ]
-                : [
-                    const Color(0xffe0f2fe),
-                    const Color(0xfff0f9ff),
-                    Colors.white,
-                  ],
-          ),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: const Color(0xff0ea5e9)
-                .withOpacity(isDark ? 0.45 : 0.35),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xff0ea5e9)
-                  .withOpacity(isDark ? 0.2 : 0.15),
-              blurRadius: 28,
-              offset: const Offset(0, 10),
-            ),
-            BoxShadow(
-              color: const Color(0xff38bdf8)
-                  .withOpacity(isDark ? 0.08 : 0.12),
-              blurRadius: 18,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            // ✅ کلید حل مشکل: جلوگیری از بزرگ شدن بی‌دلیل
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ===== هدر =====
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const PeTeachersHubPage(),
-                    ),
-                  );
-                },
-                child: Row(
-                  children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xff0284c7),
-                            Color(0xff38bdf8),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xff0284c7)
-                                .withOpacity(0.5),
-                            blurRadius: 16,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.sports_rounded,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'معلمان تربیت بدنی',
-                            style: TextStyle(
-                              color: txtC,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                              fontFamily: 'Vazirmatn',
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'منابع تخصصی برای معلمان ورزش',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: mutC,
-                              fontSize: 10.5,
-                              fontFamily: 'Vazirmatn',
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        color: const Color(0xff0284c7)
-                            .withOpacity(isDark ? 0.25 : 0.12),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xff0284c7)
-                              .withOpacity(0.35),
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Color(0xff0ea5e9),
-                        size: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-
-              // ===== گرید ۲×۳ (بدون GridView) =====
-              Row(
-                children: [
-                  Expanded(
-                    child: _PeCard(
-                      label: 'فایل‌ها',
-                      icon: Icons.folder_rounded,
-                      color: const Color(0xff0284c7),
-                      index: 0,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _PeCard(
-                      label: 'تمرین و بازی',
-                      icon: Icons.sports_soccer_rounded,
-                      color: const Color(0xff059669),
-                      index: 1,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _PeCard(
-                      label: 'مقالات',
-                      icon: Icons.article_rounded,
-                      color: const Color(0xff7c3aed),
-                      index: 2,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: _PeCard(
-                      label: 'بخشنامه‌ها',
-                      icon: Icons.campaign_rounded,
-                      color: const Color(0xffc1121f),
-                      index: 3,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _PeCard(
-                      label: 'نمونه سؤالات',
-                      icon: Icons.quiz_rounded,
-                      color: const Color(0xffd97706),
-                      index: 4,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _PeCard(
-                      label: 'ابزارها',
-                      icon: Icons.handyman_rounded,
-                      color: const Color(0xff0f766e),
-                      index: 5,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/* ==================== PE CARD (FIXED) ==================== */
-
-class _PeCard extends StatefulWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final int index;
-  const _PeCard({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.index,
-  });
-
-  @override
-  State<_PeCard> createState() => _PeCardState();
-}
-
-class _PeCardState extends State<_PeCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 140),
-    );
-    _scale = Tween<double>(begin: 1.0, end: 0.93).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = darkModeNotifier.value;
-
-    return GestureDetector(
-      onTapDown: (_) => _ctrl.forward(),
-      onTapUp: (_) => _ctrl.reverse(),
-      onTapCancel: () => _ctrl.reverse(),
-      onTap: () {
-        HapticFeedback.selectionClick();
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => PeTeachersHubPage(
-              initialTab: widget.index,
-            ),
-          ),
-        );
-      },
-      child: ScaleTransition(
-        scale: _scale,
-        // ✅ استفاده از AspectRatio برای کنترل اندازه دقیق
-        child: AspectRatio(
-          aspectRatio: 0.92,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  widget.color.withOpacity(isDark ? 0.28 : 0.14),
-                  widget.color.withOpacity(isDark ? 0.08 : 0.04),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color:
-                    widget.color.withOpacity(isDark ? 0.5 : 0.35),
-                width: 1.2,
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // آیکون
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        widget.color,
-                        widget.color.withOpacity(0.75),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(11),
-                    boxShadow: [
-                      BoxShadow(
-                        color: widget.color.withOpacity(0.45),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    widget.icon,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                // متن
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Text(
-                    widget.label,
-                    maxLines: 2,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: txtC,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w900,
-                      height: 1.25,
-                      fontFamily: 'Vazirmatn',
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/* ==================== PE TEACHERS HUB PAGE ==================== */
-
-class PeTeachersHubPage extends StatefulWidget {
-  final int initialTab;
-  const PeTeachersHubPage({super.key, this.initialTab = 0});
-  @override
-  State<PeTeachersHubPage> createState() => _PeTeachersHubPageState();
-}
-
-class _PeTeachersHubPageState extends State<PeTeachersHubPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tab;
-
-  @override
-  void initState() {
-    super.initState();
-    _tab = TabController(
-      length: kPeTeacherTabs.length,
-      vsync: this,
-      initialIndex:
-          widget.initialTab.clamp(0, kPeTeacherTabs.length - 1),
-    );
-  }
-
-  @override
-  void dispose() {
-    _tab.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => Scaffold(
-        backgroundColor: bgC,
-        appBar: AppBar(
-          title: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xff0284c7),
-                      Color(0xff38bdf8)
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xff0284c7)
-                          .withOpacity(0.4),
-                      blurRadius: 12,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.sports_rounded,
-                    color: Colors.white, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'معلمان تربیت بدنی',
-                style: TextStyle(
-                  color: txtC,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'Vazirmatn',
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: bgC,
-          foregroundColor: txtC,
-          elevation: 0,
-          actions: [
-            IconButton(
-              onPressed: () {
-                HapticFeedback.selectionClick();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const PeAdminLoginPage()),
-                );
-              },
-              icon: const Icon(
-                  Icons.admin_panel_settings_rounded,
-                  color: Color(0xff0ea5e9)),
-              tooltip: 'پنل مدیریت',
-            ),
-          ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(52),
-            child: Container(
-              height: 44,
-              margin: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-              decoration: BoxDecoration(
-                color: pnl,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: lineC),
-              ),
-              child: TabBar(
-                controller: _tab,
-                isScrollable: true,
-                indicator: BoxDecoration(
-                  gradient: LinearGradient(colors: [
-                    accentNotifier.value,
-                    accentNotifier.value.withOpacity(0.7),
-                  ]),
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicatorPadding:
-                    const EdgeInsets.symmetric(horizontal: 4),
-                labelColor: Colors.white,
-                unselectedLabelColor: txtC.withOpacity(0.7),
-                labelStyle: const TextStyle(
-                  fontFamily: 'Vazirmatn',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                ),
-                unselectedLabelStyle: const TextStyle(
-                  fontFamily: 'Vazirmatn',
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                ),
-                dividerColor: Colors.transparent,
-                tabs: kPeTeacherTabs.map((t) {
-                  return Tab(
-                    child: Row(
-                      children: [
-                        Icon(t['icon'] as IconData, size: 14),
-                        const SizedBox(width: 5),
-                        Text(t['label'] as String),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-        ),
-        body: TabBarView(
-          controller: _tab,
-          children: kPeTeacherTabs.map((t) {
-            return _PeTabContent(
-              slug: t['slug'] as String,
-              color: t['color'] as Color,
-              label: t['label'] as String,
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-}
-
-/* ==================== PE TAB CONTENT ==================== */
-
-class _PeTabContent extends StatefulWidget {
-  final String slug;
-  final Color color;
-  final String label;
-  const _PeTabContent({
-    required this.slug,
-    required this.color,
-    required this.label,
-  });
-
-  @override
-  State<_PeTabContent> createState() => _PeTabContentState();
-}
-
-class _PeTabContentState extends State<_PeTabContent> {
-  List<dynamic> _items = [];
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() => _loading = true);
-    try {
-      final list = await getPeTeacherContent(widget.slug);
-      if (mounted) {
-        setState(() {
-          _items = list;
-          _loading = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _items = [];
-          _loading = false;
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_loading) return const ArticlesSkeleton();
-
-    if (_items.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(40),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: widget.color.withOpacity(0.15),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: widget.color.withOpacity(0.3),
-                    width: 1.5,
-                  ),
-                ),
-                child: Icon(
-                  Icons.inbox_rounded,
-                  color: widget.color,
-                  size: 48,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'هنوز محتوایی در «${widget.label}» اضافه نشده',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: txtC,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'Vazirmatn',
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'مدیر می‌تواند از پنل مدیریت، محتوا اضافه کند',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: mutC,
-                  fontSize: 12,
-                  height: 1.7,
-                  fontFamily: 'Vazirmatn',
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      color: widget.color,
-      backgroundColor: pnl,
-      onRefresh: _load,
-      child: ListView.builder(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
-        itemCount: _items.length,
-        itemBuilder: (c, i) => _buildItem(_items[i]),
-      ),
-    );
-  }
-
-  Widget _buildItem(dynamic item) {
-    final title = item['title']?.toString() ?? '';
-    final content = item['content']?.toString() ?? '';
-    final fileUrl = item['file_url']?.toString() ?? '';
-    final fileName = item['file_name']?.toString() ?? '';
-    final date = item['date']?.toString() ?? '';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: pnl,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: lineC),
-        boxShadow: [
-          BoxShadow(
-            color: widget.color.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: widget.color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.description_rounded,
-                  color: widget.color,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        color: txtC,
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w900,
-                        height: 1.5,
-                        fontFamily: 'Vazirmatn',
-                      ),
-                    ),
-                    if (date.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        date,
-                        style: TextStyle(
-                          color: mutC,
-                          fontSize: 10.5,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (content.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              content,
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                color: mutC,
-                fontSize: 12,
-                height: 1.8,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-          ],
-          if (fileUrl.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            GestureDetector(
-              onTap: () => openExternalUrl(fileUrl),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      widget.color,
-                      widget.color.withOpacity(0.7),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: widget.color.withOpacity(0.35),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.download_rounded,
-                        color: Colors.white, size: 16),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        fileName.isNotEmpty
-                            ? 'دانلود: $fileName'
-                            : 'دانلود فایل',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-/* ==================== PE ADMIN LOGIN ==================== */
-
-class PeAdminLoginPage extends StatefulWidget {
-  const PeAdminLoginPage({super.key});
-  @override
-  State<PeAdminLoginPage> createState() => _PeAdminLoginPageState();
-}
-
-class _PeAdminLoginPageState extends State<PeAdminLoginPage> {
-  final _userCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
-  bool _loading = false;
-  bool _obscure = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSaved();
-  }
-
-  Future<void> _loadSaved() async {
-    try {
-      final u = await _storage.read(key: 'admin_username');
-      final p = await _storage.read(key: 'admin_password');
-      if (u != null && u.isNotEmpty) _userCtrl.text = u;
-      if (p != null && p.isNotEmpty) _passCtrl.text = p;
-    } catch (_) {}
-  }
-
-  Future<void> _login() async {
-    final user = _userCtrl.text.trim();
-    final pass = _passCtrl.text.trim();
-    if (user.isEmpty || pass.isEmpty) {
-      setState(() => _error = 'نام کاربری و رمز را وارد کنید.');
-      return;
-    }
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      await verifyAdmin(username: user, appPassword: pass);
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => PeAdminPanelPage(
-            username: user,
-            password: pass,
-          ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = e.toString().replaceFirst('Exception: ', '');
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _userCtrl.dispose();
-    _passCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => Scaffold(
-        backgroundColor: bgC,
-        appBar: AppBar(
-          title: const Text(
-            'ورود ادمین — معلمان',
-            style: TextStyle(
-                fontWeight: FontWeight.w900,
-                fontFamily: 'Vazirmatn'),
-          ),
-          backgroundColor: bgC,
-          foregroundColor: txtC,
-          elevation: 0,
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      const Color(0xff0284c7).withOpacity(0.2),
-                      const Color(0xff0284c7).withOpacity(0.05),
-                    ],
-                  ),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                      color: const Color(0xff0284c7)
-                          .withOpacity(0.3)),
-                ),
-                child: const Icon(Icons.sports_rounded,
-                    color: Color(0xff0284c7), size: 42),
-              ),
-              const SizedBox(height: 22),
-              Text(
-                'ورود مدیر بخش معلمان',
-                style: TextStyle(
-                  color: txtC,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'Vazirmatn',
-                ),
-              ),
-              const SizedBox(height: 30),
-              _buildField(
-                controller: _userCtrl,
-                icon: Icons.person_rounded,
-                hint: 'نام کاربری وردپرس',
-              ),
-              const SizedBox(height: 12),
-              _buildField(
-                controller: _passCtrl,
-                icon: Icons.key_rounded,
-                hint: 'Application Password',
-                obscure: _obscure,
-                suffix: IconButton(
-                  icon: Icon(
-                    _obscure
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                    color: mutC,
-                    size: 20,
-                  ),
-                  onPressed: () =>
-                      setState(() => _obscure = !_obscure),
-                ),
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: rose.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                    border:
-                        Border.all(color: rose.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.error_outline_rounded,
-                          color: rose, size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _error!,
-                          style: TextStyle(
-                            color: rose,
-                            fontSize: 12,
-                            fontFamily: 'Vazirmatn',
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: _loading ? null : _login,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff0284c7),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: _loading
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          'ورود',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'Vazirmatn',
-                          ),
-                        ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildField({
-    required TextEditingController controller,
-    required IconData icon,
-    required String hint,
-    bool obscure = false,
-    Widget? suffix,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: pnl,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: lineC),
-      ),
-      child: TextField(
-        controller: controller,
-        obscureText: obscure,
-        textDirection: TextDirection.ltr,
-        style: TextStyle(color: txtC, fontFamily: 'Vazirmatn'),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle:
-              TextStyle(color: mutC, fontFamily: 'Vazirmatn'),
-          prefixIcon: Icon(icon, color: const Color(0xff0284c7)),
-          suffixIcon: suffix,
-          filled: true,
-          fillColor: Colors.transparent,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/* ==================== PE ADMIN PANEL PAGE (FINAL) ==================== */
-
-class PeAdminPanelPage extends StatefulWidget {
-  final String username;
-  final String password;
-  const PeAdminPanelPage({
-    super.key,
-    required this.username,
-    required this.password,
-  });
-  @override
-  State<PeAdminPanelPage> createState() => _PeAdminPanelPageState();
-}
-
-class _PeAdminPanelPageState extends State<PeAdminPanelPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tab;
-
-  // فرم
-  final _titleCtrl = TextEditingController();
-  final _contentCtrl = TextEditingController();
-  bool _sending = false;
-
-  // فایل
-  PlatformFile? _selectedFile;
-  bool _uploadingFile = false;
-  String? _uploadedFileUrl;
-  String? _uploadedFileName;
-
-  // محتوا بر اساس تب
-  final Map<String, List<dynamic>> _itemsByType = {};
-  final Map<String, bool> _loadingByType = {};
-
-  // ویرایش
-  int? _editingId;
-
-  @override
-  void initState() {
-    super.initState();
-    _tab = TabController(length: kPeTeacherTabs.length, vsync: this);
-    _tab.addListener(_onTabChanged);
-    _loadType(kPeTeacherTabs[0]['slug'] as String);
-  }
-
-  /// ✅ هنگام تغییر تب، فرم پاک می‌شود + محتوای تب جدید لود می‌شود
-  void _onTabChanged() {
-    if (_tab.indexIsChanging) return;
-    final slug = kPeTeacherTabs[_tab.index]['slug'] as String;
-
-    // لود محتوای تب جدید (اگر قبلاً لود نشده)
-    if (!_itemsByType.containsKey(slug)) {
-      _loadType(slug);
-    }
-
-    // ✅ پاک کردن فرم هنگام تغییر تب
-    _titleCtrl.clear();
-    _contentCtrl.clear();
-    _selectedFile = null;
-    _uploadedFileUrl = null;
-    _uploadedFileName = null;
-    _editingId = null;
-
-    if (mounted) setState(() {});
-  }
-
-  @override
-  void dispose() {
-    _tab.removeListener(_onTabChanged);
-    _tab.dispose();
-    _titleCtrl.dispose();
-    _contentCtrl.dispose();
-    super.dispose();
-  }
-
-  String get _currentSlug =>
-      kPeTeacherTabs[_tab.index]['slug'] as String;
-
-  Color get _currentColor =>
-      kPeTeacherTabs[_tab.index]['color'] as Color;
-
-  String get _currentLabel =>
-      kPeTeacherTabs[_tab.index]['label'] as String;
-
-  Future<void> _loadType(String slug) async {
-    setState(() => _loadingByType[slug] = true);
-    try {
-      final list = await getPeTeacherContent(slug);
-      if (mounted) {
-        setState(() {
-          _itemsByType[slug] = list;
-          _loadingByType[slug] = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _itemsByType[slug] = [];
-          _loadingByType[slug] = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _reloadCurrent() async {
-    await _loadType(_currentSlug);
-  }
-
-  // ==================== FILE ====================
-
-  Future<void> _pickFile() async {
-    HapticFeedback.selectionClick();
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        allowMultiple: false,
-        type: FileType.any,
-        withData: false,
-        withReadStream: false,
-      );
-      if (result == null || result.files.isEmpty) return;
-      final file = result.files.first;
-      if (file.path == null) {
-        showSnack(context, 'خطا در دسترسی به فایل', error: true);
-        return;
-      }
-      if (file.size > 50 * 1024 * 1024) {
-        showSnack(context,
-            'حجم فایل نباید بیش از ۵۰ مگابایت باشد.',
-            error: true);
-        return;
-      }
-      setState(() {
-        _selectedFile = file;
-        _uploadedFileUrl = null;
-        _uploadedFileName = null;
-      });
-    } catch (e) {
-      showSnack(context, 'خطا: $e', error: true);
-    }
-  }
-
-  void _removeFile() {
-    HapticFeedback.lightImpact();
-    setState(() {
-      _selectedFile = null;
-      _uploadedFileUrl = null;
-      _uploadedFileName = null;
-    });
-  }
-
-  Future<bool> _uploadFileIfNeeded() async {
-    if (_selectedFile == null) return true;
-    if (_uploadedFileUrl != null) return true;
-    if (_selectedFile!.path == null) return false;
-    setState(() => _uploadingFile = true);
-    try {
-      final result = await uploadMedia(
-        username: widget.username,
-        appPassword: widget.password,
-        filePath: _selectedFile!.path!,
-        fileName: _selectedFile!.name,
-      );
-      final sourceUrl = result['source_url']?.toString() ?? '';
-      if (sourceUrl.isEmpty) {
-        throw Exception('URL فایل یافت نشد');
-      }
-      setState(() {
-        _uploadedFileUrl = sourceUrl;
-        _uploadedFileName = _selectedFile!.name;
-      });
-      return true;
-    } catch (e) {
-      if (mounted) {
-        showSnack(
-          context,
-          e.toString().replaceFirst('Exception: ', ''),
-          error: true,
-        );
-      }
-      return false;
-    } finally {
-      if (mounted) setState(() => _uploadingFile = false);
-    }
-  }
-
-  // ==================== SUBMIT ====================
-
-  Future<void> _submit() async {
-    final title = _titleCtrl.text.trim();
-    final content = _contentCtrl.text.trim();
-
-    if (title.isEmpty) {
-      showSnack(context, 'عنوان را وارد کنید.', error: true);
-      return;
-    }
-
-    setState(() => _sending = true);
-
-    try {
-      final ok = await _uploadFileIfNeeded();
-      if (!ok) {
-        if (mounted) setState(() => _sending = false);
-        return;
-      }
-
-      // ✅ ارسال به سرور
-      if (_editingId != null) {
-        await updatePeTeacherContent(
-          username: widget.username,
-          appPassword: widget.password,
-          id: _editingId!,
-          type: _currentSlug,
-          title: title,
-          content: content,
-          fileUrl: _uploadedFileUrl,
-          fileName: _uploadedFileName,
-        );
-        if (!mounted) return;
-        HapticFeedback.mediumImpact();
-        showSnack(context, '✅ محتوا ویرایش شد!');
-      } else {
-        await postPeTeacherContent(
-          username: widget.username,
-          appPassword: widget.password,
-          type: _currentSlug,
-          title: title,
-          content: content,
-          fileUrl: _uploadedFileUrl,
-          fileName: _uploadedFileName,
-        );
-        if (!mounted) return;
-        HapticFeedback.mediumImpact();
-        showSnack(context, '✅ محتوا با موفقیت اضافه شد!');
-      }
-
-      _titleCtrl.clear();
-      _contentCtrl.clear();
-      setState(() {
-        _selectedFile = null;
-        _uploadedFileUrl = null;
-        _uploadedFileName = null;
-        _editingId = null;
-      });
-
-      await _reloadCurrent();
-    } catch (e) {
-      if (!mounted) return;
-      showSnack(
-        context,
-        e.toString().replaceFirst('Exception: ', ''),
-        error: true,
-      );
-    } finally {
-      if (mounted) setState(() => _sending = false);
-    }
-  }
-
-  Future<void> _deleteItem(dynamic item) async {
-    final id = int.tryParse(item['id']?.toString() ?? '') ?? 0;
-    if (id == 0) {
-      showSnack(context, 'شناسه نامعتبر', error: true);
-      return;
-    }
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: pnl,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: Text(
-          'حذف محتوا',
-          style: TextStyle(
-            color: txtC,
-            fontWeight: FontWeight.w900,
-            fontFamily: 'Vazirmatn',
-          ),
-        ),
-        content: Text(
-          'آیا از حذف «${item['title']}» مطمئن هستید؟',
-          style: TextStyle(color: mutC, fontFamily: 'Vazirmatn'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('انصراف',
-                style: TextStyle(
-                    color: mutC, fontFamily: 'Vazirmatn')),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text('حذف',
-                style: TextStyle(
-                    color: rose,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn')),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
-    try {
-      await deletePeTeacherContent(
-        username: widget.username,
-        appPassword: widget.password,
-        id: id,
-        type: _currentSlug,
-      );
-      if (!mounted) return;
-      showSnack(context, 'محتوا حذف شد.');
-      await _reloadCurrent();
-    } catch (e) {
-      if (!mounted) return;
-      showSnack(
-        context,
-        e.toString().replaceFirst('Exception: ', ''),
-        error: true,
-      );
-    }
-  }
-
-  void _startEdit(dynamic item) {
-    HapticFeedback.selectionClick();
-    setState(() {
-      _editingId = int.tryParse(item['id']?.toString() ?? '');
-      _titleCtrl.text = item['title']?.toString() ?? '';
-      _contentCtrl.text = item['content']?.toString() ?? '';
-      _uploadedFileUrl = item['file_url']?.toString();
-      _uploadedFileName = item['file_name']?.toString();
-      _selectedFile = null;
-    });
-    showSnack(
-      context,
-      '✏️ حالت ویرایش فعال شد. تغییرات را اعمال و ذخیره کنید.',
-    );
-  }
-
-  void _cancelEdit() {
-    HapticFeedback.lightImpact();
-    setState(() {
-      _editingId = null;
-      _titleCtrl.clear();
-      _contentCtrl.clear();
-      _selectedFile = null;
-      _uploadedFileUrl = null;
-      _uploadedFileName = null;
-    });
-  }
-
-  IconData _fileIcon(String ext) {
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].contains(ext)) {
-      return Icons.image_rounded;
-    }
-    if (ext == 'pdf') return Icons.picture_as_pdf_rounded;
-    if (['doc', 'docx'].contains(ext)) return Icons.description_rounded;
-    if (['xls', 'xlsx'].contains(ext)) return Icons.table_chart_rounded;
-    if (['ppt', 'pptx'].contains(ext)) return Icons.slideshow_rounded;
-    if (['zip', 'rar', '7z'].contains(ext)) return Icons.archive_rounded;
-    if (['mp4', 'avi', 'mov', 'mkv'].contains(ext)) {
-      return Icons.videocam_rounded;
-    }
-    if (['mp3', 'wav', 'm4a'].contains(ext)) {
-      return Icons.audiotrack_rounded;
-    }
-    return Icons.insert_drive_file_rounded;
-  }
-
-  String _formatSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) {
-      return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    }
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-  }
-
-  // ==================== BUILD ====================
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).padding.bottom;
-
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => Scaffold(
-        backgroundColor: bgC,
-        appBar: AppBar(
-          title: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xff0284c7),
-                      Color(0xff38bdf8)
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xff0284c7)
-                          .withOpacity(0.4),
-                      blurRadius: 12,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.sports_rounded,
-                    color: Colors.white, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'پنل مدیریت معلمان',
-                style: TextStyle(
-                  color: txtC,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'Vazirmatn',
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: bgC,
-          foregroundColor: txtC,
-          elevation: 0,
-          actions: [
-            if (_editingId != null)
-              IconButton(
-                onPressed: _cancelEdit,
-                icon: Icon(Icons.cancel_rounded,
-                    color: kWarning, size: 22),
-                tooltip: 'لغو ویرایش',
-              ),
-          ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(52),
-            child: Container(
-              height: 44,
-              margin: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-              decoration: BoxDecoration(
-                color: pnl,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: lineC),
-              ),
-              child: TabBar(
-                controller: _tab,
-                isScrollable: true,
-                indicator: BoxDecoration(
-                  gradient: LinearGradient(colors: [
-                    accentNotifier.value,
-                    accentNotifier.value.withOpacity(0.7),
-                  ]),
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicatorPadding:
-                    const EdgeInsets.symmetric(horizontal: 4),
-                labelColor: Colors.white,
-                unselectedLabelColor: txtC.withOpacity(0.7),
-                labelStyle: const TextStyle(
-                  fontFamily: 'Vazirmatn',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                ),
-                unselectedLabelStyle: const TextStyle(
-                  fontFamily: 'Vazirmatn',
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                ),
-                dividerColor: Colors.transparent,
-                tabs: kPeTeacherTabs.map((t) {
-                  return Tab(
-                    child: Row(
-                      children: [
-                        Icon(t['icon'] as IconData, size: 14),
-                        const SizedBox(width: 5),
-                        Text(t['label'] as String),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-        ),
-        body: TabBarView(
-          controller: _tab,
-          children: kPeTeacherTabs.map((t) {
-            return _buildTabPage(
-              slug: t['slug'] as String,
-              color: t['color'] as Color,
-              label: t['label'] as String,
-              bottomInset: bottomInset,
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTabPage({
-    required String slug,
-    required Color color,
-    required String label,
-    required double bottomInset,
-  }) {
-    final items = _itemsByType[slug] ?? [];
-    final isLoading = _loadingByType[slug] == true;
-    final isCurrent = slug == _currentSlug;
-
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(20, 20, 20, bottomInset + 120),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _sectionBanner(
-            icon: Icons.sports_rounded,
-            title: 'مدیریت «$label»',
-            subtitle: 'افزودن، ویرایش و حذف محتوا در این بخش',
-            color: color,
-          ),
-          const SizedBox(height: 18),
-
-          if (isCurrent && _editingId != null) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    kWarning.withOpacity(0.15),
-                    kWarning.withOpacity(0.05),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color: kWarning.withOpacity(0.4), width: 1.2),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [kWarning, Color(0xfff59e0b)],
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.edit_rounded,
-                        color: Colors.white, size: 18),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'حالت ویرایش فعال',
-                          style: TextStyle(
-                            color: kWarning,
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'Vazirmatn',
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'تغییرات را اعمال و ذخیره کنید',
-                          style: TextStyle(
-                            color: mutC,
-                            fontSize: 10.5,
-                            fontFamily: 'Vazirmatn',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: _cancelEdit,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: kWarning.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                            color: kWarning.withOpacity(0.35)),
-                      ),
-                      child: Text('لغو',
-                          style: TextStyle(
-                              color: kWarning,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
-                              fontFamily: 'Vazirmatn')),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-          ],
-
-          Text(
-            'عنوان',
-            style: TextStyle(
-              color: color,
-              fontSize: 13.5,
-              fontWeight: FontWeight.w900,
-              fontFamily: 'Vazirmatn',
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: pnl,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: lineC),
-            ),
-            child: TextField(
-              controller: _titleCtrl,
-              textDirection: TextDirection.rtl,
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                  color: txtC,
-                  fontSize: 14,
-                  fontFamily: 'Vazirmatn'),
-              decoration: InputDecoration(
-                hintText: 'عنوان $label',
-                hintStyle: TextStyle(
-                    color: mutC, fontFamily: 'Vazirmatn'),
-                filled: true,
-                fillColor: Colors.transparent,
-                contentPadding: const EdgeInsets.all(15),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          Row(
-            children: [
-              Text(
-                'توضیحات',
-                style: TextStyle(
-                  color: color,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'Vazirmatn',
-                ),
-              ),
-              const Spacer(),
-              GestureDetector(
-                onTap: () async {
-                  await showInsertLinkDialog(
-                    context,
-                    controller: _contentCtrl,
-                    title: 'افزودن لینک به توضیحات',
-                  );
-                  if (mounted) setState(() {});
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [
-                        Color(0xff0ea5e9),
-                        Color(0xff0284c7),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xff0ea5e9)
-                            .withOpacity(0.35),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.link_rounded,
-                          color: Colors.white, size: 13),
-                      SizedBox(width: 4),
-                      Text(
-                        'افزودن لینک',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: pnl,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: lineC),
-            ),
-            child: TextField(
-              controller: _contentCtrl,
-              textDirection: TextDirection.rtl,
-              textAlign: TextAlign.right,
-              maxLines: 5,
-              style: TextStyle(
-                color: txtC,
-                fontSize: 13,
-                height: 1.8,
-                fontFamily: 'Vazirmatn',
-              ),
-              decoration: InputDecoration(
-                hintText:
-                    'توضیحات کامل...\n\nمی‌توانید از [متن](لینک) برای لینک‌گذاری استفاده کنید.',
-                hintStyle: TextStyle(
-                    color: mutC, fontFamily: 'Vazirmatn'),
-                filled: true,
-                fillColor: Colors.transparent,
-                contentPadding: const EdgeInsets.all(15),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          Text(
-            'فایل ضمیمه (اختیاری، حداکثر ۵۰ مگابایت)',
-            style: TextStyle(
-              color: color,
-              fontSize: 13,
-              fontWeight: FontWeight.w900,
-              fontFamily: 'Vazirmatn',
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          if (_uploadedFileUrl != null && _selectedFile == null)
-            _buildUploadedFileCard(color)
-          else if (_selectedFile == null)
-            _buildFilePickerButton(color)
-          else
-            _buildSelectedFileCard(color),
-
-          const SizedBox(height: 20),
-
-          SizedBox(
-            height: 54,
-            child: ElevatedButton.icon(
-              onPressed:
-                  _sending || _uploadingFile ? null : _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    _editingId != null ? kWarning : color,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              icon: (_sending || _uploadingFile)
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Icon(
-                      _editingId != null
-                          ? Icons.save_rounded
-                          : Icons.send_rounded,
-                      size: 20,
-                    ),
-              label: Text(
-                _uploadingFile
-                    ? 'در حال آپلود فایل...'
-                    : (_sending
-                        ? 'در حال ارسال...'
-                        : (_editingId != null
-                            ? 'ذخیره تغییرات'
-                            : 'افزودن به «$label»')),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'Vazirmatn',
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 30),
-          Divider(color: lineC),
-          const SizedBox(height: 14),
-
-          Row(
-            children: [
-              Icon(Icons.list_alt_rounded, color: color, size: 18),
-              const SizedBox(width: 8),
-              Text(
-                'محتوای موجود ($label)',
-                style: TextStyle(
-                  color: txtC,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'Vazirmatn',
-                ),
-              ),
-              const SizedBox(width: 6),
-              if (!isLoading)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 7, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '${items.length}',
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'Vazirmatn',
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          if (isLoading)
-            const Padding(
-              padding: EdgeInsets.all(20),
-              child: Center(
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else if (items.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: pnl2,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: lineC),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.inbox_outlined,
-                      color: mutC, size: 22),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'هنوز محتوایی در این بخش اضافه نشده',
-                      style: TextStyle(
-                        color: mutC,
-                        fontSize: 12,
-                        fontFamily: 'Vazirmatn',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            ...items.map((item) => _buildItemCard(item, color)),
-        ],
-      ),
-    );
-  }
-
-  Widget _sectionBanner({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            color.withOpacity(0.15),
-            color.withOpacity(0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(14),
-        border:
-            Border.all(color: color.withOpacity(0.35), width: 1.2),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [color, color.withOpacity(0.7)],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withOpacity(0.4),
-                  blurRadius: 12,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Icon(icon, color: Colors.white, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: mutC,
-                    fontSize: 10.5,
-                    height: 1.5,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilePickerButton(Color color) {
-    return GestureDetector(
-      onTap: _pickFile,
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: color.withOpacity(0.4),
-            width: 1.5,
-          ),
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 54,
-              height: 54,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [color, color.withOpacity(0.7)],
-                ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withOpacity(0.4),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.upload_file_rounded,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'انتخاب فایل ضمیمه',
-              style: TextStyle(
-                color: txtC,
-                fontSize: 13,
-                fontWeight: FontWeight.w900,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'PDF، Word، Excel، تصویر، ویدیو و...',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: mutC,
-                fontSize: 10.5,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSelectedFileCard(Color color) {
-    final file = _selectedFile!;
-    final ext = file.name.toLowerCase().split('.').last;
-    final icon = _fileIcon(ext);
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: pnl,
-        borderRadius: BorderRadius.circular(14),
-        border:
-            Border.all(color: color.withOpacity(0.4), width: 1.2),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [color, color.withOpacity(0.7)],
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: Colors.white, size: 24),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  file.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: txtC,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w800,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _formatSize(file.size),
-                  style: TextStyle(
-                    color: mutC,
-                    fontSize: 10.5,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: _uploadingFile ? null : _removeFile,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: rose.withOpacity(0.15),
-                shape: BoxShape.circle,
-                border: Border.all(color: rose.withOpacity(0.3)),
-              ),
-              child: Icon(Icons.close_rounded,
-                  color: rose, size: 20),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUploadedFileCard(Color color) {
-    final ext = (_uploadedFileName ?? '')
-        .toLowerCase()
-        .split('.')
-        .last;
-    final icon = _fileIcon(ext);
-    final isEditing = _editingId != null;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: kSuccess.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(14),
-        border:
-            Border.all(color: kSuccess.withOpacity(0.4), width: 1.2),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [kSuccess, kSuccessLight],
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: Colors.white, size: 24),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      isEditing
-                          ? Icons.info_rounded
-                          : Icons.check_circle_rounded,
-                      color: kSuccess,
-                      size: 14,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      isEditing ? 'فایل فعلی' : 'فایل آماده است',
-                      style: TextStyle(
-                        color: kSuccess,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w900,
-                        fontFamily: 'Vazirmatn',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _uploadedFileName ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: txtC,
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: _removeFile,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: rose.withOpacity(0.15),
-                shape: BoxShape.circle,
-                border: Border.all(color: rose.withOpacity(0.3)),
-              ),
-              child: Icon(Icons.close_rounded,
-                  color: rose, size: 20),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildItemCard(dynamic item, Color color) {
-    final title = item['title']?.toString() ?? '';
-    final content = item['content']?.toString() ?? '';
-    final fileUrl = item['file_url']?.toString() ?? '';
-    final fileName = item['file_name']?.toString() ?? '';
-    final date = item['date']?.toString() ?? '';
-    final itemId = int.tryParse(item['id']?.toString() ?? '');
-    final isBeingEdited = itemId != null && _editingId == itemId;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isBeingEdited ? kWarning.withOpacity(0.06) : pnl,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isBeingEdited
-              ? kWarning.withOpacity(0.5)
-              : lineC,
-          width: isBeingEdited ? 1.5 : 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: isBeingEdited
-                      ? kWarning.withOpacity(0.15)
-                      : color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  isBeingEdited
-                      ? Icons.edit_rounded
-                      : Icons.description_rounded,
-                  color: isBeingEdited ? kWarning : color,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        color: txtC,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w800,
-                        height: 1.5,
-                        fontFamily: 'Vazirmatn',
-                      ),
-                    ),
-                    if (date.isNotEmpty) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                        date,
-                        style: TextStyle(
-                          color: mutC,
-                          fontSize: 10,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: () => _startEdit(item),
-                icon: Icon(
-                  isBeingEdited
-                      ? Icons.edit_off_rounded
-                      : Icons.edit_rounded,
-                  color: isBeingEdited ? kWarning : color,
-                  size: 20,
-                ),
-                tooltip: 'ویرایش',
-                visualDensity: VisualDensity.compact,
-              ),
-              IconButton(
-                onPressed: () => _deleteItem(item),
-                icon: Icon(Icons.delete_outline_rounded,
-                    color: rose, size: 20),
-                tooltip: 'حذف',
-                visualDensity: VisualDensity.compact,
-              ),
-            ],
-          ),
-          if (content.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              content,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                color: mutC,
-                fontSize: 11.5,
-                height: 1.7,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-          ],
-          if (fileUrl.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () => openExternalUrl(fileUrl),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                      color: color.withOpacity(0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.download_rounded,
-                        color: color, size: 13),
-                    const SizedBox(width: 5),
-                    Flexible(
-                      child: Text(
-                        fileName.isNotEmpty
-                            ? fileName
-                            : 'دانلود فایل',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: color,
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w800,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ],
       ),
     );
   }
