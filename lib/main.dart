@@ -268,10 +268,10 @@ class QuizQuestion {
       );
 }
 
-/* ==================== QUIZ LOADING (FIX: forceRefresh) ==================== */
+/* ==================== QUIZ LOADING (با forceRefresh) ==================== */
 
 Future<void> loadQuiz({bool forceRefresh = false}) async {
-  // ✅ FIX: اگه forceRefresh بود، مستقیم از سرور با timestamp (بدون کش)
+  // اگه forceRefresh بود، مستقیم از سرور با timestamp (بدون کش)
   if (forceRefresh) {
     try {
       final url =
@@ -1385,6 +1385,14 @@ Future<List> getPostsPaged({
     final list = json.decode(r.body) as List;
     _postsCache[u] = list;
     _postsCacheTime[u] = now;
+
+    // ✅ جلوگیری از رشد بی‌نهایت کش
+    if (_postsCache.length > 50) {
+      final oldKey = _postsCache.keys.first;
+      _postsCache.remove(oldKey);
+      _postsCacheTime.remove(oldKey);
+    }
+
     try {
       await _storage.write(key: 'cache_$u', value: r.body);
     } catch (_) {}
@@ -1533,10 +1541,10 @@ Future<List> getNewNewsList() async {
   }
 }
 
-/* ==================== GLOSSARY API (FIX: forceRefresh) ==================== */
+/* ==================== GLOSSARY API (با forceRefresh) ==================== */
 
 Future<List> getSportsGlossary({bool forceRefresh = false}) async {
-  // ✅ FIX: اگه forceRefresh بود، مستقیم از سرور با timestamp
+  // اگه forceRefresh بود، مستقیم از سرور با timestamp
   if (forceRefresh) {
     try {
       final url =
@@ -2050,17 +2058,30 @@ Future<Map<String, dynamic>> uploadMedia({
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // ✅ قفل کردن اپ به حالت عمودی
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
 
+  // ✅ تنظیم رنگ نوار بالا و پایین سیستم
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: kPrimaryNavy,
+      systemNavigationBarIconBrightness: Brightness.light,
+      systemNavigationBarDividerColor: Colors.transparent,
     ),
   );
+
+  // ✅ فعال کردن حالت Edge-to-Edge
+  try {
+    await SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.edgeToEdge,
+    );
+  } catch (_) {}
+
   try {
     await loadBookmarks();
     await loadAccentColor();
@@ -2194,7 +2215,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     _ctrl.forward();
 
-    // ✅ FIX: ذخیره Timer و کنسل کردن آن در dispose
+    // ✅ ذخیره Timer برای کنسل در dispose
     _navTimer = Timer(const Duration(milliseconds: 2600), () {
       if (mounted) {
         Navigator.pushReplacement(
@@ -2434,6 +2455,7 @@ class _RootState extends State<Root> {
   int _i = 0;
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _linkSub;
+  bool _deepLinkHandling = false;
 
   static const _pages = <Widget>[
     Home(),
@@ -2471,7 +2493,11 @@ class _RootState extends State<Root> {
     } catch (_) {}
   }
 
-  void _handleDeepLink(Uri uri) async {
+  // ✅ جلوگیری از باز شدن دوباره صفحه در صورت کلیک مکرر
+  Future<void> _handleDeepLink(Uri uri) async {
+    if (_deepLinkHandling) return;
+    _deepLinkHandling = true;
+
     try {
       final host = uri.host.toLowerCase();
       if (!host.contains('itarbiatbadani.ir')) return;
@@ -2539,7 +2565,9 @@ class _RootState extends State<Root> {
           ),
         );
       }
-    } catch (_) {}
+    } catch (_) {} finally {
+      _deepLinkHandling = false;
+    }
   }
 
   @override
@@ -9468,7 +9496,7 @@ class _BookmarksPageState extends State<BookmarksPage>
     }
   }
 }
-/* ==================== SEARCH PAGE ==================== */
+/* ==================== SEARCH PAGE (بدون تغییر) ==================== */
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -10353,7 +10381,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 }
 
-/* ==================== ACCOUNT PAGE ==================== */
+/* ==================== ACCOUNT PAGE (اصلاح‌شده) ==================== */
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -10372,6 +10400,15 @@ class _AccountPageState extends State<AccountPage>
   @override
   void initState() {
     super.initState();
+
+    // ✅ فعال کردن چرخش برای این صفحه
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+
     _entryCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
@@ -10386,6 +10423,12 @@ class _AccountPageState extends State<AccountPage>
 
   @override
   void dispose() {
+    // ✅ برگرداندن قفل عمودی
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+
     _entryCtrl.dispose();
     super.dispose();
   }
@@ -10486,159 +10529,174 @@ class _AccountPageState extends State<AccountPage>
                 ),
               ),
             Expanded(
-              child: Stack(
-                children: [
-                  InAppWebView(
-                    initialUrlRequest: URLRequest(
-                        url: WebUri('$site/my-account/')),
-                    initialSettings: InAppWebViewSettings(
-                      javaScriptEnabled: true,
-                      useOnDownloadStart: true,
-                      useShouldOverrideUrlLoading: true,
-                      userAgent:
-                          'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
-                      cacheEnabled: true,
-                      clearCache: false,
-                      transparentBackground: true,
-                      supportZoom: true,
-                      allowsInlineMediaPlayback: true,
-                      mediaPlaybackRequiresUserGesture: false,
-                      useHybridComposition: true,
-                      domStorageEnabled: true,
-                      databaseEnabled: true,
-                      isFraudulentWebsiteWarningEnabled: true,
-                      safeBrowsingEnabled: true,
-                      disableContextMenu: false,
-                      disableVerticalScroll: false,
-                      disableHorizontalScroll: false,
-                      verticalScrollBarEnabled: true,
-                      horizontalScrollBarEnabled: false,
-                      textZoom: 100,
-                      useWideViewPort: true,
-                      loadWithOverviewMode: true,
-                      thirdPartyCookiesEnabled: true,
-                    ),
-                    onWebViewCreated: (c) => _controller = c,
-                    onLoadStart: (c, url) =>
-                        setState(() => _l = true),
-                    onLoadStop: (c, url) async {
-                      if (!mounted) return;
-                      setState(() {
-                        _l = false;
-                        _progress = 0;
-                      });
-                      await _save();
-                    },
-                    onProgressChanged: (c, p) {
-                      if (!mounted) return;
-                      setState(() => _progress = p / 100);
-                    },
-                    onReceivedError: (controller, request, error) {
-                      if (request.isForMainFrame ?? false) {
-                        if (!mounted) return;
-                        setState(() {
-                          _l = false;
-                          _progress = 0;
-                        });
-                      }
-                    },
-                    onReceivedHttpError:
-                        (controller, request, response) {
-                      debugPrint(
-                          'Account WebView HTTP Error: ${response.statusCode}');
-                    },
-                    onDownloadStartRequest:
-                        (controller, request) async {
-                      await openExternalUrl(
-                          request.url.toString());
-                    },
-                    shouldOverrideUrlLoading:
-                        (controller, action) async {
-                      final url = action.request.url.toString();
-                      if (_isTrustedUrl(url)) {
-                        return NavigationActionPolicy.ALLOW;
-                      }
-                      if (await canLaunchUrl(Uri.parse(url))) {
-                        await launchUrl(Uri.parse(url),
-                            mode: LaunchMode.externalApplication);
-                      }
-                      return NavigationActionPolicy.CANCEL;
-                    },
-                  ),
-                  if (_l && _progress == 0)
-                    FadeTransition(
-                      opacity: _fadeAnim,
-                      child: Container(
-                        color: bgC,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment:
-                                MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      kTabAccount,
-                                      kPrimaryNavy,
-                                    ],
-                                  ),
-                                  borderRadius:
-                                      BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: kTabAccount
-                                          .withOpacity(0.4),
-                                      blurRadius: 24,
-                                      offset: const Offset(0, 8),
+              // ✅ SafeArea + Padding برای جلوگیری از افتادن زیر نوار ناوبری
+              child: SafeArea(
+                top: false,
+                bottom: true,
+                child: Padding(
+                  // ارتفاع نوار ناوبری اپ + فاصله
+                  padding: EdgeInsets.only(bottom: R.w(88)),
+                  child: Stack(
+                    children: [
+                      InAppWebView(
+                        initialUrlRequest: URLRequest(
+                            url: WebUri('$site/my-account/')),
+                        initialSettings: InAppWebViewSettings(
+                          javaScriptEnabled: true,
+                          useOnDownloadStart: true,
+                          useShouldOverrideUrlLoading: true,
+                          userAgent:
+                              'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+                          cacheEnabled: true,
+                          clearCache: false,
+                          transparentBackground: true,
+                          supportZoom: true,
+                          allowsInlineMediaPlayback: true,
+                          mediaPlaybackRequiresUserGesture: false,
+                          useHybridComposition: true,
+                          domStorageEnabled: true,
+                          databaseEnabled: true,
+                          isFraudulentWebsiteWarningEnabled: true,
+                          safeBrowsingEnabled: true,
+                          disableContextMenu: false,
+                          disableVerticalScroll: false,
+                          disableHorizontalScroll: false,
+                          verticalScrollBarEnabled: true,
+                          horizontalScrollBarEnabled: false,
+                          textZoom: 100,
+                          useWideViewPort: true,
+                          loadWithOverviewMode: true,
+                          thirdPartyCookiesEnabled: true,
+                        ),
+                        onWebViewCreated: (c) => _controller = c,
+                        onLoadStart: (c, url) {
+                          if (mounted) setState(() => _l = true);
+                        },
+                        onLoadStop: (c, url) async {
+                          if (!mounted) return;
+                          setState(() {
+                            _l = false;
+                            _progress = 0;
+                          });
+                          await _save();
+                        },
+                        onProgressChanged: (c, p) {
+                          if (!mounted) return;
+                          setState(() => _progress = p / 100);
+                        },
+                        onReceivedError:
+                            (controller, request, error) {
+                          if (request.isForMainFrame ?? false) {
+                            if (!mounted) return;
+                            setState(() {
+                              _l = false;
+                              _progress = 0;
+                            });
+                          }
+                        },
+                        onReceivedHttpError:
+                            (controller, request, response) {
+                          debugPrint(
+                              'Account WebView HTTP Error: ${response.statusCode}');
+                        },
+                        onDownloadStartRequest:
+                            (controller, request) async {
+                          await openExternalUrl(
+                              request.url.toString());
+                        },
+                        shouldOverrideUrlLoading:
+                            (controller, action) async {
+                          final url =
+                              action.request.url.toString();
+                          if (_isTrustedUrl(url)) {
+                            return NavigationActionPolicy.ALLOW;
+                          }
+                          if (await canLaunchUrl(Uri.parse(url))) {
+                            await launchUrl(Uri.parse(url),
+                                mode:
+                                    LaunchMode.externalApplication);
+                          }
+                          return NavigationActionPolicy.CANCEL;
+                        },
+                      ),
+                      if (_l && _progress == 0)
+                        FadeTransition(
+                          opacity: _fadeAnim,
+                          child: Container(
+                            color: bgC,
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          kTabAccount,
+                                          kPrimaryNavy,
+                                        ],
+                                      ),
+                                      borderRadius:
+                                          BorderRadius.circular(20),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: kTabAccount
+                                              .withOpacity(0.4),
+                                          blurRadius: 24,
+                                          offset:
+                                              const Offset(0, 8),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                                child: const Icon(
-                                  Icons.person_rounded,
-                                  color: Colors.white,
-                                  size: 42,
-                                ),
+                                    child: const Icon(
+                                      Icons.person_rounded,
+                                      color: Colors.white,
+                                      size: 42,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  Text(
+                                    'در حال بارگذاری...',
+                                    style: TextStyle(
+                                      color: txtC,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      fontFamily: 'Vazirmatn',
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'لطفاً منتظر بمانید',
+                                    style: TextStyle(
+                                      color: mutC,
+                                      fontSize: 12,
+                                      fontFamily: 'Vazirmatn',
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  SizedBox(
+                                    width: 30,
+                                    height: 30,
+                                    child:
+                                        CircularProgressIndicator(
+                                      strokeWidth: 3,
+                                      color: kTabAccount,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 24),
-                              Text(
-                                'در حال بارگذاری...',
-                                style: TextStyle(
-                                  color: txtC,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800,
-                                  fontFamily: 'Vazirmatn',
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'لطفاً منتظر بمانید',
-                                style: TextStyle(
-                                  color: mutC,
-                                  fontSize: 12,
-                                  fontFamily: 'Vazirmatn',
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              SizedBox(
-                                width: 30,
-                                height: 30,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 3,
-                                  color: kTabAccount,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                ],
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
@@ -10733,7 +10791,7 @@ class _AccountPageState extends State<AccountPage>
   }
 }
 
-/* ==================== MODERN WEB PAGE ==================== */
+/* ==================== MODERN WEB PAGE (اصلاح‌شده) ==================== */
 
 class ModernWebPage extends StatefulWidget {
   final String url;
@@ -10751,6 +10809,30 @@ class _ModernWebPageState extends State<ModernWebPage> {
   bool _l = true;
   double _progress = 0;
   InAppWebViewController? _controller;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // ✅ فعال کردن چرخش برای این صفحه
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
+
+  @override
+  void dispose() {
+    // ✅ برگرداندن قفل عمودی
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+
+    super.dispose();
+  }
 
   bool _isTrustedUrl(String url) {
     return url.contains('itarbiatbadani.ir') ||
@@ -10816,109 +10898,120 @@ class _ModernWebPageState extends State<ModernWebPage> {
           ),
         ),
       ),
-      body: Stack(
-        children: [
-          InAppWebView(
-            initialUrlRequest:
-                URLRequest(url: WebUri(widget.url)),
-            initialSettings: InAppWebViewSettings(
-              javaScriptEnabled: true,
-              useShouldOverrideUrlLoading: true,
-              mediaPlaybackRequiresUserGesture: false,
-              useOnDownloadStart: true,
-              supportZoom: true,
-              cacheEnabled: true,
-              clearCache: false,
-              transparentBackground: true,
-              allowsInlineMediaPlayback: true,
-              useHybridComposition: true,
-              domStorageEnabled: true,
-              databaseEnabled: true,
-              disableVerticalScroll: false,
-              disableHorizontalScroll: false,
-              verticalScrollBarEnabled: true,
-              horizontalScrollBarEnabled: false,
-              textZoom: 100,
-              useWideViewPort: true,
-              loadWithOverviewMode: true,
-              thirdPartyCookiesEnabled: true,
-            ),
-            onWebViewCreated: (c) => _controller = c,
-            onLoadStart: (c, url) {
-              if (mounted) setState(() => _l = true);
-            },
-            onLoadStop: (c, url) {
-              if (!mounted) return;
-              setState(() {
-                _l = false;
-                _progress = 0;
-              });
-            },
-            onProgressChanged: (c, p) {
-              if (!mounted) return;
-              setState(() => _progress = p / 100);
-            },
-            onReceivedError: (controller, request, error) {
-              if (request.isForMainFrame ?? false) {
-                if (!mounted) return;
-                setState(() {
-                  _l = false;
-                  _progress = 0;
-                });
-              }
-            },
-            onReceivedHttpError: (controller, request, response) {
-              debugPrint(
-                  'HTTP Error: ${response.statusCode} - ${request.url}');
-            },
-            onDownloadStartRequest: (controller, request) async {
-              await openExternalUrl(request.url.toString());
-            },
-            shouldOverrideUrlLoading: (controller, action) async {
-              final url = action.request.url.toString();
-              if (_isTrustedUrl(url)) {
-                return NavigationActionPolicy.ALLOW;
-              }
-              if (await canLaunchUrl(Uri.parse(url))) {
-                await launchUrl(Uri.parse(url),
-                    mode: LaunchMode.externalApplication);
-              }
-              return NavigationActionPolicy.CANCEL;
-            },
-          ),
-          if (_l && _progress == 0)
-            Center(
-              child: Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      accentNotifier.value.withOpacity(0.15),
-                      accentNotifier.value.withOpacity(0.05),
-                    ],
-                  ),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: accentNotifier.value.withOpacity(0.3),
-                    width: 1.5,
-                  ),
+      // ✅ SafeArea + Padding برای جلوگیری از افتادن زیر نوار ناوبری
+      body: SafeArea(
+        top: false,
+        bottom: true,
+        child: Padding(
+          padding: EdgeInsets.only(bottom: R.w(4)),
+          child: Stack(
+            children: [
+              InAppWebView(
+                initialUrlRequest:
+                    URLRequest(url: WebUri(widget.url)),
+                initialSettings: InAppWebViewSettings(
+                  javaScriptEnabled: true,
+                  useShouldOverrideUrlLoading: true,
+                  mediaPlaybackRequiresUserGesture: false,
+                  useOnDownloadStart: true,
+                  supportZoom: true,
+                  cacheEnabled: true,
+                  clearCache: false,
+                  transparentBackground: true,
+                  allowsInlineMediaPlayback: true,
+                  useHybridComposition: true,
+                  domStorageEnabled: true,
+                  databaseEnabled: true,
+                  disableVerticalScroll: false,
+                  disableHorizontalScroll: false,
+                  verticalScrollBarEnabled: true,
+                  horizontalScrollBarEnabled: false,
+                  textZoom: 100,
+                  useWideViewPort: true,
+                  loadWithOverviewMode: true,
+                  thirdPartyCookiesEnabled: true,
                 ),
-                child: Center(
-                  child: SizedBox(
-                    width: 32,
-                    height: 32,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 3,
-                      color: accentNotifier.value,
+                onWebViewCreated: (c) => _controller = c,
+                onLoadStart: (c, url) {
+                  if (mounted) setState(() => _l = true);
+                },
+                onLoadStop: (c, url) {
+                  if (!mounted) return;
+                  setState(() {
+                    _l = false;
+                    _progress = 0;
+                  });
+                },
+                onProgressChanged: (c, p) {
+                  if (!mounted) return;
+                  setState(() => _progress = p / 100);
+                },
+                onReceivedError: (controller, request, error) {
+                  if (request.isForMainFrame ?? false) {
+                    if (!mounted) return;
+                    setState(() {
+                      _l = false;
+                      _progress = 0;
+                    });
+                  }
+                },
+                onReceivedHttpError:
+                    (controller, request, response) {
+                  debugPrint(
+                      'HTTP Error: ${response.statusCode} - ${request.url}');
+                },
+                onDownloadStartRequest:
+                    (controller, request) async {
+                  await openExternalUrl(request.url.toString());
+                },
+                shouldOverrideUrlLoading: (controller, action) async {
+                  final url = action.request.url.toString();
+                  if (_isTrustedUrl(url)) {
+                    return NavigationActionPolicy.ALLOW;
+                  }
+                  if (await canLaunchUrl(Uri.parse(url))) {
+                    await launchUrl(Uri.parse(url),
+                        mode: LaunchMode.externalApplication);
+                  }
+                  return NavigationActionPolicy.CANCEL;
+                },
+              ),
+              if (_l && _progress == 0)
+                Center(
+                  child: Container(
+                    width: 70,
+                    height: 70,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          accentNotifier.value.withOpacity(0.15),
+                          accentNotifier.value.withOpacity(0.05),
+                        ],
+                      ),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color:
+                            accentNotifier.value.withOpacity(0.3),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Center(
+                      child: SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          color: accentNotifier.value,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -10949,6 +11042,15 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
   @override
   void initState() {
     super.initState();
+
+    // ✅ فعال کردن چرخش برای این صفحه
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+
     _entryCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
@@ -10985,6 +11087,12 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
 
   @override
   void dispose() {
+    // ✅ برگرداندن قفل عمودی
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+
     _entryCtrl.dispose();
     _scroll.dispose();
     super.dispose();
@@ -17694,7 +17802,8 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
     );
   }
 }
-/* ==================== QUIZ PAGE ==================== */
+
+/* ==================== QUIZ PAGE (با Auto-Refresh) ==================== */
 
 class QuizPage extends StatefulWidget {
   const QuizPage({super.key});
@@ -18929,7 +19038,6 @@ class _QuizPageState extends State<QuizPage> with WidgetsBindingObserver {
     );
   }
 }
-
 /* ==================== SPORTS GLOSSARY PAGE (با Auto-Refresh) ==================== */
 
 class SportsGlossaryPage extends StatefulWidget {
@@ -19187,7 +19295,8 @@ class _SportsGlossaryPageState extends State<SportsGlossaryPage>
                       child: _filtered.isEmpty
                           ? _buildEmpty()
                           : ListView.separated(
-                              physics: const AlwaysScrollableScrollPhysics(
+                              physics:
+                                  const AlwaysScrollableScrollPhysics(
                                 parent: BouncingScrollPhysics(),
                               ),
                               padding: const EdgeInsets.fromLTRB(
@@ -19412,7 +19521,8 @@ class ReadingStatsPage extends StatelessWidget {
                 ? _buildEmpty()
                 : SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
+                    padding:
+                        const EdgeInsets.fromLTRB(14, 14, 14, 100),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
