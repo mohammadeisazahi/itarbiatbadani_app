@@ -202,6 +202,7 @@ class Cat {
   final Color c;
   const Cat(this.n, this.s, this.i, this.c);
 }
+
 const cats = <Cat>[
   Cat('رشته تربیت بدنی و علوم ورزشی',
       'physical-education-sport-sciences',
@@ -267,9 +268,36 @@ class QuizQuestion {
       );
 }
 
-/* ==================== QUIZ LOADING ==================== */
+/* ==================== QUIZ LOADING (FIX: forceRefresh) ==================== */
 
-Future<void> loadQuiz() async {
+Future<void> loadQuiz({bool forceRefresh = false}) async {
+  // ✅ FIX: اگه forceRefresh بود، مستقیم از سرور با timestamp (بدون کش)
+  if (forceRefresh) {
+    try {
+      final url =
+          '$quizRemoteApi?_=${DateTime.now().millisecondsSinceEpoch}';
+      final r = await http
+          .get(Uri.parse(url))
+          .timeout(const Duration(seconds: 10));
+      if (r.statusCode == 200) {
+        final data = json.decode(r.body);
+        if (data is List) {
+          quizNotifier.value = data
+              .map((e) => QuizQuestion.fromMap(
+                  Map<String, dynamic>.from(e)))
+              .toList();
+          try {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('quiz_questions', r.body);
+          } catch (_) {}
+          return;
+        }
+      }
+    } catch (_) {}
+    return;
+  }
+
+  // حالت عادی: اول از سرور، بعد کش
   try {
     final r = await http
         .get(Uri.parse(quizRemoteApi))
@@ -278,8 +306,8 @@ Future<void> loadQuiz() async {
       final data = json.decode(r.body);
       if (data is List && data.isNotEmpty) {
         quizNotifier.value = data
-            .map((e) =>
-                QuizQuestion.fromMap(Map<String, dynamic>.from(e)))
+            .map((e) => QuizQuestion.fromMap(
+                Map<String, dynamic>.from(e)))
             .toList();
         try {
           final prefs = await SharedPreferences.getInstance();
@@ -290,13 +318,14 @@ Future<void> loadQuiz() async {
     }
   } catch (_) {}
 
+  // fallback: کش محلی
   try {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString('quiz_questions');
     if (data != null && data.isNotEmpty) {
       final list = (json.decode(data) as List)
-          .map((e) =>
-              QuizQuestion.fromMap(Map<String, dynamic>.from(e)))
+          .map((e) => QuizQuestion.fromMap(
+              Map<String, dynamic>.from(e)))
           .toList();
       quizNotifier.value = list;
     }
@@ -1494,12 +1523,67 @@ String _newNewsUrl({int perPage = 10, int page = 1}) {
 
 Future<List> getNewNewsList() async {
   try {
-    final r = await http.get(Uri.parse(_newNewsUrl(perPage: 20)));
+    final url = '${_newNewsUrl(perPage: 20)}'
+        '&_=${DateTime.now().millisecondsSinceEpoch}';
+    final r = await http.get(Uri.parse(url));
     if (r.statusCode != 200) return [];
     return json.decode(r.body) as List;
   } catch (_) {
     return [];
   }
+}
+
+/* ==================== GLOSSARY API (FIX: forceRefresh) ==================== */
+
+Future<List> getSportsGlossary({bool forceRefresh = false}) async {
+  // ✅ FIX: اگه forceRefresh بود، مستقیم از سرور با timestamp
+  if (forceRefresh) {
+    try {
+      final url =
+          '$glossaryRemoteApi?_=${DateTime.now().millisecondsSinceEpoch}';
+      final r = await http
+          .get(Uri.parse(url))
+          .timeout(const Duration(seconds: 10));
+      if (r.statusCode == 200) {
+        final data = json.decode(r.body);
+        if (data is List) {
+          try {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('glossary_cache', r.body);
+          } catch (_) {}
+          return data;
+        }
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  // حالت عادی: اول از سرور، بعد کش
+  try {
+    final r = await http
+        .get(Uri.parse(glossaryRemoteApi))
+        .timeout(const Duration(seconds: 10));
+    if (r.statusCode == 200) {
+      final data = json.decode(r.body);
+      if (data is List) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('glossary_cache', r.body);
+        } catch (_) {}
+        return data;
+      }
+    }
+  } catch (_) {}
+
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final cached = prefs.getString('glossary_cache');
+    if (cached != null && cached.isNotEmpty) {
+      return json.decode(cached) as List;
+    }
+  } catch (_) {}
+
+  return [];
 }
 /* ==================== ADMIN AUTH ==================== */
 
@@ -1617,7 +1701,6 @@ Future<void> verifyAdmin({
 
 /* ==================== AD BANNER API ==================== */
 
-/// ذخیره تبلیغ در وردپرس (از پنل ادمین اپ)
 Future<void> saveAdBannerToServer({
   required String username,
   required String appPassword,
@@ -1627,7 +1710,6 @@ Future<void> saveAdBannerToServer({
 }) async {
   final auth = _basicAuth(username, appPassword);
 
-  // چک کن برگه قبلاً ساخته شده یا نه
   final checkUrl = '$api/pages?slug=$adBannerSlug&_fields=id';
   final checkResp = await http.get(Uri.parse(checkUrl));
 
@@ -1637,7 +1719,6 @@ Future<void> saveAdBannerToServer({
     if (list.isNotEmpty) existingId = list[0]['id'];
   }
 
-  // محتوای برگه
   String content = link;
   if (imageUrl != null && imageUrl.isNotEmpty) {
     content = '<img src="$imageUrl" alt="$title" />\n$link';
@@ -1674,16 +1755,11 @@ Future<void> saveAdBannerToServer({
   }
 
   if (r.statusCode == 200 || r.statusCode == 201) return;
-  if (r.statusCode == 401) {
-    throw Exception('نام کاربری یا رمز اشتباه است.');
-  }
-  if (r.statusCode == 403) {
-    throw Exception('شما اجازه ذخیره تبلیغ ندارید.');
-  }
+  if (r.statusCode == 401) throw Exception('نام کاربری یا رمز اشتباه است.');
+  if (r.statusCode == 403) throw Exception('شما اجازه ذخیره تبلیغ ندارید.');
   throw Exception('خطا در ذخیره تبلیغ (${r.statusCode})');
 }
 
-/// حذف تبلیغ از سرور
 Future<void> deleteAdBannerFromServer({
   required String username,
   required String appPassword,
@@ -1705,11 +1781,11 @@ Future<void> deleteAdBannerFromServer({
   );
 }
 
-/// خوندن تبلیغ از سرور (برای همه کاربرا)
 Future<void> loadAdBannerFromServer() async {
   try {
     final url = '$api/pages?slug=$adBannerSlug'
-        '&_embed=wp:featuredmedia&_fields=title,content,_embedded';
+        '&_embed=wp:featuredmedia&_fields=title,content,_embedded'
+        '&_=${DateTime.now().millisecondsSinceEpoch}';
     final r = await http
         .get(Uri.parse(url))
         .timeout(const Duration(seconds: 10));
@@ -1721,13 +1797,11 @@ Future<void> loadAdBannerFromServer() async {
         final title = clean(page['title']?['rendered'] ?? '');
         final rawContent = page['content']?['rendered'] ?? '';
 
-        // استخراج لینک
         String link = '';
         final urlMatch =
             RegExp(r'https?://[^\s<>"]+').firstMatch(rawContent);
         if (urlMatch != null) link = urlMatch.group(0) ?? '';
 
-        // استخراج تصویر
         String imageUrl = '';
         final media = page['_embedded']?['wp:featuredmedia'];
         if (media is List && media.isNotEmpty) {
@@ -1747,7 +1821,6 @@ Future<void> loadAdBannerFromServer() async {
           };
           adBannerNotifier.value = adData;
 
-          // ذخیره محلی برای آفلاین
           try {
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString('ad_banner', json.encode(adData));
@@ -1758,7 +1831,6 @@ Future<void> loadAdBannerFromServer() async {
     }
   } catch (_) {}
 
-  // fallback: خوندن از حافظه محلی
   await loadAdBannerLocal();
 }
 
@@ -1829,34 +1901,6 @@ Future<void> deleteQuizQuestionRemote({
 }
 
 /* ==================== GLOSSARY API ==================== */
-
-Future<List> getSportsGlossary() async {
-  try {
-    final r = await http
-        .get(Uri.parse(glossaryRemoteApi))
-        .timeout(const Duration(seconds: 10));
-    if (r.statusCode == 200) {
-      final data = json.decode(r.body);
-      if (data is List) {
-        try {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('glossary_cache', r.body);
-        } catch (_) {}
-        return data;
-      }
-    }
-  } catch (_) {}
-
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final cached = prefs.getString('glossary_cache');
-    if (cached != null && cached.isNotEmpty) {
-      return json.decode(cached) as List;
-    }
-  } catch (_) {}
-
-  return [];
-}
 
 Future<Map<String, dynamic>> postGlossaryWord({
   required String username,
@@ -2110,6 +2154,7 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _logoFade;
   late Animation<double> _textFade;
   late Animation<Offset> _textSlide;
+  Timer? _navTimer;
 
   @override
   void initState() {
@@ -2149,7 +2194,8 @@ class _SplashScreenState extends State<SplashScreen>
 
     _ctrl.forward();
 
-    Timer(const Duration(milliseconds: 2600), () {
+    // ✅ FIX: ذخیره Timer و کنسل کردن آن در dispose
+    _navTimer = Timer(const Duration(milliseconds: 2600), () {
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -2167,6 +2213,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
+    _navTimer?.cancel();
     _ctrl.dispose();
     super.dispose();
   }
@@ -2815,14 +2862,16 @@ class Home extends StatefulWidget {
   State<Home> createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> {
+class _HomeState extends State<Home> with WidgetsBindingObserver {
   Future<List>? _f;
   Future<List>? _newsFuture;
   Key _bannerKey = UniqueKey();
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {
@@ -2831,6 +2880,28 @@ class _HomeState extends State<Home> {
         checkForNewNotifications();
       } catch (_) {}
     });
+
+    // ✅ Auto-refresh notifications every 2 minutes
+    _refreshTimer = Timer.periodic(
+      const Duration(minutes: 2),
+      (t) {
+        if (mounted) checkForNewNotifications();
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      checkForNewNotifications();
+    }
   }
 
   void _load() {
@@ -3124,7 +3195,7 @@ Widget ModernHeader(BuildContext context, [String? t]) {
             ),
           ),
 
-          // 🔔 اعلان‌ها (اصلاح‌شده)
+          // 🔔 اعلان‌ها
           ValueListenableBuilder<List<Map<String, dynamic>>>(
             valueListenable: inAppNotificationsNotifier,
             builder: (c, list, __) {
@@ -3298,6 +3369,7 @@ class _LiveNewsTickerState extends State<LiveNewsTicker> {
   }
 
   void _startTicker() {
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 4), (t) {
       if (!mounted) {
         t.cancel();
@@ -4178,7 +4250,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
         _count = posts.length;
         if (_timer == null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _startAuto(_count);
+            if (mounted) _startAuto(_count);
           });
         }
 
@@ -7311,6 +7383,12 @@ class _ArticlesPageState extends State<ArticlesPage> {
     });
   }
 
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
     if (_loading || !_hasMore) return;
     setState(() {
@@ -7320,6 +7398,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
     try {
       final list =
           await getPostsPaged(perPage: perPageSize, page: _page);
+      if (!mounted) return;
       setState(() {
         if (list.isEmpty) {
           _hasMore = false;
@@ -7332,6 +7411,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _loading = false;
@@ -7509,6 +7589,12 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
     _init();
   }
 
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
   Future<void> _init() async {
     setState(() => _loading = true);
     try {
@@ -7516,6 +7602,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
       if (_catId == null) throw Exception('دسته‌بندی یافت نشد');
       await _loadFirst();
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _loading = false;
@@ -7536,6 +7623,7 @@ class _CategoryPostsPageState extends State<CategoryPostsPage> {
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _loading = false;
@@ -7897,6 +7985,12 @@ class _NewsPageState extends State<NewsPage> {
     });
   }
 
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
   Future<void> _init() async {
     setState(() => _loading = true);
     try {
@@ -7904,6 +7998,7 @@ class _NewsPageState extends State<NewsPage> {
       if (_catId == null) throw Exception('دسته‌بندی اخبار یافت نشد');
       await _load();
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _loading = false;
@@ -7944,6 +8039,7 @@ class _NewsPageState extends State<NewsPage> {
     try {
       final list = await getPostsPaged(
           perPage: perPageSize, page: _page, catId: _catId);
+      if (!mounted) return;
       setState(() {
         if (list.isEmpty) {
           _hasMore = false;
@@ -7960,6 +8056,7 @@ class _NewsPageState extends State<NewsPage> {
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _loading = false;
@@ -8695,6 +8792,12 @@ class _ShopPageState extends State<ShopPage> {
     });
   }
 
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
     if (_loading || !_hasMore) return;
     setState(() {
@@ -8704,6 +8807,7 @@ class _ShopPageState extends State<ShopPage> {
     try {
       final list =
           await getProductsPaged(perPage: perPageSize, page: _page);
+      if (!mounted) return;
       setState(() {
         if (list.isEmpty) {
           _hasMore = false;
@@ -8718,6 +8822,7 @@ class _ShopPageState extends State<ShopPage> {
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _loading = false;
@@ -9663,7 +9768,7 @@ class _SearchPageState extends State<SearchPage> {
                 child: GestureDetector(
                   onTap: () {
                     HapticFeedback.selectionClick();
-                    setState(() => _sortBy = opt['key']);
+                    setState(() => _sortBy = opt['key'] as String);
                     _applyFilters();
                   },
                   child: AnimatedContainer(
@@ -10417,16 +10522,20 @@ class _AccountPageState extends State<AccountPage>
                     onLoadStart: (c, url) =>
                         setState(() => _l = true),
                     onLoadStop: (c, url) async {
+                      if (!mounted) return;
                       setState(() {
                         _l = false;
                         _progress = 0;
                       });
                       await _save();
                     },
-                    onProgressChanged: (c, p) =>
-                        setState(() => _progress = p / 100),
+                    onProgressChanged: (c, p) {
+                      if (!mounted) return;
+                      setState(() => _progress = p / 100);
+                    },
                     onReceivedError: (controller, request, error) {
                       if (request.isForMainFrame ?? false) {
+                        if (!mounted) return;
                         setState(() {
                           _l = false;
                           _progress = 0;
@@ -10735,17 +10844,23 @@ class _ModernWebPageState extends State<ModernWebPage> {
               thirdPartyCookiesEnabled: true,
             ),
             onWebViewCreated: (c) => _controller = c,
-            onLoadStart: (c, url) => setState(() => _l = true),
+            onLoadStart: (c, url) {
+              if (mounted) setState(() => _l = true);
+            },
             onLoadStop: (c, url) {
+              if (!mounted) return;
               setState(() {
                 _l = false;
                 _progress = 0;
               });
             },
-            onProgressChanged: (c, p) =>
-                setState(() => _progress = p / 100),
+            onProgressChanged: (c, p) {
+              if (!mounted) return;
+              setState(() => _progress = p / 100);
+            },
             onReceivedError: (controller, request, error) {
               if (request.isForMainFrame ?? false) {
+                if (!mounted) return;
                 setState(() {
                   _l = false;
                   _progress = 0;
@@ -10854,14 +10969,14 @@ class _UrgentNewsDetailPageState extends State<UrgentNewsDetailPage>
     _scroll.addListener(() {
       final show = _scroll.offset > 120;
       if (show != _showAppBar) {
-        setState(() => _showAppBar = show);
+        if (mounted) setState(() => _showAppBar = show);
       }
       if (_scroll.hasClients) {
         final max = _scroll.position.maxScrollExtent;
         if (max > 0) {
           final p = (_scroll.offset / max).clamp(0.0, 1.0);
           if ((p - _readingProgress).abs() > 0.01) {
-            setState(() => _readingProgress = p);
+            if (mounted) setState(() => _readingProgress = p);
           }
         }
       }
@@ -13042,7 +13157,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         _quizCorrectIndex = 0;
       });
 
-      await loadQuiz();
+      await loadQuiz(forceRefresh: true);
     } catch (e) {
       if (!mounted) return;
       showSnack(
@@ -13477,7 +13592,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       await removeQuizQuestion(q.id);
       if (mounted) {
         showSnack(context, 'سوال حذف شد');
-        await loadQuiz();
+        await loadQuiz(forceRefresh: true);
       }
     } catch (e) {
       if (mounted) {
@@ -13544,7 +13659,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         imageUrl = result['source_url']?.toString();
       }
 
-      // ذخیره در سرور (برای همه کاربرا)
       await saveAdBannerToServer(
         username: widget.username,
         appPassword: widget.password,
@@ -13553,7 +13667,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         imageUrl: imageUrl,
       );
 
-      // ذخیره محلی هم برای آفلاین
       await saveAdBanner({
         'imageUrl': imageUrl ?? '',
         'title': title,
@@ -15302,7 +15415,7 @@ class _GlossaryAdminPageState extends State<GlossaryAdminPage> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final list = await getSportsGlossary();
+      final list = await getSportsGlossary(forceRefresh: true);
       if (mounted) {
         setState(() {
           _items = list;
@@ -15478,6 +15591,17 @@ class _GlossaryAdminPageState extends State<GlossaryAdminPage> {
           backgroundColor: bgC,
           foregroundColor: txtC,
           elevation: 0,
+          actions: [
+            IconButton(
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                _load();
+              },
+              icon: const Icon(Icons.refresh_rounded,
+                  color: Color(0xff0f766e), size: 22),
+              tooltip: 'به‌روزرسانی',
+            ),
+          ],
         ),
         body: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -16659,36 +16783,11 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
   bool _hasCalculated = false;
 
   final List<Map<String, dynamic>> _activityLevels = [
-    {
-      'key': 'sedentary',
-      'label': 'کم‌تحرک',
-      'mult': 1.2,
-      'desc': 'بدون ورزش'
-    },
-    {
-      'key': 'light',
-      'label': 'سبک',
-      'mult': 1.375,
-      'desc': '۱-۳ روز در هفته'
-    },
-    {
-      'key': 'moderate',
-      'label': 'متوسط',
-      'mult': 1.55,
-      'desc': '۳-۵ روز در هفته'
-    },
-    {
-      'key': 'active',
-      'label': 'فعال',
-      'mult': 1.725,
-      'desc': '۶-۷ روز در هفته'
-    },
-    {
-      'key': 'veryActive',
-      'label': 'خیلی فعال',
-      'mult': 1.9,
-      'desc': 'ورزشکار حرفه‌ای'
-    },
+    {'key': 'sedentary', 'label': 'کم‌تحرک', 'mult': 1.2, 'desc': 'بدون ورزش'},
+    {'key': 'light', 'label': 'سبک', 'mult': 1.375, 'desc': '۱-۳ روز در هفته'},
+    {'key': 'moderate', 'label': 'متوسط', 'mult': 1.55, 'desc': '۳-۵ روز در هفته'},
+    {'key': 'active', 'label': 'فعال', 'mult': 1.725, 'desc': '۶-۷ روز در هفته'},
+    {'key': 'veryActive', 'label': 'خیلی فعال', 'mult': 1.9, 'desc': 'ورزشکار حرفه‌ای'},
   ];
 
   @override
@@ -16943,9 +17042,7 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
             ),
           ),
           const SizedBox(height: 10),
-          ..._activityLevels
-              .map((level) => _activityOption(level))
-              .toList(),
+          ..._activityLevels.map((level) => _activityOption(level)).toList(),
           const SizedBox(height: 18),
           SizedBox(
             height: 52,
@@ -17025,9 +17122,7 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           gradient: selected
-              ? LinearGradient(
-                  colors: [color, color.withOpacity(0.7)],
-                )
+              ? LinearGradient(colors: [color, color.withOpacity(0.7)])
               : null,
           color: selected ? null : pnl2,
           borderRadius: BorderRadius.circular(14),
@@ -17039,11 +17134,7 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: selected ? Colors.white : color,
-              size: 22,
-            ),
+            Icon(icon, color: selected ? Colors.white : color, size: 22),
             const SizedBox(width: 8),
             Text(
               label,
@@ -17106,8 +17197,7 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
                   fontFamily: 'Vazirmatn',
                 ),
                 border: InputBorder.none,
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 8),
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
               ),
             ),
           ),
@@ -17612,16 +17702,53 @@ class QuizPage extends StatefulWidget {
   State<QuizPage> createState() => _QuizPageState();
 }
 
-class _QuizPageState extends State<QuizPage> {
+class _QuizPageState extends State<QuizPage> with WidgetsBindingObserver {
   int _currentIndex = 0;
   bool _showResult = false;
+  bool _refreshing = false;
+  Timer? _autoRefresh;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _jumpToFirstUnanswered();
     });
+    // 🔄 هر ۳۰ ثانیه آپدیت خودکار
+    _autoRefresh = Timer.periodic(const Duration(seconds: 30), (t) {
+      if (mounted && !_refreshing) _silentRefresh();
+    });
+  }
+
+  @override
+  void dispose() {
+    _autoRefresh?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      _silentRefresh();
+    }
+  }
+
+  Future<void> _silentRefresh() async {
+    try {
+      await loadQuiz(forceRefresh: true);
+    } catch (_) {}
+  }
+
+  Future<void> _manualRefresh() async {
+    HapticFeedback.mediumImpact();
+    setState(() => _refreshing = true);
+    await _silentRefresh();
+    if (mounted) {
+      setState(() => _refreshing = false);
+      showSnack(context, 'سوالات به‌روز شد ✅');
+    }
   }
 
   void _jumpToFirstUnanswered() {
@@ -17696,6 +17823,20 @@ class _QuizPageState extends State<QuizPage> {
                   foregroundColor: txtC,
                   elevation: 0,
                   actions: [
+                    IconButton(
+                      onPressed: _refreshing ? null : _manualRefresh,
+                      icon: _refreshing
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: kQuizColor),
+                            )
+                          : Icon(Icons.refresh_rounded,
+                              color: kQuizColor, size: 22),
+                      tooltip: 'به‌روزرسانی',
+                    ),
                     if (questions.isNotEmpty)
                       TextButton.icon(
                         onPressed: () {
@@ -17782,7 +17923,7 @@ class _QuizPageState extends State<QuizPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'به‌زودی از طرف مدیریت، سوالات کوئیز اضافه خواهد شد',
+              'برای به‌روزرسانی، دکمه بالا را بزنید',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: mutC,
@@ -18394,8 +18535,7 @@ class _QuizPageState extends State<QuizPage> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'پاسخ صحیح: گزینه «$correctLetter»',
@@ -18438,8 +18578,7 @@ class _QuizPageState extends State<QuizPage> {
                       ),
                     ),
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
@@ -18448,14 +18587,10 @@ class _QuizPageState extends State<QuizPage> {
                               height: 28,
                               decoration: BoxDecoration(
                                 color: kInfo.withOpacity(0.15),
-                                borderRadius:
-                                    BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Icon(
-                                Icons.lightbulb_rounded,
-                                color: kInfo,
-                                size: 16,
-                              ),
+                              child: Icon(Icons.lightbulb_rounded,
+                                  color: kInfo, size: 16),
                             ),
                             const SizedBox(width: 8),
                             Text(
@@ -18528,8 +18663,7 @@ class _QuizPageState extends State<QuizPage> {
       resultColor = kUrgent;
       resultText = 'نیاز به تمرین بیشتر';
       resultIcon = Icons.school_rounded;
-      motivationalText =
-          'اشکالی نداره، با مرور توضیحات بهتر می‌شی';
+      motivationalText = 'اشکالی نداره، با مرور توضیحات بهتر می‌شی';
     }
 
     return SingleChildScrollView(
@@ -18609,8 +18743,7 @@ class _QuizPageState extends State<QuizPage> {
                   decoration: BoxDecoration(
                     color: pnl,
                     shape: BoxShape.circle,
-                    border: Border.all(
-                        color: resultColor, width: 3),
+                    border: Border.all(color: resultColor, width: 3),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -18797,6 +18930,412 @@ class _QuizPageState extends State<QuizPage> {
   }
 }
 
+/* ==================== SPORTS GLOSSARY PAGE (با Auto-Refresh) ==================== */
+
+class SportsGlossaryPage extends StatefulWidget {
+  const SportsGlossaryPage({super.key});
+  @override
+  State<SportsGlossaryPage> createState() => _SportsGlossaryPageState();
+}
+
+class _SportsGlossaryPageState extends State<SportsGlossaryPage>
+    with WidgetsBindingObserver {
+  final _searchCtrl = TextEditingController();
+  List<dynamic> _items = [];
+  List<dynamic> _filtered = [];
+  bool _loading = true;
+  bool _refreshing = false;
+  String _query = '';
+  Timer? _autoRefresh;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _load(force: true);
+    _searchCtrl.addListener(() {
+      final q = _searchCtrl.text.trim().toLowerCase();
+      setState(() {
+        _query = q;
+        _applyFilter();
+      });
+    });
+    // 🔄 هر ۳۰ ثانیه آپدیت خودکار
+    _autoRefresh = Timer.periodic(const Duration(seconds: 30), (t) {
+      if (mounted && !_refreshing) _silentRefresh();
+    });
+  }
+
+  @override
+  void dispose() {
+    _autoRefresh?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      _silentRefresh();
+    }
+  }
+
+  Future<void> _silentRefresh() async {
+    try {
+      final list = await getSportsGlossary(forceRefresh: true);
+      if (mounted) {
+        setState(() {
+          _items = list;
+          _applyFilter();
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _load({bool force = false, bool silent = false}) async {
+    if (!silent) setState(() => _loading = true);
+    try {
+      final list = await getSportsGlossary(forceRefresh: force);
+      if (mounted) {
+        setState(() {
+          _items = list;
+          _applyFilter();
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _items = [];
+          _filtered = [];
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _manualRefresh() async {
+    HapticFeedback.mediumImpact();
+    setState(() => _refreshing = true);
+    await _silentRefresh();
+    if (mounted) {
+      setState(() => _refreshing = false);
+      showSnack(context, 'لغات به‌روز شد ✅');
+    }
+  }
+
+  void _applyFilter() {
+    if (_query.isEmpty) {
+      _filtered = List.from(_items);
+      return;
+    }
+    _filtered = _items.where((item) {
+      final en = (item['en'] ?? '').toString().toLowerCase();
+      final fa = (item['fa'] ?? '').toString().toLowerCase();
+      final desc = (item['desc'] ?? '').toString().toLowerCase();
+      return en.contains(_query) ||
+          fa.contains(_query) ||
+          desc.contains(_query);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, _, __) => Scaffold(
+        backgroundColor: bgC,
+        appBar: AppBar(
+          title: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xff0f766e), Color(0xff14b8a6)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xff0f766e).withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.translate_rounded,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'لغات تخصصی',
+                style: TextStyle(
+                  color: txtC,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: bgC,
+          foregroundColor: txtC,
+          elevation: 0,
+          actions: [
+            IconButton(
+              onPressed: _refreshing ? null : _manualRefresh,
+              icon: _refreshing
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xff0f766e)),
+                    )
+                  : const Icon(Icons.refresh_rounded,
+                      color: Color(0xff0f766e), size: 22),
+              tooltip: 'به‌روزرسانی',
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+              decoration: BoxDecoration(
+                color: pnl,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: lineC),
+              ),
+              child: TextField(
+                controller: _searchCtrl,
+                style: TextStyle(
+                  color: txtC,
+                  fontFamily: 'Vazirmatn',
+                  fontSize: 13,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'جستجو در لغات...',
+                  hintStyle: TextStyle(
+                      color: mutC, fontFamily: 'Vazirmatn'),
+                  prefixIcon: const Icon(Icons.search_rounded,
+                      color: Color(0xff0f766e)),
+                  suffixIcon: _query.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(Icons.close_rounded,
+                              color: mutC, size: 18),
+                          onPressed: () => _searchCtrl.clear(),
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: Colors.transparent,
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 14),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+            if (!_loading)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xff0f766e)
+                            .withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${_filtered.length} لغت',
+                        style: const TextStyle(
+                          color: Color(0xff0f766e),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      'به‌روزرسانی خودکار: ۳۰ ثانیه',
+                      style: TextStyle(
+                        color: mutC,
+                        fontSize: 10,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: _loading
+                  ? const ArticlesSkeleton()
+                  : RefreshIndicator(
+                      color: const Color(0xff0f766e),
+                      backgroundColor: pnl,
+                      strokeWidth: 3,
+                      onRefresh: _manualRefresh,
+                      child: _filtered.isEmpty
+                          ? _buildEmpty()
+                          : ListView.separated(
+                              physics: const AlwaysScrollableScrollPhysics(
+                                parent: BouncingScrollPhysics(),
+                              ),
+                              padding: const EdgeInsets.fromLTRB(
+                                  14, 0, 14, 100),
+                              itemCount: _filtered.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 10),
+                              itemBuilder: (c, i) =>
+                                  _buildCard(_filtered[i]),
+                            ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard(dynamic item) {
+    final en = item['en']?.toString() ?? '';
+    final fa = item['fa']?.toString() ?? '';
+    final desc = item['desc']?.toString() ?? '';
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: pnl,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: lineC),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xff0f766e).withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xff0f766e).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  en,
+                  style: const TextStyle(
+                    color: Color(0xff0f766e),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  fa,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: txtC,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (desc.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: pnl2,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                desc,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: mutC,
+                  fontSize: 12,
+                  height: 1.7,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: const Color(0xff0f766e).withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.translate_rounded,
+                  color: Color(0xff0f766e), size: 48),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              _query.isEmpty
+                  ? 'هنوز لغتی اضافه نشده'
+                  : 'نتیجه‌ای پیدا نشد',
+              style: TextStyle(
+                color: txtC,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _query.isEmpty
+                  ? 'برای به‌روزرسانی، از بالا بکشید پایین'
+                  : 'کلمه دیگری را امتحان کنید',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: mutC,
+                fontSize: 12,
+                height: 1.7,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /* ==================== READING STATS PAGE ==================== */
 
 class ReadingStatsPage extends StatelessWidget {
@@ -18873,11 +19412,9 @@ class ReadingStatsPage extends StatelessWidget {
                 ? _buildEmpty()
                 : SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    padding:
-                        const EdgeInsets.fromLTRB(14, 14, 14, 100),
+                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.stretch,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _buildStreakCard(streak),
                         const SizedBox(height: 14),
@@ -19395,8 +19932,7 @@ class ReadingStatsPage extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: pnl2,
                       borderRadius: BorderRadius.circular(12),
-                      border:
-                          Border.all(color: lineC, width: 0.8),
+                      border: Border.all(color: lineC, width: 0.8),
                     ),
                     child: Row(
                       children: [
@@ -19444,8 +19980,7 @@ class ReadingStatsPage extends StatelessWidget {
                                 CrossAxisAlignment.start,
                             children: [
                               Text(
-                                article['title']?.toString() ??
-                                    '',
+                                article['title']?.toString() ?? '',
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.right,
@@ -19586,347 +20121,6 @@ class ReadingStatsPage extends StatelessWidget {
   }
 }
 
-/* ==================== SPORTS GLOSSARY PAGE ==================== */
-
-class SportsGlossaryPage extends StatefulWidget {
-  const SportsGlossaryPage({super.key});
-  @override
-  State<SportsGlossaryPage> createState() =>
-      _SportsGlossaryPageState();
-}
-
-class _SportsGlossaryPageState extends State<SportsGlossaryPage> {
-  final _searchCtrl = TextEditingController();
-  List<dynamic> _items = [];
-  List<dynamic> _filtered = [];
-  bool _loading = true;
-  String _query = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-    _searchCtrl.addListener(() {
-      final q = _searchCtrl.text.trim().toLowerCase();
-      setState(() {
-        _query = q;
-        _applyFilter();
-      });
-    });
-  }
-
-  Future<void> _load() async {
-    setState(() => _loading = true);
-    try {
-      final list = await getSportsGlossary();
-      if (mounted) {
-        setState(() {
-          _items = list;
-          _applyFilter();
-          _loading = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _items = [];
-          _filtered = [];
-          _loading = false;
-        });
-      }
-    }
-  }
-
-  void _applyFilter() {
-    if (_query.isEmpty) {
-      _filtered = List.from(_items);
-      return;
-    }
-    _filtered = _items.where((item) {
-      final en = (item['en'] ?? '').toString().toLowerCase();
-      final fa = (item['fa'] ?? '').toString().toLowerCase();
-      final desc = (item['desc'] ?? '').toString().toLowerCase();
-      return en.contains(_query) ||
-          fa.contains(_query) ||
-          desc.contains(_query);
-    }).toList();
-  }
-
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkModeNotifier,
-      builder: (context, _, __) => Scaffold(
-        backgroundColor: bgC,
-        appBar: AppBar(
-          title: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xff0f766e),
-                      Color(0xff14b8a6)
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xff0f766e)
-                          .withOpacity(0.4),
-                      blurRadius: 12,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.translate_rounded,
-                    color: Colors.white, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'لغات تخصصی',
-                style: TextStyle(
-                  color: txtC,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'Vazirmatn',
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: bgC,
-          foregroundColor: txtC,
-          elevation: 0,
-        ),
-        body: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.fromLTRB(14, 8, 14, 8),
-              decoration: BoxDecoration(
-                color: pnl,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: lineC),
-              ),
-              child: TextField(
-                controller: _searchCtrl,
-                style: TextStyle(
-                  color: txtC,
-                  fontFamily: 'Vazirmatn',
-                  fontSize: 13,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'جستجو در لغات...',
-                  hintStyle: TextStyle(
-                      color: mutC, fontFamily: 'Vazirmatn'),
-                  prefixIcon: const Icon(Icons.search_rounded,
-                      color: Color(0xff0f766e)),
-                  suffixIcon: _query.isNotEmpty
-                      ? IconButton(
-                          icon: Icon(Icons.close_rounded,
-                              color: mutC, size: 18),
-                          onPressed: () {
-                            _searchCtrl.clear();
-                          },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: Colors.transparent,
-                  contentPadding:
-                      const EdgeInsets.symmetric(vertical: 14),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ),
-            if (!_loading)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xff0f766e)
-                            .withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '${_filtered.length} لغت',
-                        style: const TextStyle(
-                          color: Color(0xff0f766e),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: _loading
-                  ? const ArticlesSkeleton()
-                  : _filtered.isEmpty
-                      ? _buildEmpty()
-                      : ListView.separated(
-                          physics: const BouncingScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(
-                              14, 0, 14, 100),
-                          itemCount: _filtered.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 10),
-                          itemBuilder: (c, i) =>
-                              _buildCard(_filtered[i]),
-                        ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCard(dynamic item) {
-    final en = item['en']?.toString() ?? '';
-    final fa = item['fa']?.toString() ?? '';
-    final desc = item['desc']?.toString() ?? '';
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: pnl,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: lineC),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xff0f766e).withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xff0f766e).withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  en,
-                  style: const TextStyle(
-                    color: Color(0xff0f766e),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  fa,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: txtC,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (desc.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: pnl2,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                desc,
-                textAlign: TextAlign.right,
-                style: TextStyle(
-                  color: mutC,
-                  fontSize: 12,
-                  height: 1.7,
-                  fontFamily: 'Vazirmatn',
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmpty() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: const Color(0xff0f766e).withOpacity(0.12),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.translate_rounded,
-                  color: Color(0xff0f766e), size: 48),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              _query.isEmpty
-                  ? 'هنوز لغتی اضافه نشده'
-                  : 'نتیجه‌ای پیدا نشد',
-              style: TextStyle(
-                color: txtC,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _query.isEmpty
-                  ? 'به‌زودی از طرف مدیریت، لغات تخصصی اضافه می‌شود'
-                  : 'کلمه دیگری را امتحان کنید',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: mutC,
-                fontSize: 12,
-                height: 1.7,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /* ==================== SKELETONS ==================== */
 
 class ArticlesSkeleton extends StatelessWidget {
@@ -19961,8 +20155,7 @@ class ArticlesSkeleton extends StatelessWidget {
                       SizedBox(height: 6),
                       ShimmerBox(height: 14, width: 160),
                       SizedBox(height: 12),
-                      ShimmerBox(
-                          height: 12, width: 70, radius: 6),
+                      ShimmerBox(height: 12, width: 70, radius: 6),
                     ],
                   ),
                 ),
@@ -20006,8 +20199,7 @@ class NewsSkeleton extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: const [
-                      ShimmerBox(
-                          height: 12, width: 80, radius: 6),
+                      ShimmerBox(height: 12, width: 80, radius: 6),
                       SizedBox(height: 10),
                       ShimmerBox(height: 15),
                       SizedBox(height: 6),
@@ -20015,8 +20207,7 @@ class NewsSkeleton extends StatelessWidget {
                       SizedBox(height: 10),
                       ShimmerBox(height: 12),
                       SizedBox(height: 12),
-                      ShimmerBox(
-                          height: 30, width: 120, radius: 8),
+                      ShimmerBox(height: 30, width: 120, radius: 8),
                     ],
                   ),
                 ),
@@ -20059,11 +20250,9 @@ class ShopSkeleton extends StatelessWidget {
                       SizedBox(height: 6),
                       ShimmerBox(height: 14, width: 140),
                       SizedBox(height: 12),
-                      ShimmerBox(
-                          height: 16, width: 100, radius: 8),
+                      ShimmerBox(height: 16, width: 100, radius: 8),
                       SizedBox(height: 10),
-                      ShimmerBox(
-                          height: 26, width: 90, radius: 8),
+                      ShimmerBox(height: 26, width: 90, radius: 8),
                     ],
                   ),
                 ),
@@ -20102,8 +20291,7 @@ class SearchSkeleton extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ShimmerBox(
-                          height: 12, width: 70, radius: 6),
+                      ShimmerBox(height: 12, width: 70, radius: 6),
                       SizedBox(height: 10),
                       ShimmerBox(height: 14),
                       SizedBox(height: 6),
@@ -20265,7 +20453,7 @@ class FeaturedSkeleton extends StatelessWidget {
   }
 }
 
-/* ==================== EMPTY & ERROR ==================== */
+/* ==================== EMPTY & ERROR WIDGETS ==================== */
 
 class EmptyWidget extends StatelessWidget {
   final String text;
