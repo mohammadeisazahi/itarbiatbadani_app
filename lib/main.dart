@@ -424,7 +424,9 @@ Future<void> loadAccentColor() async {
 Future<void> saveAccentColor(Color c) async {
   accentNotifier.value = c;
   try {
-    await _storage.write(key: 'accent_color', value: c.toARGB32().toString());
+    // ✅ FIXED: toARGB32 در Flutter 3.27.4 وجود ندارد
+    final value = (c.value & 0xFFFFFFFF).toString();
+    await _storage.write(key: 'accent_color', value: value);
   } catch (_) {}
 }
 /* ==================== AD BANNER (LOCAL CACHE) ==================== */
@@ -8611,12 +8613,12 @@ class _AccountPageState extends State<AccountPage>
         for (final c in all) {
           if (c.name.startsWith('wordpress_logged_in') ||
               c.name.startsWith('wordpress_sec')) {
-            await CookieManager.instance().deleteCookie(
-              url: WebUri(site),
-              name: c.name,
-              domain: c.domain,
-              path: c.path,
-            );
+          await CookieManager.instance().deleteCookie(
+  url: WebUri(site),
+  name: c.name,
+  domain: c.domain,
+  path: c.path ?? '/',
+);
           }
         }
       }
