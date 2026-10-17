@@ -8727,16 +8727,32 @@ class _AccountPageState extends State<AccountPage>
                               });
                             }
                           },
-                          onLoadStop: (c, url) async {
-                            if (!mounted) return;
-                            final canBack = await c.canGoBack();
-                            setState(() {
-                              _l = false;
-                              _progress = 0;
-                              _canGoBack = canBack;
-                            });
-                            await _save();
-                          },
+                                                 onLoadStop: (c, url) async {
+                          if (!mounted) return;
+                          final canBack = await c.canGoBack();
+                          setState(() {
+                            _l = false;
+                            _progress = 0;
+                            _canGoBack = canBack;
+                          });
+                          await _save();
+
+                          // ✅ اضافه کردن این بخش برای حذف دکمه بازگشت به خانه از داخل سایت
+                          await c.evaluateJavascript(source: """
+                            (function() {
+                              var links = document.querySelectorAll('a');
+                              for (var i = 0; i < links.length; i++) {
+                                var txt = links[i].innerText.trim();
+                                if (txt === 'بازگشت به خانه' || txt.includes('بازگشت به خانه') || txt.includes('بازگشت به فروشگاه')) {
+                                  links[i].style.setProperty('display', 'none', 'important');
+                                  if (links[i].parentElement) {
+                                    links[i].parentElement.style.setProperty('display', 'none', 'important');
+                                  }
+                                }
+                              }
+                            })();
+                          """);
+                        },
                           onProgressChanged: (c, p) {
                             if (!mounted) return;
                             setState(() => _progress = p / 100);
